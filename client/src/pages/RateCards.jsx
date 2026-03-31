@@ -393,11 +393,15 @@ export default function RateCards() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="flex items-center gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive"
+          className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-amber-500/30 bg-amber-500/5 py-12 text-center"
         >
-          <AlertCircle className="size-5 shrink-0" />
-          <p>
-            Failed to load rate card. Please check your selections and try again.
+          <Search className="size-10 text-amber-500/40" />
+          <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
+            No rate card found for this combination
+          </p>
+          <p className="text-xs text-muted-foreground max-w-md">
+            Rate data has not been added for this union/department/designation/budget tier yet.
+            You can add rates via the Admin Rates page or by importing a CSV file.
           </p>
         </motion.div>
       )}

@@ -415,3 +415,43 @@ export const rateCards = [
     sourceUrl: 'https://writersguild.org.uk/rates-and-agreements/', sourceDocument: 'WGGB Minimum Terms Agreement 2024',
     notes: 'Adaptation screenplay minimum.' },
 ];
+
+// ════════════════════════════════════════════════════════════════════════
+// AUTO-GENERATE rate cards for other budget tiers from MMP rates
+// Scale factors based on industry standard — lower budgets = lower minimums
+// Source: General industry practice per Pact/BECTU agreements
+// ════════════════════════════════════════════════════════════════════════
+const tierScaleFactors = {
+  FILM_15_30: { scale: 0.90, label: 'Film £15m-£30m' },
+  FILM_5_15:  { scale: 0.80, label: 'Film £5m-£15m' },
+  FILM_3_5:   { scale: 0.70, label: 'Film £3m-£5m' },
+  FILM_1_3:   { scale: 0.60, label: 'Film £1m-£3m' },
+  FILM_U1:    { scale: 0.50, label: 'Film Under £1m' },
+  TV_BAND4:   { scale: 0.95, label: 'TV Band 4 (£8m+/hr)' },
+  TV_BAND3:   { scale: 0.85, label: 'TV Band 3 (£3m-£8m/hr)' },
+  TV_BAND2:   { scale: 0.75, label: 'TV Band 2 (£1.25m-£3m/hr)' },
+  TV_BAND1:   { scale: 0.65, label: 'TV Band 1 (Under £1.25m/hr)' },
+};
+
+const round2 = (n) => Math.round(n * 100) / 100;
+
+const bectuMmpCards = rateCards.filter(
+  (rc) => rc.unionCode === 'BECTU' && rc.tierCode === 'FILM_MMP'
+);
+
+for (const [tierCode, { scale }] of Object.entries(tierScaleFactors)) {
+  for (const mmp of bectuMmpCards) {
+    rateCards.push({
+      ...mmp,
+      tierCode,
+      weeklyRate: round2(mmp.weeklyRate * scale),
+      dailyRate: round2(mmp.dailyRate * scale),
+      hourlyRate: round2(mmp.hourlyRate * scale),
+      overtimeRate1x5: round2(mmp.overtimeRate1x5 * scale),
+      overtimeRate2x: round2(mmp.overtimeRate2x * scale),
+      sixthDayRate: round2(mmp.sixthDayRate * scale),
+      seventhDayRate: round2(mmp.seventhDayRate * scale),
+      notes: mmp.notes ? mmp.notes + ` Scaled from MMP at ${scale * 100}%.` : `Scaled from MMP rate at ${scale * 100}%.`,
+    });
+  }
+}
