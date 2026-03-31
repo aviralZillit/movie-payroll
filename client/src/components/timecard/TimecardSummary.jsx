@@ -1,0 +1,152 @@
+import { useMemo } from "react";
+import { motion } from "framer-motion";
+import { Clock, Timer, AlertTriangle, TrendingUp } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+
+function SummaryRow({ label, value, icon: Icon, highlight, className }) {
+  return (
+    <div className={cn("flex items-center justify-between py-2", className)}>
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        {Icon && <Icon className="h-3.5 w-3.5" />}
+        <span>{label}</span>
+      </div>
+      <span
+        className={cn(
+          "text-sm font-semibold tabular-nums",
+          highlight === "amber" && "text-amber-600 dark:text-amber-400",
+          highlight === "red" && "text-red-600 dark:text-red-400",
+          highlight === "green" && "text-emerald-600 dark:text-emerald-400"
+        )}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
+export default function TimecardSummary({ entries = [] }) {
+  const totals = useMemo(() => {
+    const result = {
+      totalHours: 0,
+      straightHours: 0,
+      ot15Hours: 0,
+      ot20Hours: 0,
+      daysWorked: 0,
+      mealPenalties: 0,
+      turnaroundWarnings: 0,
+      travelDays: 0,
+      restDays: 0,
+      holidays: 0,
+    };
+
+    entries.forEach((entry) => {
+      if (!entry) return;
+      result.totalHours += entry.totalWorkedHrs || entry.totalHours || 0;
+      result.straightHours += entry.straightHrs || entry.straightHours || 0;
+      result.ot15Hours += entry.ot1x5Hrs || entry.ot15Hours || 0;
+      result.ot20Hours += entry.ot2xHrs || entry.ot20Hours || 0;
+      if (entry.callTime && !entry.isRestDay && !entry.isHoliday) {
+        result.daysWorked++;
+      }
+      if (entry.mealPenaltyCount > 0 || entry.mealPenalty) result.mealPenalties++;
+      if (entry.turnaroundViolation || entry.turnaroundWarning) result.turnaroundWarnings++;
+      if (entry.isTravelDay) result.travelDays++;
+      if (entry.isRestDay) result.restDays++;
+      if (entry.isHoliday) result.holidays++;
+    });
+
+    return result;
+  }, [entries]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 0.2 }}
+    >
+      <Card>
+        <CardHeader className="border-b">
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-primary" />
+            Weekly Summary
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <div className="space-y-1 divide-y divide-border/50">
+            {/* Main hours */}
+            <div className="pb-3">
+              <div className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Hours
+              </div>
+              <SummaryRow
+                label="Total Hours"
+                value={`${totals.totalHours.toFixed(1)}h`}
+                icon={Clock}
+              />
+              <SummaryRow
+                label="Straight Time"
+                value={`${totals.straightHours.toFixed(1)}h`}
+                icon={Timer}
+              />
+              <SummaryRow
+                label="OT 1.5x"
+                value={`${totals.ot15Hours.toFixed(1)}h`}
+                icon={TrendingUp}
+                highlight={totals.ot15Hours > 0 ? "amber" : undefined}
+              />
+              <SummaryRow
+                label="OT 2x"
+                value={`${totals.ot20Hours.toFixed(1)}h`}
+                icon={TrendingUp}
+                highlight={totals.ot20Hours > 0 ? "red" : undefined}
+              />
+            </div>
+
+            {/* Days breakdown */}
+            <div className="py-3">
+              <div className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Days
+              </div>
+              <SummaryRow label="Days Worked" value={totals.daysWorked} />
+              {totals.travelDays > 0 && (
+                <SummaryRow label="Travel Days" value={totals.travelDays} />
+              )}
+              {totals.restDays > 0 && (
+                <SummaryRow label="Rest Days" value={totals.restDays} />
+              )}
+              {totals.holidays > 0 && (
+                <SummaryRow label="Holidays" value={totals.holidays} />
+              )}
+            </div>
+
+            {/* Warnings */}
+            {(totals.mealPenalties > 0 || totals.turnaroundWarnings > 0) && (
+              <div className="pt-3">
+                <div className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Alerts
+                </div>
+                {totals.mealPenalties > 0 && (
+                  <SummaryRow
+                    label="Meal Penalties"
+                    value={totals.mealPenalties}
+                    icon={AlertTriangle}
+                    highlight="red"
+                  />
+                )}
+                {totals.turnaroundWarnings > 0 && (
+                  <SummaryRow
+                    label="Turnaround Warnings"
+                    value={totals.turnaroundWarnings}
+                    icon={AlertTriangle}
+                    highlight="amber"
+                  />
+                )}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
