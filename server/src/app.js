@@ -3,6 +3,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { existsSync } from 'fs';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -19,6 +22,9 @@ import adminRateCardRoutes from './routes/adminRateCardRoutes.js';
 import exportRoutes from './routes/exportRoutes.js';
 import importRoutes from './routes/importRoutes.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 
 // Connect to MongoDB
@@ -28,17 +34,19 @@ connectDB();
 app.use(helmet());
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
-    ? true  // Allow same-origin in production (frontend served from Express)
+    ? true
     : [process.env.CLIENT_URL || 'http://localhost:5173', 'http://localhost:5180'],
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
-app.use(morgan('dev'));
+if (process.env.NODE_ENV !== 'production') {
+  app.use(morgan('dev'));
+}
 
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 500 });
 app.use('/api', limiter);
 
-// Routes
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/rate-cards', rateCardRoutes);
 app.use('/api/productions', productionRoutes);
@@ -52,24 +60,22 @@ app.use('/api/import', importRoutes);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date() }));
 
-// Serve React frontend in production
-import path from 'path';
-import { fileURLToPath } from 'url';
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Error handler (for API routes)
+app.use('/api', errorHandler);
 
-if (process.env.NODE_ENV === 'production') {
-  const clientDist = path.join(__dirname, '../../client/dist');
+// Serve React frontend in production
+const clientDist = path.join(__dirname, '../../client/dist');
+if (existsSync(clientDist)) {
   app.use(express.static(clientDist));
   app.get('*', (_req, res) => {
     res.sendFile(path.join(clientDist, 'index.html'));
   });
 }
 
-// Error handler
+// Catch-all error handler
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
 
 export default app;
