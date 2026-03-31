@@ -88,6 +88,9 @@ async function seed() {
       }
       rcDocs.push({
         unionId, departmentId: deptId, designationId: desigId, budgetTierId: tierId,
+        dealType: rc.dealType || '55hr_week',
+        guaranteedHoursPerWeek: rc.guaranteedHoursPerWeek,
+        guaranteedHoursPerDay: rc.guaranteedHoursPerDay,
         effectiveFrom: rc.effectiveFrom,
         effectiveTo: rc.effectiveTo || null,
         weeklyRate: rc.weeklyRate,
@@ -103,7 +106,7 @@ async function seed() {
         sourceDocument: rc.sourceDocument,
         notes: rc.notes || null,
         isActive: true,
-        isVerified: false,
+        isVerified: rc.isVerified || false,
       });
     }
     const createdRcs = await RateCard.insertMany(rcDocs);

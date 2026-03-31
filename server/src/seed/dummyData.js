@@ -218,12 +218,13 @@ export async function seedDummyData() {
     notes,
   }) {
     const rc = await findRateCard(unionId, departmentId, designationId, budgetTierId);
+    const fb = fallbackRates || { weeklyRate: 1500, dailyRate: 300, hourlyRate: 27, ot1x5: 41, ot2x: 54 };
 
-    const weeklyRate = rc ? rc.weeklyRate : fallbackRates.weeklyRate;
-    const dailyRate = rc ? rc.dailyRate : fallbackRates.dailyRate;
-    const hourlyRate = rc ? rc.hourlyRate : fallbackRates.hourlyRate;
-    const ot1x5 = rc ? rc.overtimeRate1x5 : fallbackRates.ot1x5;
-    const ot2x = rc ? rc.overtimeRate2x : fallbackRates.ot2x;
+    const weeklyRate = rc ? rc.weeklyRate : fb.weeklyRate;
+    const dailyRate = rc ? rc.dailyRate : fb.dailyRate;
+    const hourlyRate = rc ? rc.hourlyRate : fb.hourlyRate;
+    const ot1x5 = rc ? rc.overtimeRate1x5 : fb.ot1x5;
+    const ot2x = rc ? rc.overtimeRate2x : fb.ot2x;
 
     // Look up union for turnaround hours
     const union = await Union.findById(unionId);

@@ -303,7 +303,8 @@ export default function RateCards() {
     }
   }, [unionId, departmentId, designationId, budgetTierId]);
 
-  const rates = rateLookup.data;
+  const rates = rateLookup.data?.primary || rateLookup.data;
+  const rateVariants = rateLookup.data?.variants || [];
   const ratesLoading = rateLookup.isPending;
   const ratesError = rateLookup.isError;
   const allSelected = unionId && departmentId && designationId && budgetTierId;
