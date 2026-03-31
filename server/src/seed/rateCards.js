@@ -1,5 +1,7 @@
 // UK Union Rate Cards — 2024-2025 rates from official sources
 // IMPORTANT: These are MINIMUM rates. Crew with 3+ years experience typically negotiate above these.
+// NOTE: All seeded rate cards have isVerified: false — they need to be verified against official
+// union documents via the Admin Rates import flow before being considered authoritative.
 //
 // Official sources:
 //   BECTU Rate Cards:        https://bectu.org.uk/get-involved-in-the-union/ratecards/
@@ -452,6 +454,7 @@ for (const [tierCode, { scale }] of Object.entries(tierScaleFactors)) {
       sixthDayRate: round2(mmp.sixthDayRate * scale),
       seventhDayRate: round2(mmp.seventhDayRate * scale),
       notes: mmp.notes ? mmp.notes + ` Scaled from MMP at ${scale * 100}%.` : `Scaled from MMP rate at ${scale * 100}%.`,
+      isVerified: false,
     });
   }
 }

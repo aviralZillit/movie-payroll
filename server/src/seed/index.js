@@ -103,6 +103,7 @@ async function seed() {
         sourceDocument: rc.sourceDocument,
         notes: rc.notes || null,
         isActive: true,
+        isVerified: false,
       });
     }
     const createdRcs = await RateCard.insertMany(rcDocs);

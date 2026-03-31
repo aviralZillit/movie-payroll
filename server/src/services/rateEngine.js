@@ -5,10 +5,14 @@ import AppError from '../utils/AppError.js';
  * Look up the active rate card matching the given criteria for a specific date.
  * Returns the full rate object including sourceUrl.
  */
-export const lookupRate = async ({ unionId, departmentId, designationId, budgetTierId, date }) => {
+/**
+ * Look up a single rate card. If dealType is provided, returns that specific deal.
+ * If not provided, defaults to '55hr_week'.
+ */
+export const lookupRate = async ({ unionId, departmentId, designationId, budgetTierId, dealType, date }) => {
   const queryDate = date ? new Date(date) : new Date();
 
-  const rateCard = await RateCard.findOne({
+  const query = {
     unionId,
     departmentId,
     designationId,
@@ -19,7 +23,13 @@ export const lookupRate = async ({ unionId, departmentId, designationId, budgetT
       { effectiveTo: null },
       { effectiveTo: { $gte: queryDate } },
     ],
-  })
+  };
+
+  if (dealType) {
+    query.dealType = dealType;
+  }
+
+  const rateCard = await RateCard.findOne(query)
     .sort({ effectiveFrom: -1 })
     .populate('unionId', 'code name')
     .populate('departmentId', 'code name')
@@ -31,6 +41,41 @@ export const lookupRate = async ({ unionId, departmentId, designationId, budgetT
   }
 
   return rateCard;
+};
+
+/**
+ * Look up ALL deal types for a given role+tier combination.
+ * Returns an array of rate cards (one per deal type).
+ */
+export const lookupAllDealTypes = async ({ unionId, departmentId, designationId, budgetTierId, date }) => {
+  const queryDate = date ? new Date(date) : new Date();
+
+  const rateCards = await RateCard.find({
+    unionId,
+    departmentId,
+    designationId,
+    budgetTierId,
+    isActive: true,
+    effectiveFrom: { $lte: queryDate },
+    $or: [
+      { effectiveTo: null },
+      { effectiveTo: { $gte: queryDate } },
+    ],
+  })
+    .sort({ dealType: 1, effectiveFrom: -1 })
+    .populate('unionId', 'code name')
+    .populate('departmentId', 'code name')
+    .populate('designationId', 'code name')
+    .populate('budgetTierId', 'code name');
+
+  // Deduplicate — keep only the most recent per dealType
+  const seen = new Map();
+  for (const rc of rateCards) {
+    const dt = rc.dealType || '55hr_week';
+    if (!seen.has(dt)) seen.set(dt, rc);
+  }
+
+  return Array.from(seen.values());
 };
 
 /**

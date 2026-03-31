@@ -7,6 +7,8 @@ import {
   Moon,
   AlertCircle,
   Search,
+  ShieldCheck,
+  ShieldAlert,
 } from "lucide-react";
 import {
   Select,
@@ -86,7 +88,8 @@ const fadeIn = {
 // Sub-components
 // ---------------------------------------------------------------------------
 
-function StatCard({ label, value, icon: Icon, accent = false, sourceUrl, sourceDocument }) {
+function StatCard({ label, value, icon: Icon, accent = false, sourceUrl, sourceDocument, isVerified }) {
+  const displayValue = isVerified === false && value && value !== "--" ? `~${value}` : value;
   return (
     <motion.div variants={cardVariants}>
       <Card
@@ -106,7 +109,7 @@ function StatCard({ label, value, icon: Icon, accent = false, sourceUrl, sourceD
                 accent ? "text-primary" : "text-foreground"
               }`}
             >
-              {value}
+              {displayValue}
             </p>
           </div>
           <div className="flex items-center gap-1.5">
@@ -129,7 +132,8 @@ function StatCard({ label, value, icon: Icon, accent = false, sourceUrl, sourceD
   );
 }
 
-function SmallStatCard({ label, value, sourceUrl, sourceDocument }) {
+function SmallStatCard({ label, value, sourceUrl, sourceDocument, isVerified }) {
+  const displayValue = isVerified === false && value && value !== "--" ? `~${value}` : value;
   return (
     <motion.div variants={cardVariants}>
       <Card className="bg-card/80 backdrop-blur-sm transition-shadow hover:shadow-lg">
@@ -138,7 +142,7 @@ function SmallStatCard({ label, value, sourceUrl, sourceDocument }) {
             <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
               {label}
             </p>
-            <p className="text-lg font-semibold text-foreground">{value}</p>
+            <p className="text-lg font-semibold text-foreground">{displayValue}</p>
           </div>
           <InfoTooltip sourceUrl={sourceUrl} sourceDocument={sourceDocument} />
         </CardContent>
@@ -426,6 +430,7 @@ export default function RateCards() {
                 accent
                 sourceUrl={rates.sourceUrl}
                 sourceDocument={rates.sourceDocument}
+                isVerified={rates.isVerified}
               />
               <StatCard
                 label="Daily Rate"
@@ -433,6 +438,7 @@ export default function RateCards() {
                 icon={CalendarDays}
                 sourceUrl={rates.sourceUrl}
                 sourceDocument={rates.sourceDocument}
+                isVerified={rates.isVerified}
               />
               <StatCard
                 label="Hourly Rate"
@@ -440,6 +446,7 @@ export default function RateCards() {
                 icon={Clock}
                 sourceUrl={rates.sourceUrl}
                 sourceDocument={rates.sourceDocument}
+                isVerified={rates.isVerified}
               />
             </div>
 
@@ -450,32 +457,77 @@ export default function RateCards() {
                 value={formatGBP(rates.overtimeRate1x5)}
                 sourceUrl={rates.sourceUrl}
                 sourceDocument={rates.sourceDocument}
+                isVerified={rates.isVerified}
               />
               <SmallStatCard
                 label="OT 2x"
                 value={formatGBP(rates.overtimeRate2x)}
                 sourceUrl={rates.sourceUrl}
                 sourceDocument={rates.sourceDocument}
+                isVerified={rates.isVerified}
               />
               <SmallStatCard
                 label="6th Day"
                 value={formatGBP(rates.sixthDayRate)}
                 sourceUrl={rates.sourceUrl}
                 sourceDocument={rates.sourceDocument}
+                isVerified={rates.isVerified}
               />
               <SmallStatCard
                 label="7th Day"
                 value={formatGBP(rates.seventhDayRate)}
                 sourceUrl={rates.sourceUrl}
                 sourceDocument={rates.sourceDocument}
+                isVerified={rates.isVerified}
               />
               <SmallStatCard
                 label="Night Premium"
                 value={formatPercent(rates.nightPremiumPct)}
                 sourceUrl={rates.sourceUrl}
                 sourceDocument={rates.sourceDocument}
+                isVerified={rates.isVerified}
               />
             </div>
+
+            {/* Verification status banner */}
+            {!rates.isVerified ? (
+              <motion.div variants={cardVariants}>
+                <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+                  <ShieldAlert className="mt-0.5 size-5 shrink-0 text-amber-500" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+                      UNVERIFIED RATES
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      These rates are approximate and have not been verified against
+                      official union documents. To import official rates, go to Admin
+                      Rates &rarr; Import, or upload the official rate card PDF/CSV.
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div variants={cardVariants}>
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant="secondary"
+                    className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs"
+                  >
+                    <ShieldCheck className="mr-1 size-3" />
+                    Verified
+                  </Badge>
+                  {rates.verifiedAt && (
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(rates.verifiedAt).toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
+                  )}
+                </div>
+              </motion.div>
+            )}
 
             {/* Holiday pay & notes */}
             {(rates.holidayPayInclusive != null || rates.notes) && (

@@ -132,6 +132,10 @@ export const importRateCards = asyncHandler(async (req, res) => {
         sourceUrl: item.sourceUrl ?? '',
         sourceDocument: item.sourceDocument ?? '',
         isActive: true,
+        // Imported rates come from official sources, so mark as verified
+        isVerified: true,
+        verifiedAt: new Date(),
+        verifiedBy: req.user?._id || req.user?.id || null,
       };
 
       const result = await RateCard.findOneAndUpdate(

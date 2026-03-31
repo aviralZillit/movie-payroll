@@ -22,6 +22,8 @@ import {
   CheckCircle2,
   XCircle,
   Loader2,
+  ShieldCheck,
+  ShieldAlert,
 } from "lucide-react";
 import {
   Table,
@@ -76,6 +78,7 @@ import {
 import { useUnions, useBudgetTiers } from "@/hooks/useRateCards";
 import ExportButton from "@/components/common/ExportButton";
 import ImportDialog from "@/components/common/ImportDialog";
+import RateSourcesGuide from "@/components/common/RateSourcesGuide";
 import { Upload } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -699,11 +702,11 @@ export default function AdminRateCards() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+        className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5"
       >
         {summaryLoading ? (
           <>
-            {[1, 2, 3, 4].map((i) => (
+            {[1, 2, 3, 4, 5].map((i) => (
               <Skeleton key={i} className="h-24 rounded-xl" />
             ))}
           </>
@@ -728,6 +731,22 @@ export default function AdminRateCards() {
               label="Departments"
               value={summary?.departmentCount || "0"}
               icon={LayoutGrid}
+            />
+            <SummaryCard
+              label="Rates Verified"
+              value={(() => {
+                const verified = rateCards.filter((rc) => rc.isVerified).length;
+                const total = pagination.total || rateCards.length;
+                return `${verified} of ${total}`;
+              })()}
+              description={(() => {
+                const verified = rateCards.filter((rc) => rc.isVerified).length;
+                const total = rateCards.length;
+                if (total === 0) return undefined;
+                const pct = Math.round((verified / total) * 100);
+                return `${pct}% on this page`;
+              })()}
+              icon={ShieldCheck}
             />
             <SummaryCard
               label="Last Updated"
@@ -986,6 +1005,9 @@ export default function AdminRateCards() {
                           Holiday
                         </TableHead>
                         <TableHead className="text-center">Source</TableHead>
+                        <TableHead className="text-center whitespace-nowrap">
+                          Verified
+                        </TableHead>
                         <TableHead className="text-center">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -1005,7 +1027,7 @@ export default function AdminRateCards() {
                       {rateCards.length === 0 && (
                         <TableRow>
                           <TableCell
-                            colSpan={16}
+                            colSpan={17}
                             className="h-32 text-center text-muted-foreground"
                           >
                             No rate cards found matching your filters.
@@ -1086,6 +1108,9 @@ export default function AdminRateCards() {
         </AnimatePresence>
       )}
 
+      {/* ---- Rate Sources Guide ---- */}
+      <RateSourcesGuide />
+
       {/* ---- Edit dialog ---- */}
       <EditRateCardDialog
         rateCard={editCard}
@@ -1100,7 +1125,8 @@ export default function AdminRateCards() {
         open={importOpen}
         onOpenChange={setImportOpen}
         title="Import Rate Cards"
-        description="Upload a CSV or JSON file to bulk-import rate cards."
+        description="Upload a CSV or JSON file to bulk-import rate cards. Imported rates are automatically marked as verified."
+        helperContent={<RateSourcesGuide defaultOpen={false} />}
         templateHeaders={[
           "Union Code",
           "Dept Code",
@@ -1141,7 +1167,7 @@ function DepartmentGroup({ deptName, cards, collapsed, onToggle, onEdit }) {
         className="bg-muted/40 hover:bg-muted/60 cursor-pointer"
         onClick={onToggle}
       >
-        <TableCell colSpan={16} className="py-2">
+        <TableCell colSpan={17} className="py-2">
           <div className="flex items-center gap-2">
             {collapsed ? (
               <ChevronRight className="size-4 text-muted-foreground" />
@@ -1168,6 +1194,17 @@ function DepartmentGroup({ deptName, cards, collapsed, onToggle, onEdit }) {
 function RateCardRow({ rc, idx, onEdit }) {
   const isEntryLevel = rc.designationId?.level === 0;
   const hasNightPremium = rc.nightPremiumPct != null && rc.nightPremiumPct > 0;
+  const verifyMutation = useUpdateRateCard();
+
+  const handleVerify = async (e) => {
+    e.stopPropagation();
+    try {
+      await verifyMutation.mutateAsync({ id: rc._id, isVerified: true });
+      toast.success("Rate card marked as verified.");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to verify rate card.");
+    }
+  };
 
   return (
     <TableRow className={cn(idx % 2 === 0 ? "bg-background" : "bg-muted/10")}>
@@ -1266,6 +1303,39 @@ function RateCardRow({ rc, idx, onEdit }) {
           </Tooltip>
         ) : (
           <span className="text-muted-foreground/40">--</span>
+        )}
+      </TableCell>
+      <TableCell className="text-center">
+        {rc.isVerified ? (
+          <Tooltip>
+            <TooltipTrigger>
+              <ShieldCheck className="mx-auto size-4 text-emerald-500" />
+            </TooltipTrigger>
+            <TooltipContent>
+              Verified
+              {rc.verifiedAt &&
+                ` on ${new Date(rc.verifiedAt).toLocaleDateString("en-GB")}`}
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-7"
+                onClick={handleVerify}
+                disabled={verifyMutation.isPending}
+              >
+                {verifyMutation.isPending ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <ShieldAlert className="size-4 text-amber-500" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Click to mark as verified</TooltipContent>
+          </Tooltip>
         )}
       </TableCell>
       <TableCell className="text-center">

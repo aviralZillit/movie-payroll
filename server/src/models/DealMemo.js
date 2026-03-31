@@ -35,6 +35,13 @@ const dealMemoSchema = new mongoose.Schema(
     guaranteedWeeks: Number,
 
     // Rates
+    dealType: {
+      type: String,
+      enum: ['50hr_week', '55hr_week', '60hr_week', 'daily', 'flat_fee', 'session'],
+      default: '55hr_week',
+    },
+    guaranteedHoursPerWeek: { type: Number, default: 55 },
+    guaranteedHoursPerDay: { type: Number, default: 11 },
     weeklyRate: { type: Number, required: true },
     dailyRate: { type: Number, required: true },
     hourlyRate: { type: Number, required: true },

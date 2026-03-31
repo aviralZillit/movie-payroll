@@ -74,28 +74,36 @@ export const getBudgetTiers = asyncHandler(async (req, res) => {
 
 /**
  * POST /api/rate-cards/lookup
- * Body: { unionId, departmentId, designationId, budgetTierId, date }
+ * Body: { unionId, departmentId, designationId, budgetTierId, dealType, date }
+ * If dealType is omitted, returns ALL deal types for comparison.
  */
 export const lookupRate = asyncHandler(async (req, res) => {
-  const { unionId, departmentId, designationId, budgetTierId, date } = req.body;
+  const { unionId, departmentId, designationId, budgetTierId, dealType, date } = req.body;
 
   if (!unionId || !departmentId || !designationId || !budgetTierId) {
     throw new AppError('unionId, departmentId, designationId, and budgetTierId are required.', 400);
   }
 
-  const rateCard = await rateEngine.lookupRate({
-    unionId,
-    departmentId,
-    designationId,
-    budgetTierId,
-    date,
-  });
-
-  if (!rateCard) {
-    throw new AppError('No active rate card found for the given criteria.', 404);
+  if (dealType) {
+    // Return a single rate card for the specified deal type
+    const rateCard = await rateEngine.lookupRate({
+      unionId, departmentId, designationId, budgetTierId, dealType, date,
+    });
+    if (!rateCard) {
+      throw new AppError('No active rate card found for the given criteria.', 404);
+    }
+    res.json({ success: true, data: rateCard });
+  } else {
+    // Return ALL deal types for comparison view
+    const rateCards = await rateEngine.lookupAllDealTypes({
+      unionId, departmentId, designationId, budgetTierId, date,
+    });
+    if (!rateCards.length) {
+      throw new AppError('No active rate cards found for the given criteria.', 404);
+    }
+    // Return the first as primary and all as variants
+    res.json({ success: true, data: rateCards[0], variants: rateCards });
   }
-
-  res.json({ success: true, data: rateCard });
 });
 
 /**

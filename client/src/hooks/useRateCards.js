@@ -58,14 +58,16 @@ export function useBudgetTiers(unionId) {
 
 export function useRateLookup() {
   return useMutation({
-    mutationFn: async ({ unionId, departmentId, designationId, budgetTierId }) => {
+    mutationFn: async ({ unionId, departmentId, designationId, budgetTierId, dealType }) => {
       const { data } = await api.post("/rate-cards/lookup", {
         unionId,
         departmentId,
         designationId,
         budgetTierId,
+        dealType, // if omitted, API returns all deal types
       });
-      return data.data;
+      // data.data = primary rate card, data.variants = all deal types
+      return { primary: data.data, variants: data.variants || [data.data] };
     },
   });
 }

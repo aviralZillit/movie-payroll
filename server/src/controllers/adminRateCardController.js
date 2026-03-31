@@ -228,6 +228,7 @@ export const updateRateCard = asyncHandler(async (req, res) => {
     'effectiveFrom',
     'effectiveTo',
     'isActive',
+    'isVerified',
   ];
 
   const updates = {};
@@ -235,6 +236,15 @@ export const updateRateCard = asyncHandler(async (req, res) => {
     if (req.body[field] !== undefined) {
       updates[field] = req.body[field];
     }
+  }
+
+  // When marking as verified, auto-set verifiedAt and verifiedBy
+  if (updates.isVerified === true) {
+    updates.verifiedAt = new Date();
+    updates.verifiedBy = req.user?._id || req.user?.id || null;
+  } else if (updates.isVerified === false) {
+    updates.verifiedAt = null;
+    updates.verifiedBy = null;
   }
 
   if (Object.keys(updates).length === 0) {

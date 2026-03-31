@@ -163,6 +163,7 @@ export default function ImportDialog({
   templateHeaders = [],
   endpoint,
   onSuccess,
+  helperContent,
 }) {
   const [file, setFile] = useState(null);
   const [parsedData, setParsedData] = useState([]);
@@ -292,6 +293,9 @@ export default function ImportDialog({
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
+
+        {/* Helper content (e.g. rate sources guide) */}
+        {helperContent}
 
         {/* Template download */}
         {templateHeaders.length > 0 && (
