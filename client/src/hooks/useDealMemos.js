@@ -81,10 +81,12 @@ export function useUpdateDealMemo() {
 // ---------------------------------------------------------------------------
 const ACTION_TO_STATUS = {
   send: 'sent',
+  negotiate: 'negotiating',
   sign: 'signed',
   activate: 'active',
   complete: 'completed',
   cancel: 'cancelled',
+  resend: 'sent',
 };
 
 export function useTransitionDealMemo() {

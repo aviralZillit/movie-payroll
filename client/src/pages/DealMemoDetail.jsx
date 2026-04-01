@@ -41,6 +41,7 @@ import {
   XCircle,
   Printer,
   FileDown,
+  MessageSquare,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -90,12 +91,17 @@ function getStatusActions(status, user, memo) {
   } else if (status === 'sent') {
     if (isPersonOnDeal) {
       actions.push({ action: 'sign', label: 'Review & Sign', icon: PenLine, variant: 'default', signFlow: true });
+      actions.push({ action: 'negotiate', label: 'Negotiate', icon: MessageSquare, variant: 'outline' });
     }
     if (isAdmin) {
       actions.push({ action: 'sign', label: 'Mark Signed', icon: PenLine, variant: 'default' });
+      actions.push({ action: 'negotiate', label: 'Negotiate', icon: MessageSquare, variant: 'outline' });
       actions.push({ action: 'cancel', label: 'Cancel', icon: XCircle, variant: 'destructive', confirm: true });
     }
   } else if (status === 'negotiating') {
+    if (isAdmin) {
+      actions.push({ action: 'resend', label: 'Re-send', icon: Send, variant: 'default' });
+    }
     if (isAdmin || isPersonOnDeal) {
       actions.push({ action: 'sign', label: 'Mark Signed', icon: PenLine, variant: 'default' });
     }

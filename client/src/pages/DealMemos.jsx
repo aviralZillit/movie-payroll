@@ -318,16 +318,49 @@ export default function DealMemos() {
                             Send
                           </Button>
                         )}
-                        {/* Crew: Sign button for sent deals that belong to them */}
+                        {/* Crew: Sign + Negotiate buttons for sent deals that belong to them */}
                         {!isAdmin && dm.status === "sent" && (dm.personId?._id === user?._id || dm.personId === user?._id) && (
+                          <>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              disabled={transitionMutation.isPending}
+                              onClick={(e) => handleTransition(e, dm._id || dm.id, "sign")}
+                            >
+                              <PenLine className="size-3.5 mr-1" />
+                              Sign
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={transitionMutation.isPending}
+                              onClick={(e) => handleTransition(e, dm._id || dm.id, "negotiate")}
+                            >
+                              Negotiate
+                            </Button>
+                          </>
+                        )}
+                        {/* Admin: Negotiate button for sent deals */}
+                        {isAdmin && dm.status === "sent" && (
                           <Button
-                            variant="default"
+                            variant="outline"
                             size="sm"
                             disabled={transitionMutation.isPending}
-                            onClick={(e) => handleTransition(e, dm._id || dm.id, "sign")}
+                            onClick={(e) => handleTransition(e, dm._id || dm.id, "negotiate")}
                           >
-                            <PenLine className="size-3.5 mr-1" />
-                            Sign
+                            Negotiate
+                          </Button>
+                        )}
+                        {/* Admin: Re-send for negotiating deals */}
+                        {isAdmin && dm.status === "negotiating" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={transitionMutation.isPending}
+                            onClick={(e) => handleTransition(e, dm._id || dm.id, "resend")}
+                          >
+                            <Send className="size-3.5 mr-1" />
+                            Re-send
                           </Button>
                         )}
                         {/* Admin: Activate button for signed deals */}
