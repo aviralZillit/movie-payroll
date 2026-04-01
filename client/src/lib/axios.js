@@ -29,7 +29,7 @@ api.interceptors.response.use(
       error.response?.status === 401 &&
       !originalRequest._retry &&
       !originalRequest.url.includes("/auth/login") &&
-      !originalRequest.url.includes("/auth/refresh")
+      !originalRequest.url.includes("/auth/refresh-token")
     ) {
       originalRequest._retry = true;
 
@@ -40,16 +40,19 @@ api.interceptors.response.use(
         }
 
         const { data } = await axios.post(
-          (import.meta.env.VITE_API_URL || "/api") + "/auth/refresh",
+          (import.meta.env.VITE_API_URL || "/api") + "/auth/refresh-token",
           { refreshToken }
         );
 
-        localStorage.setItem("token", data.token);
-        if (data.refreshToken) {
-          localStorage.setItem("refreshToken", data.refreshToken);
-        }
+        // The refresh endpoint returns { success, data: { accessToken, refreshToken } }
+        const tokens = data.data || data;
+        const newToken = tokens.accessToken || tokens.token;
+        const newRefresh = tokens.refreshToken;
 
-        originalRequest.headers.Authorization = `Bearer ${data.token}`;
+        if (newToken) localStorage.setItem("token", newToken);
+        if (newRefresh) localStorage.setItem("refreshToken", newRefresh);
+
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return api(originalRequest);
       } catch (refreshError) {
         localStorage.removeItem("token");
