@@ -2713,6 +2713,347 @@ export const rateCards = [
     sourceUrl: 'https://www.castingcollective.co.uk/production/payrates',
     sourceDocument: 'FAA/Pact Agreement 2024-2025',
     notes: 'Photo Double. Same rate as Background Artist: £111.21/day.' },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // BECTU — ART DEPARTMENT (additional designations) — VERIFIED from BFDG PDF
+  // Source: BFDG/BECTU Art Dept Film Rate Card 2025-2026 — MMP 3+ yr rates
+  // ════════════════════════════════════════════════════════════════════════
+
+  // Standby Art Director
+  { unionCode: 'BECTU', deptCode: 'ART', desigCode: 'STBY_AD', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 2480, dailyRate: 496, hourlyRate: 45.09,
+    overtimeRate1x5: 70, overtimeRate2x: 70, sixthDayRate: 496, seventhDayRate: 496,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://britishfilmdesigners.com/wp-content/uploads/2026/01/FILM-TV-ART-DEPT-2025-RATE-CARD.pdf',
+    sourceDocument: 'BFDG/BECTU Art Dept Film Rate Card 2025-2026',
+    notes: 'Standby Art Director MMP 3+ yr rate. £2,480/55hr wk.' },
+
+  // Draughtsperson / Set Designer
+  { unionCode: 'BECTU', deptCode: 'ART', desigCode: 'DRFT', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 1630, dailyRate: 326, hourlyRate: 29.64,
+    overtimeRate1x5: 70, overtimeRate2x: 70, sixthDayRate: 326, seventhDayRate: 326,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://britishfilmdesigners.com/wp-content/uploads/2026/01/FILM-TV-ART-DEPT-2025-RATE-CARD.pdf',
+    sourceDocument: 'BFDG/BECTU Art Dept Film Rate Card 2025-2026',
+    notes: 'Draughtsperson / Set Designer MMP 3+ yr rate. £1,630/55hr wk.' },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // BECTU — COSTUME (additional designations) — VERIFIED from official PDF
+  // Source: BECTU Costume Dept Film Rate Card July 2023 — MMP experienced
+  // ════════════════════════════════════════════════════════════════════════
+
+  // Costume Maker / Cutter
+  { unionCode: 'BECTU', deptCode: 'COS', desigCode: 'COS_MKR', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 1963, dailyRate: 392.60, hourlyRate: 39.26,
+    overtimeRate1x5: 70, overtimeRate2x: 70, sixthDayRate: 392.60, seventhDayRate: 392.60,
+    nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/costume-film.html',
+    sourceDocument: 'BECTU Costume Dept Film Rate Card July 2023',
+    notes: 'Costume Maker/Cutter MMP experienced. £1,963/55hr wk. Holiday pay inclusive.' },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // BECTU — HAIR, MAKEUP & PROSTHETICS (additional designations)
+  // Source: hairmakeupbranch.org.uk (estimated from rate card pattern)
+  // ════════════════════════════════════════════════════════════════════════
+
+  // Hair & Makeup Assistant
+  { unionCode: 'BECTU', deptCode: 'HMU', desigCode: 'HMU_AST', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 1800, dailyRate: 360, hourlyRate: 36,
+    overtimeRate1x5: 70, overtimeRate2x: 70, sixthDayRate: 360, seventhDayRate: 360,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://www.hairmakeupbranch.org.uk/copy-of-rate-cards',
+    sourceDocument: 'HMU Branch Rate Card (estimated from pattern)',
+    notes: 'Hair & Makeup Assistant MMP estimated. £1,800/55hr wk.' },
+
+  // Prosthetics Supervisor
+  { unionCode: 'BECTU', deptCode: 'HMU', desigCode: 'PROS_SUP', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 3500, dailyRate: 700, hourlyRate: 64,
+    overtimeRate1x5: 82, overtimeRate2x: 82, sixthDayRate: 700, seventhDayRate: 700,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://www.hairmakeupbranch.org.uk/copy-of-rate-cards',
+    sourceDocument: 'HMU Branch Rate Card (estimated from pattern)',
+    notes: 'Prosthetics Supervisor MMP estimated. £3,500/55hr wk.' },
+
+  // Prosthetics Artist
+  { unionCode: 'BECTU', deptCode: 'HMU', desigCode: 'PROS_ART', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 2500, dailyRate: 500, hourlyRate: 45,
+    overtimeRate1x5: 70, overtimeRate2x: 70, sixthDayRate: 500, seventhDayRate: 500,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://www.hairmakeupbranch.org.uk/copy-of-rate-cards',
+    sourceDocument: 'HMU Branch Rate Card (estimated from pattern)',
+    notes: 'Prosthetics Artist MMP estimated. £2,500/55hr wk.' },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // BECTU — CONSTRUCTION (additional designations)
+  // Source: BECTU Construction (estimated - manager rate individually negotiated)
+  // ════════════════════════════════════════════════════════════════════════
+
+  // Construction Manager
+  { unionCode: 'BECTU', deptCode: 'CON', desigCode: 'CON_MGR', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 3000, dailyRate: 600, hourlyRate: 55,
+    overtimeRate1x5: 82, overtimeRate2x: 82, sixthDayRate: 600, seventhDayRate: 600,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://union.bectu.org.uk/resource/construction.html',
+    sourceDocument: 'BECTU Construction (estimated)',
+    notes: 'Construction Manager MMP estimated. Rate individually negotiated. £3,000/55hr wk.' },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // BECTU — LOCATIONS (additional designations) — from Locations Branch PDF 2026
+  // Source: Locations Branch Film & Scripted TV rate card 2026 — MMP starting rate
+  // 55hr week for film.
+  // ════════════════════════════════════════════════════════════════════════
+
+  // Assistant Location Manager
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'AST_LOC', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 1830, dailyRate: 366, hourlyRate: 33.27,
+    overtimeRate1x5: 70, overtimeRate2x: 70, sixthDayRate: 366, seventhDayRate: 366,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'Assistant Location Manager MMP starting rate. £1,830/55hr wk.' },
+
+  // Location Assistant
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'LOC_AST', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 1335, dailyRate: 267, hourlyRate: 24.27,
+    overtimeRate1x5: 70, overtimeRate2x: 70, sixthDayRate: 267, seventhDayRate: 267,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'Location Assistant MMP starting rate. £1,335/55hr wk.' },
+
+  // Location Trainee
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'LOC_TRN', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 950, dailyRate: 190, hourlyRate: 17,
+    overtimeRate1x5: 70, overtimeRate2x: 70, sixthDayRate: 190, seventhDayRate: 190,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'Location Trainee MMP estimated. £950/55hr wk.' },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // BECTU — POST PRODUCTION (additional designations)
+  // Source: BECTU Post-Production Film Rate Card 2023-2024 — Premium (£30M+)
+  // ════════════════════════════════════════════════════════════════════════
+
+  // Post Production Supervisor
+  { unionCode: 'BECTU', deptCode: 'POST', desigCode: 'POST_SUP', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 3500, dailyRate: 700, hourlyRate: 63.64,
+    overtimeRate1x5: 82, overtimeRate2x: 82, sixthDayRate: 700, seventhDayRate: 700,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
+    sourceDocument: 'BECTU Post-Production Film Rate Card 2023-2024',
+    notes: 'Post Production Supervisor MMP. Rate negotiated. £3,500/55hr wk estimated.' },
+
+  // Colourist
+  { unionCode: 'BECTU', deptCode: 'POST', desigCode: 'COLOUR', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 3220, dailyRate: 644, hourlyRate: 58.55,
+    overtimeRate1x5: 82, overtimeRate2x: 82, sixthDayRate: 644, seventhDayRate: 644,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
+    sourceDocument: 'BECTU Post-Production Film Rate Card 2023-2024',
+    notes: 'Colourist MMP (£30m+). Rate negotiated. £3,220/55hr wk.' },
+
+  // Online Editor
+  { unionCode: 'BECTU', deptCode: 'POST', desigCode: 'ON_ED', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 2610, dailyRate: 522, hourlyRate: 47.45,
+    overtimeRate1x5: 70, overtimeRate2x: 70, sixthDayRate: 522, seventhDayRate: 522,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
+    sourceDocument: 'BECTU Post-Production Film Rate Card 2023-2024',
+    notes: 'Online Editor MMP. £2,610/55hr wk, £47.45/hr.' },
+
+  // Post Production Coordinator
+  { unionCode: 'BECTU', deptCode: 'POST', desigCode: 'POST_COO', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 1830, dailyRate: 366, hourlyRate: 33.27,
+    overtimeRate1x5: 70, overtimeRate2x: 70, sixthDayRate: 366, seventhDayRate: 366,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
+    sourceDocument: 'BECTU Post-Production Film Rate Card 2023-2024',
+    notes: 'Post Production Coordinator MMP estimated. £1,830/55hr wk.' },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // BECTU — PRODUCTION OFFICE (additional designations)
+  // Source: LPD Production rate card (estimated)
+  // ════════════════════════════════════════════════════════════════════════
+
+  // Assistant Accountant
+  { unionCode: 'BECTU', deptCode: 'PROD', desigCode: 'AST_ACC', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 1500, dailyRate: 300, hourlyRate: 27.27,
+    overtimeRate1x5: 70, overtimeRate2x: 70, sixthDayRate: 300, seventhDayRate: 300,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://union.bectu.org.uk/resource/production.html',
+    sourceDocument: 'LPD Production rate card (estimated)',
+    notes: 'Assistant Accountant MMP estimated. £1,500/55hr wk.' },
+
+  // Cashier
+  { unionCode: 'BECTU', deptCode: 'PROD', desigCode: 'CASH', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 1200, dailyRate: 240, hourlyRate: 21.82,
+    overtimeRate1x5: 70, overtimeRate2x: 70, sixthDayRate: 240, seventhDayRate: 240,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://union.bectu.org.uk/resource/production.html',
+    sourceDocument: 'LPD Production rate card (estimated)',
+    notes: 'Cashier MMP estimated. £1,200/55hr wk.' },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // BECTU — SET CRAFTS
+  // Source: BECTU TV & Drama Construction Set Crafts rate card 2024-2025
+  // ════════════════════════════════════════════════════════════════════════
+
+  // Standby Carpenter
+  { unionCode: 'BECTU', deptCode: 'SETC', desigCode: 'STBY_CARP', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 1930, dailyRate: 386, hourlyRate: 35.09,
+    overtimeRate1x5: 70, overtimeRate2x: 70, sixthDayRate: 386, seventhDayRate: 386,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://union.bectu.org.uk/resource/set-crafts.html',
+    sourceDocument: 'BECTU TV & Drama Construction Set Crafts rate card 2024-2025',
+    notes: 'Standby Carpenter MMP estimated. £1,930/55hr wk.' },
+
+  // Standby Painter
+  { unionCode: 'BECTU', deptCode: 'SETC', desigCode: 'STBY_PAINT', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 1930, dailyRate: 386, hourlyRate: 35.09,
+    overtimeRate1x5: 70, overtimeRate2x: 70, sixthDayRate: 386, seventhDayRate: 386,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://union.bectu.org.uk/resource/set-crafts.html',
+    sourceDocument: 'BECTU TV & Drama Construction Set Crafts rate card 2024-2025',
+    notes: 'Standby Painter MMP estimated. £1,930/55hr wk.' },
+
+  // Standby Rigger
+  { unionCode: 'BECTU', deptCode: 'SETC', desigCode: 'STBY_RIG', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 1930, dailyRate: 386, hourlyRate: 35.09,
+    overtimeRate1x5: 70, overtimeRate2x: 70, sixthDayRate: 386, seventhDayRate: 386,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://union.bectu.org.uk/resource/set-crafts.html',
+    sourceDocument: 'BECTU TV & Drama Construction Set Crafts rate card 2024-2025',
+    notes: 'Standby Rigger MMP estimated. £1,930/55hr wk.' },
+
+  // Standby Stagehand
+  { unionCode: 'BECTU', deptCode: 'SETC', desigCode: 'STBY_STGE', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 1315, dailyRate: 263, hourlyRate: 23.91,
+    overtimeRate1x5: 70, overtimeRate2x: 70, sixthDayRate: 263, seventhDayRate: 263,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://union.bectu.org.uk/resource/set-crafts.html',
+    sourceDocument: 'BECTU TV & Drama Construction Set Crafts rate card 2024-2025',
+    notes: 'Standby Stagehand MMP estimated. £1,315/55hr wk.' },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // BECTU — VFX
+  // Source: Industry standard (VFX rates are typically negotiated per facility)
+  // ════════════════════════════════════════════════════════════════════════
+
+  // VFX Supervisor
+  { unionCode: 'BECTU', deptCode: 'VFX', desigCode: 'VFX_SUP', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 4000, dailyRate: 800, hourlyRate: 72.73,
+    overtimeRate1x5: 82, overtimeRate2x: 82, sixthDayRate: 800, seventhDayRate: 800,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
+    sourceDocument: 'Industry standard (VFX rates negotiated per facility)',
+    notes: 'VFX Supervisor MMP estimated. £4,000/55hr wk.' },
+
+  // VFX Producer
+  { unionCode: 'BECTU', deptCode: 'VFX', desigCode: 'VFX_PRD', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 3000, dailyRate: 600, hourlyRate: 54.55,
+    overtimeRate1x5: 82, overtimeRate2x: 82, sixthDayRate: 600, seventhDayRate: 600,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
+    sourceDocument: 'Industry standard (VFX rates negotiated per facility)',
+    notes: 'VFX Producer MMP estimated. £3,000/55hr wk.' },
+
+  // VFX Coordinator
+  { unionCode: 'BECTU', deptCode: 'VFX', desigCode: 'VFX_COO', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 1830, dailyRate: 366, hourlyRate: 33.27,
+    overtimeRate1x5: 70, overtimeRate2x: 70, sixthDayRate: 366, seventhDayRate: 366,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
+    sourceDocument: 'Industry standard (VFX rates negotiated per facility)',
+    notes: 'VFX Coordinator MMP estimated. £1,830/55hr wk.' },
+
+  // Compositor
+  { unionCode: 'BECTU', deptCode: 'VFX', desigCode: 'COMP', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 2500, dailyRate: 500, hourlyRate: 45.45,
+    overtimeRate1x5: 70, overtimeRate2x: 70, sixthDayRate: 500, seventhDayRate: 500,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
+    sourceDocument: 'Industry standard (VFX rates negotiated per facility)',
+    notes: 'Compositor MMP estimated. £2,500/55hr wk.' },
+
+  // CG Artist
+  { unionCode: 'BECTU', deptCode: 'VFX', desigCode: 'CG_ART', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 2500, dailyRate: 500, hourlyRate: 45.45,
+    overtimeRate1x5: 70, overtimeRate2x: 70, sixthDayRate: 500, seventhDayRate: 500,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
+    sourceDocument: 'Industry standard (VFX rates negotiated per facility)',
+    notes: 'CG Artist MMP estimated. £2,500/55hr wk.' },
+
+  // Animator
+  { unionCode: 'BECTU', deptCode: 'VFX', desigCode: 'ANIM', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 2500, dailyRate: 500, hourlyRate: 45.45,
+    overtimeRate1x5: 70, overtimeRate2x: 70, sixthDayRate: 500, seventhDayRate: 500,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
+    sourceDocument: 'Industry standard (VFX rates negotiated per facility)',
+    notes: 'Animator MMP estimated. £2,500/55hr wk.' },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // BECTU — RIGGERS
+  // Source: BECTU Riggers (estimated from electrical riggers rate card)
+  // ════════════════════════════════════════════════════════════════════════
+
+  // Rigging Supervisor
+  { unionCode: 'BECTU', deptCode: 'RIG', desigCode: 'RIG_SUP', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 2500, dailyRate: 500, hourlyRate: 45.45,
+    overtimeRate1x5: 70, overtimeRate2x: 70, sixthDayRate: 500, seventhDayRate: 500,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://union.bectu.org.uk/resource/riggers.html',
+    sourceDocument: 'BECTU Riggers (estimated from electrical riggers rate card)',
+    notes: 'Rigging Supervisor MMP estimated. £2,500/55hr wk.' },
+
+  // Rigger
+  { unionCode: 'BECTU', deptCode: 'RIG', desigCode: 'RIGGER', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 1930, dailyRate: 386, hourlyRate: 35.09,
+    overtimeRate1x5: 70, overtimeRate2x: 70, sixthDayRate: 386, seventhDayRate: 386,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://union.bectu.org.uk/resource/riggers.html',
+    sourceDocument: 'BECTU Riggers (estimated from electrical riggers rate card)',
+    notes: 'Rigger MMP estimated. £1,930/55hr wk.' },
+
+  // Rigging Assistant
+  { unionCode: 'BECTU', deptCode: 'RIG', desigCode: 'RIG_AST', tierCode: 'FILM_MMP',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2025-01-01', weeklyRate: 1500, dailyRate: 300, hourlyRate: 27.27,
+    overtimeRate1x5: 70, overtimeRate2x: 70, sixthDayRate: 300, seventhDayRate: 300,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://union.bectu.org.uk/resource/riggers.html',
+    sourceDocument: 'BECTU Riggers (estimated from electrical riggers rate card)',
+    notes: 'Rigging Assistant MMP estimated. £1,500/55hr wk.' },
 ];
 
 // Departments with rates seeded:
@@ -2741,4 +3082,4 @@ export const rateCards = [
 //   Musicians Union (session rates — negotiated per project)
 //   Equity Stunt, Dance, Voice (negotiated — industry estimates)
 //
-// NOT SEEDED: Set Crafts, VFX, Riggers — import via Admin Rates
+// Set Crafts, VFX, Riggers — seeded with estimated rates (isVerified: false)
