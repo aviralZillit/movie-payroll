@@ -386,6 +386,7 @@ export default function DealMemoNew() {
       if (!formData) return;
 
       // Map each AI-returned field onto the react-hook-form
+      const num = (v) => (v != null && v !== '' ? Number(v) : null);
       const fieldMap = {
         productionId: formData.productionId,
         personId: formData.personId,
@@ -395,34 +396,34 @@ export default function DealMemoNew() {
         budgetTierId: formData.budgetTierId,
         startDate: formData.startDate,
         endDate: formData.endDate,
-        weeklyRate: formData.weeklyRate,
-        dailyRate: formData.dailyRate,
-        hourlyRate: formData.hourlyRate,
-        guaranteedHours: formData.guaranteedHours,
-        holidayPayPct: formData.holidayPayPct,
-        employerNiPct: formData.employerNiPct,
-        pensionPct: formData.pensionPct,
-        apprenticeLevyPct: formData.apprenticeLevyPct,
-        standardWorkDayHrs: formData.standardWorkDayHrs,
-        lunchBreakHrs: formData.lunchBreakHrs,
-        sixthDayMultiplier: formData.sixthDayMultiplier,
-        seventhDayMultiplier: formData.seventhDayMultiplier,
-        nightPremiumPct: formData.nightPremiumPct,
-        mealPenaltyEnabled: formData.mealPenaltyEnabled,
-        mealPenaltyAmount: formData.mealPenaltyAmount,
-        mealPenaltyAfterHrs: formData.mealPenaltyAfterHrs,
-        turnaroundMinHrs: formData.turnaroundMinHrs,
-        kitAllowance: formData.kitAllowance,
-        travelAllowance: formData.travelAllowance,
-        perDiem: formData.perDiem,
-        phoneAllowance: formData.phoneAllowance,
-        computerAllowance: formData.computerAllowance,
-        carAllowance: formData.carAllowance,
+        weeklyRate: num(formData.weeklyRate) || 0,
+        dailyRate: num(formData.dailyRate),
+        hourlyRate: num(formData.hourlyRate),
+        guaranteedHours: num(formData.guaranteedHours),
+        holidayPayPct: num(formData.holidayPayPct) ?? 12.07,
+        employerNiPct: num(formData.employerNiPct) ?? 15,
+        pensionPct: num(formData.pensionPct) ?? 3,
+        apprenticeLevyPct: num(formData.apprenticeLevyPct) ?? 0,
+        standardWorkDayHrs: num(formData.standardWorkDayHrs) ?? 11,
+        lunchBreakHrs: num(formData.lunchBreakHrs) ?? 1,
+        sixthDayMultiplier: num(formData.sixthDayMultiplier) ?? 1.5,
+        seventhDayMultiplier: num(formData.seventhDayMultiplier) ?? 2,
+        nightPremiumPct: num(formData.nightPremiumPct) ?? 50,
+        mealPenaltyEnabled: formData.mealPenaltyEnabled ?? true,
+        mealPenaltyAmount: num(formData.mealPenaltyAmount) ?? 35,
+        mealPenaltyAfterHrs: num(formData.mealPenaltyAfterHrs) ?? 6,
+        turnaroundMinHrs: num(formData.turnaroundMinHrs) ?? 11,
+        kitAllowance: num(formData.kitAllowance) ?? 0,
+        travelAllowance: num(formData.travelAllowance) ?? 0,
+        perDiem: num(formData.perDiem) ?? 0,
+        phoneAllowance: num(formData.phoneAllowance) ?? 0,
+        computerAllowance: num(formData.computerAllowance) ?? 0,
+        carAllowance: num(formData.carAllowance) ?? 0,
       };
 
       for (const [key, value] of Object.entries(fieldMap)) {
         if (value !== undefined && value !== null) {
-          setValue(key, value, { shouldValidate: false });
+          setValue(key, value, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
         }
       }
 
@@ -498,7 +499,7 @@ export default function DealMemoNew() {
       case 6:
         return (
           <StepReview
-            values={getValues()}
+            values={watch()}
             productions={productions}
             personOptions={personOptions}
             classificationLabels={classificationLabels}
