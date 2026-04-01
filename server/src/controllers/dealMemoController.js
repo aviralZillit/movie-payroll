@@ -63,6 +63,23 @@ export const create = asyncHandler(async (req, res) => {
     date: startDate,
   });
 
+  // Map form field names to model field names
+  if (rest.guaranteedHours != null) {
+    rest.guaranteedHoursPerWeek = rest.guaranteedHours;
+    rest.guaranteedHoursPerDay = Math.round(rest.guaranteedHours / 5);
+    delete rest.guaranteedHours;
+  }
+  if (rest.apprenticeLevyPct != null) {
+    rest.apprenticeshipLevyPct = rest.apprenticeLevyPct;
+    delete rest.apprenticeLevyPct;
+  }
+  if (rest.mealPenaltyEnabled != null && rest.mealPenaltyAmount != null) {
+    rest.mealPenaltyRate = rest.mealPenaltyAmount;
+  }
+  if (rest.mealPenaltyAfterHrs != null) {
+    rest.mealPenaltyAfterHrs = rest.mealPenaltyAfterHrs;
+  }
+
   const dealData = {
     dealNumber: await generateDealNumber(),
     productionId,

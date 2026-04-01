@@ -491,7 +491,7 @@ export default function DealMemoDetail() {
               sourceLabel={rateSource?.label}
               sourceUrl={rateSource?.url}
             />
-            <DetailField label="Guaranteed Hours" value={memo.guaranteedHours ? `${memo.guaranteedHours} hrs/wk` : "--"} />
+            <DetailField label="Guaranteed Hours" value={(memo.guaranteedHoursPerWeek || memo.guaranteedHours) ? `${memo.guaranteedHoursPerWeek || memo.guaranteedHours} hrs/wk` : "--"} />
           </Section>
 
           <Separator />
@@ -501,7 +501,7 @@ export default function DealMemoDetail() {
             <DetailField label="Holiday Pay" value={memo.holidayPayPct != null ? `${memo.holidayPayPct}%` : "--"} />
             <DetailField label="Employer NI" value={memo.employerNiPct != null ? `${memo.employerNiPct}%` : "--"} />
             <DetailField label="Pension" value={memo.pensionPct != null ? `${memo.pensionPct}%` : "--"} />
-            <DetailField label="Apprenticeship Levy" value={memo.apprenticeLevyPct != null ? `${memo.apprenticeLevyPct}%` : "--"} />
+            <DetailField label="Apprenticeship Levy" value={(memo.apprenticeshipLevyPct ?? memo.apprenticeLevyPct) != null ? `${memo.apprenticeshipLevyPct ?? memo.apprenticeLevyPct}%` : "--"} />
             <DetailField
               label="Total Fringe Rate"
               value={`${(
@@ -526,8 +526,8 @@ export default function DealMemoDetail() {
             <DetailField
               label="Meal Penalty"
               value={
-                memo.mealPenaltyEnabled
-                  ? `${formatCurrency(memo.mealPenaltyAmount)} after ${memo.mealPenaltyAfterHrs} hrs`
+                (memo.mealPenaltyRate > 0 || memo.mealPenaltyEnabled)
+                  ? `${formatCurrency(memo.mealPenaltyRate || memo.mealPenaltyAmount || 0)} after ${memo.mealPenaltyAfterHrs || 6} hrs`
                   : "Disabled"
               }
             />
