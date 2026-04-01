@@ -220,11 +220,12 @@ export async function seedDummyData() {
     const rc = await findRateCard(unionId, departmentId, designationId, budgetTierId);
     const fb = fallbackRates || { weeklyRate: 1500, dailyRate: 300, hourlyRate: 27, ot1x5: 41, ot2x: 54 };
 
-    const weeklyRate = rc ? rc.weeklyRate : fb.weeklyRate;
-    const dailyRate = rc ? rc.dailyRate : fb.dailyRate;
-    const hourlyRate = rc ? rc.hourlyRate : fb.hourlyRate;
-    const ot1x5 = rc ? rc.overtimeRate1x5 : fb.ot1x5;
-    const ot2x = rc ? rc.overtimeRate2x : fb.ot2x;
+    // Use rate card if available and non-zero, otherwise fallback
+    const weeklyRate = (rc && rc.weeklyRate > 0) ? rc.weeklyRate : fb.weeklyRate;
+    const dailyRate = (rc && rc.dailyRate > 0) ? rc.dailyRate : fb.dailyRate;
+    const hourlyRate = (rc && rc.hourlyRate > 0) ? rc.hourlyRate : fb.hourlyRate;
+    const ot1x5 = (rc && rc.overtimeRate1x5 > 0) ? rc.overtimeRate1x5 : fb.ot1x5;
+    const ot2x = (rc && rc.overtimeRate2x > 0) ? rc.overtimeRate2x : fb.ot2x;
 
     // Look up union for turnaround hours
     const union = await Union.findById(unionId);
@@ -297,6 +298,7 @@ export async function seedDummyData() {
   }
 
   // DM-2025-001: Tom Harris as DOP on "The Last Horizon"
+  // DOP is "Individually Negotiated" on Camera Branch card, so we supply a realistic negotiated rate
   const dm1 = await buildDealMemo({
     dealNumber: 'DM-2025-001',
     productionId: prod1._id,
@@ -310,6 +312,7 @@ export async function seedDummyData() {
     startDate: '2024-09-01',
     endDate: '2025-06-30',
     guaranteedWeeks: 40,
+    fallbackRates: { weeklyRate: 7500, dailyRate: 1500, hourlyRate: 136, ot1x5: 82, ot2x: 82 },
     kitAllowance: 250,
     phoneAllowance: 25,
     notes: 'Negotiated rate above card. Includes own camera package.',
