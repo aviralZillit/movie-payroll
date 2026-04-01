@@ -443,9 +443,9 @@ export default function DealMemoDetail() {
         <CardContent className="pt-6 space-y-6">
           {/* Production */}
           <Section icon={Film} title="Production">
-            <DetailField label="Production" value={memo.production?.title || memo.production?.name} />
+            <DetailField label="Production" value={memo.productionId?.name || memo.production?.name} />
             <DetailField label="Deal Number" value={memo.dealNumber} />
-            <DetailField label="Person" value={memo.person?.name} />
+            <DetailField label="Person" value={memo.personId?.fullName || `${memo.personId?.firstName || ''} ${memo.personId?.lastName || ''}`.trim() || memo.person?.name} />
             <DetailField label="Created" value={formatDate(memo.createdAt)} />
           </Section>
 
@@ -453,20 +453,20 @@ export default function DealMemoDetail() {
 
           {/* Classification */}
           <Section icon={Users} title="Classification">
-            <DetailField label="Union" value={UNION_LABELS[memo.union] || memo.union} />
+            <DetailField label="Union" value={memo.unionId?.name || memo.unionId?.code || UNION_LABELS[memo.union] || memo.union} />
             <DetailField
               label="Department"
-              value={memo.department?.replace(/_/g, " ")}
+              value={memo.departmentId?.name || memo.department}
               sourceLabel="Rate Card"
-              sourceUrl={rateSource?.url}
+              sourceUrl={memo.rateCardSourceUrl || rateSource?.url}
             />
             <DetailField
               label="Designation"
-              value={memo.designation?.replace(/_/g, " ")}
+              value={memo.designationId?.name || memo.designation}
               sourceLabel="Rate Card"
-              sourceUrl={rateSource?.url}
+              sourceUrl={memo.rateCardSourceUrl || rateSource?.url}
             />
-            <DetailField label="Budget Tier" value={BUDGET_TIER_LABELS[memo.budgetTier] || memo.budgetTier} />
+            <DetailField label="Budget Tier" value={memo.budgetTierId?.name || BUDGET_TIER_LABELS[memo.budgetTier] || memo.budgetTier} />
           </Section>
 
           <Separator />
