@@ -314,22 +314,18 @@ export default function DealMemoNew() {
         {
           onSuccess: (result) => {
             const data = result?.primary || result;
-            if (data?.hourlyRate != null) setValue("hourlyRate", data.hourlyRate);
-            if (data?.dailyRate != null) setValue("dailyRate", data.dailyRate);
-            if (data?.weeklyRate != null) setValue("weeklyRate", data.weeklyRate);
-            if (data?.guaranteedHours != null) setValue("guaranteedHours", data.guaranteedHours);
-            setRateSource(data?.source || data?.sourceUrl ? { url: data.sourceUrl, label: data.sourceDocument } : null);
+            if (data?.weeklyRate > 0) setValue("weeklyRate", data.weeklyRate, { shouldDirty: true });
+            if (data?.dailyRate > 0) setValue("dailyRate", data.dailyRate, { shouldDirty: true });
+            if (data?.hourlyRate > 0) setValue("hourlyRate", data.hourlyRate, { shouldDirty: true });
+            if (data?.guaranteedHoursPerWeek > 0) setValue("guaranteedHours", data.guaranteedHoursPerWeek, { shouldDirty: true });
+            setRateSource(data?.sourceUrl ? { url: data.sourceUrl, label: data.sourceDocument } : null);
 
-            // Auto-populate overtime rules if returned
-            if (data?.overtimeRules) {
-              const r = data.overtimeRules;
-              if (r.standardWorkDayHrs != null) setValue("standardWorkDayHrs", r.standardWorkDayHrs);
-              if (r.lunchBreakHrs != null) setValue("lunchBreakHrs", r.lunchBreakHrs);
-              if (r.sixthDayMultiplier != null) setValue("sixthDayMultiplier", r.sixthDayMultiplier);
-              if (r.seventhDayMultiplier != null) setValue("seventhDayMultiplier", r.seventhDayMultiplier);
-              if (r.nightPremiumPct != null) setValue("nightPremiumPct", r.nightPremiumPct);
-              if (r.turnaroundMinHrs != null) setValue("turnaroundMinHrs", r.turnaroundMinHrs);
-            }
+            // Auto-populate from deal type
+            if (data?.guaranteedHoursPerDay > 0) setValue("standardWorkDayHrs", data.guaranteedHoursPerDay, { shouldDirty: true });
+          },
+          onError: () => {
+            // No rate card found — leave fields at defaults, user fills manually
+            toast.info("No rate card found for this combination. Please enter rates manually.");
           },
         }
       );
