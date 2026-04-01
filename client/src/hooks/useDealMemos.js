@@ -79,11 +79,20 @@ export function useUpdateDealMemo() {
 // ---------------------------------------------------------------------------
 // Transition deal memo status (send, sign, activate, complete, cancel)
 // ---------------------------------------------------------------------------
+const ACTION_TO_STATUS = {
+  send: 'sent',
+  sign: 'signed',
+  activate: 'active',
+  complete: 'completed',
+  cancel: 'cancelled',
+};
+
 export function useTransitionDealMemo() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, action }) => {
-      const { data } = await api.post(`/deal-memos/${id}/${action}`);
+    mutationFn: async ({ id, action, note }) => {
+      const toStatus = ACTION_TO_STATUS[action] || action;
+      const { data } = await api.patch(`/deal-memos/${id}/transition`, { toStatus, note });
       return data.data;
     },
     onSuccess: (_data, variables) => {

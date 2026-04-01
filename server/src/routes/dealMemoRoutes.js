@@ -21,17 +21,18 @@ router.get('/:id', getById);
 router.get('/production/:productionId', getByProduction);
 router.post(
   '/',
-  authorize('super_admin', 'payroll_admin', 'production_accountant', 'department_head'),
+  authorize('super_admin', 'payroll_admin', 'production_accountant'),
   create
 );
 router.put(
   '/:id',
-  authorize('super_admin', 'payroll_admin', 'production_accountant', 'department_head'),
+  authorize('super_admin', 'payroll_admin', 'production_accountant'),
   update
 );
+// Transition is open to all authenticated roles; fine-grained checks are in the controller
 router.patch(
   '/:id/transition',
-  authorize('super_admin', 'payroll_admin', 'production_accountant', 'department_head'),
+  authorize('super_admin', 'payroll_admin', 'production_accountant', 'department_head', 'crew_member'),
   transitionStatus
 );
 

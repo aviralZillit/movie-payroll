@@ -234,6 +234,14 @@ export const getById = asyncHandler(async (req, res) => {
     throw new AppError('Deal memo not found.', 404);
   }
 
+  // Crew members can only view their own deal memos
+  if (
+    req.user.role === 'crew_member' &&
+    deal.personId._id.toString() !== req.user._id.toString()
+  ) {
+    throw new AppError('You do not have permission to view this deal memo.', 403);
+  }
+
   res.json({ success: true, data: deal });
 });
 
@@ -285,6 +293,40 @@ export const transitionStatus = asyncHandler(async (req, res) => {
       `Cannot transition from '${deal.status}' to '${toStatus}'. Allowed: ${(allowed || []).join(', ') || 'none'}.`,
       400
     );
+  }
+
+  const role = req.user.role;
+  const isAdmin = ['super_admin', 'payroll_admin', 'production_accountant'].includes(role);
+  const isPersonOnDeal = deal.personId.toString() === req.user._id.toString();
+
+  // Per-transition authorization
+  const from = deal.status;
+
+  if (from === 'draft' && toStatus === 'sent') {
+    // Only admin/accountant can send
+    if (!isAdmin) {
+      throw new AppError('Only admins or accountants can send deal memos.', 403);
+    }
+  } else if (from === 'sent' && toStatus === 'signed') {
+    // The crew member who is the personId on the deal, or admin
+    if (!isAdmin && !isPersonOnDeal) {
+      throw new AppError('Only the assigned crew member or an admin can sign this deal memo.', 403);
+    }
+  } else if (from === 'signed' && toStatus === 'active') {
+    // Only admin/accountant can activate
+    if (!isAdmin) {
+      throw new AppError('Only admins or accountants can activate deal memos.', 403);
+    }
+  } else if (toStatus === 'cancelled') {
+    // Only admin can cancel
+    if (!['super_admin', 'payroll_admin'].includes(role)) {
+      throw new AppError('Only admins can cancel deal memos.', 403);
+    }
+  } else if (from === 'negotiating' || toStatus === 'negotiating') {
+    // Negotiating transitions: either party (admin or the person on the deal)
+    if (!isAdmin && !isPersonOnDeal) {
+      throw new AppError('Only the assigned crew member or an admin can transition negotiating deals.', 403);
+    }
   }
 
   const fromStatus = deal.status;

@@ -42,6 +42,7 @@ import {
   useRateLookup,
 } from "@/hooks/useRateCards";
 
+import useAuthStore from "@/store/authStore";
 import { cn, formatCurrency } from "@/lib/utils";
 import {
   Film,
@@ -201,8 +202,19 @@ function FilterSelect({
 // ---------------------------------------------------------------------------
 // Page component
 // ---------------------------------------------------------------------------
+const ALLOWED_CREATE_ROLES = ['super_admin', 'payroll_admin', 'production_accountant'];
+
 export default function DealMemoNew() {
   const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
+
+  // Redirect crew members and department heads away from this page
+  useEffect(() => {
+    if (user && !ALLOWED_CREATE_ROLES.includes(user.role)) {
+      navigate('/deal-memos', { replace: true });
+    }
+  }, [user, navigate]);
+
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [rateSource, setRateSource] = useState(null);

@@ -24,10 +24,12 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { useDealMemos, useProductions } from "@/hooks/useDealMemos";
+import { useDealMemos, useProductions, useTransitionDealMemo } from "@/hooks/useDealMemos";
+import useAuthStore from "@/store/authStore";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
-import { Plus, FileText, Search, Filter, X } from "lucide-react";
+import { Plus, FileText, Search, Filter, X, Send, PenLine, Play } from "lucide-react";
 import ExportButton from "@/components/common/ExportButton";
+import { toast } from "sonner";
 
 // ---------------------------------------------------------------------------
 // Status config
@@ -65,8 +67,24 @@ function StatusBadge({ status }) {
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
+const ADMIN_ROLES = ['super_admin', 'payroll_admin', 'production_accountant'];
+
 export default function DealMemos() {
   const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = ADMIN_ROLES.includes(user?.role);
+  const transitionMutation = useTransitionDealMemo();
+
+  const handleTransition = (e, id, action) => {
+    e.stopPropagation();
+    transitionMutation.mutate(
+      { id, action },
+      {
+        onSuccess: () => toast.success(`Deal memo ${action} successful`),
+        onError: (err) => toast.error(err?.response?.data?.message || `Failed to ${action} deal memo`),
+      }
+    );
+  };
 
   const [statusFilter, setStatusFilter] = useState("all");
   const [productionFilter, setProductionFilter] = useState("all");
@@ -131,10 +149,12 @@ export default function DealMemos() {
             }}
             label="Export"
           />
-          <Button onClick={() => navigate("/deal-memos/new")}>
-            <Plus className="size-4 mr-1.5" />
-            New Deal Memo
-          </Button>
+          {isAdmin && (
+            <Button onClick={() => navigate("/deal-memos/new")}>
+              <Plus className="size-4 mr-1.5" />
+              New Deal Memo
+            </Button>
+          )}
         </div>
       </div>
 
@@ -235,7 +255,7 @@ export default function DealMemos() {
               <p className="text-sm text-muted-foreground">
                 {hasFilters || searchQuery ? "No deal memos match your filters." : "No deal memos yet."}
               </p>
-              {!hasFilters && !searchQuery && (
+              {!hasFilters && !searchQuery && isAdmin && (
                 <Button variant="outline" size="sm" onClick={() => navigate("/deal-memos/new")}>
                   <Plus className="size-3.5 mr-1" />
                   Create First Deal Memo
@@ -255,6 +275,7 @@ export default function DealMemos() {
                   <TableHead className="text-right">Weekly Rate</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -282,6 +303,46 @@ export default function DealMemos() {
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {formatDate(dm.createdAt)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        {/* Admin: Send button for draft deals */}
+                        {isAdmin && dm.status === "draft" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={transitionMutation.isPending}
+                            onClick={(e) => handleTransition(e, dm._id || dm.id, "send")}
+                          >
+                            <Send className="size-3.5 mr-1" />
+                            Send
+                          </Button>
+                        )}
+                        {/* Crew: Sign button for sent deals that belong to them */}
+                        {!isAdmin && dm.status === "sent" && (dm.personId?._id === user?._id || dm.personId === user?._id) && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            disabled={transitionMutation.isPending}
+                            onClick={(e) => handleTransition(e, dm._id || dm.id, "sign")}
+                          >
+                            <PenLine className="size-3.5 mr-1" />
+                            Sign
+                          </Button>
+                        )}
+                        {/* Admin: Activate button for signed deals */}
+                        {isAdmin && dm.status === "signed" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={transitionMutation.isPending}
+                            onClick={(e) => handleTransition(e, dm._id || dm.id, "activate")}
+                          >
+                            <Play className="size-3.5 mr-1" />
+                            Activate
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

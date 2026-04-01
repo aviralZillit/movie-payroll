@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { useDealMemo, useTransitionDealMemo } from "@/hooks/useDealMemos";
+import useAuthStore from "@/store/authStore";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import {
   ChevronLeft,
@@ -71,29 +72,48 @@ const BUDGET_TIER_LABELS = {
   studio: "Studio (> £50M)",
 };
 
-// Which actions are available from each status
-const STATUS_ACTIONS = {
-  draft: [
-    { action: "send", label: "Send", icon: Send, variant: "default" },
-    { action: "cancel", label: "Cancel", icon: XCircle, variant: "destructive", confirm: true },
-  ],
-  sent: [
-    { action: "sign", label: "Mark Signed", icon: PenLine, variant: "default" },
-    { action: "cancel", label: "Cancel", icon: XCircle, variant: "destructive", confirm: true },
-  ],
-  negotiating: [
-    { action: "sign", label: "Mark Signed", icon: PenLine, variant: "default" },
-    { action: "cancel", label: "Cancel", icon: XCircle, variant: "destructive", confirm: true },
-  ],
-  signed: [
-    { action: "activate", label: "Activate", icon: Play, variant: "default" },
-    { action: "cancel", label: "Cancel", icon: XCircle, variant: "destructive", confirm: true },
-  ],
-  active: [
-    { action: "complete", label: "Complete", icon: CheckCircle2, variant: "default" },
-    { action: "cancel", label: "Cancel", icon: XCircle, variant: "destructive", confirm: true },
-  ],
-};
+const ADMIN_ROLES = ['super_admin', 'payroll_admin', 'production_accountant'];
+
+/**
+ * Returns the available actions based on the deal memo status and the current user.
+ */
+function getStatusActions(status, user, memo) {
+  const isAdmin = ADMIN_ROLES.includes(user?.role);
+  const isPersonOnDeal =
+    memo?.personId?._id === user?._id ||
+    memo?.personId === user?._id;
+  const actions = [];
+
+  if (status === 'draft' && isAdmin) {
+    actions.push({ action: 'send', label: 'Send', icon: Send, variant: 'default' });
+    actions.push({ action: 'cancel', label: 'Cancel', icon: XCircle, variant: 'destructive', confirm: true });
+  } else if (status === 'sent') {
+    if (isPersonOnDeal) {
+      actions.push({ action: 'sign', label: 'Review & Sign', icon: PenLine, variant: 'default', signFlow: true });
+    }
+    if (isAdmin) {
+      actions.push({ action: 'sign', label: 'Mark Signed', icon: PenLine, variant: 'default' });
+      actions.push({ action: 'cancel', label: 'Cancel', icon: XCircle, variant: 'destructive', confirm: true });
+    }
+  } else if (status === 'negotiating') {
+    if (isAdmin || isPersonOnDeal) {
+      actions.push({ action: 'sign', label: 'Mark Signed', icon: PenLine, variant: 'default' });
+    }
+    if (isAdmin) {
+      actions.push({ action: 'cancel', label: 'Cancel', icon: XCircle, variant: 'destructive', confirm: true });
+    }
+  } else if (status === 'signed') {
+    if (isAdmin) {
+      actions.push({ action: 'activate', label: 'Activate Deal', icon: Play, variant: 'default' });
+      actions.push({ action: 'cancel', label: 'Cancel', icon: XCircle, variant: 'destructive', confirm: true });
+    }
+  } else if (status === 'active' && isAdmin) {
+    actions.push({ action: 'complete', label: 'Complete', icon: CheckCircle2, variant: 'default' });
+    actions.push({ action: 'cancel', label: 'Cancel', icon: XCircle, variant: 'destructive', confirm: true });
+  }
+
+  return actions;
+}
 
 // ---------------------------------------------------------------------------
 // Status Timeline
@@ -257,8 +277,10 @@ function ConfirmAction({ action, label, icon: Icon, variant, onConfirm, isPendin
 export default function DealMemoDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
   const { data: memo, isLoading, isError } = useDealMemo(id);
   const transitionMutation = useTransitionDealMemo();
+  const [signDialogOpen, setSignDialogOpen] = useState(false);
 
   const handleAction = (action) => {
     transitionMutation.mutate(
@@ -266,6 +288,22 @@ export default function DealMemoDetail() {
       {
         onSuccess: () => toast.success(`Deal memo ${action} successful`),
         onError: (err) => toast.error(err?.response?.data?.message || `Failed to ${action} deal memo`),
+      }
+    );
+  };
+
+  const handleSign = () => {
+    transitionMutation.mutate(
+      { id, action: 'sign', note: 'Signed by crew member' },
+      {
+        onSuccess: () => {
+          toast.success('Deal memo signed successfully');
+          setSignDialogOpen(false);
+        },
+        onError: (err) => {
+          toast.error(err?.response?.data?.message || 'Failed to sign deal memo');
+          setSignDialogOpen(false);
+        },
       }
     );
   };
@@ -299,7 +337,7 @@ export default function DealMemoDetail() {
     );
   }
 
-  const actions = STATUS_ACTIONS[memo.status] || [];
+  const actions = getStatusActions(memo.status, user, memo);
   const rateSource = memo.rateSource || memo.source;
 
   return (
@@ -309,6 +347,33 @@ export default function DealMemoDetail() {
       transition={{ duration: 0.3 }}
       className="p-6 max-w-4xl mx-auto space-y-6"
     >
+      {/* Signing confirmation dialog */}
+      <Dialog open={signDialogOpen} onOpenChange={setSignDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Review & Sign Deal Memo</DialogTitle>
+            <DialogDescription>
+              By signing, you confirm that you have reviewed and agree to the terms of this deal memo,
+              including rates, working conditions, and all other provisions outlined above.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 text-sm text-muted-foreground">
+            I agree to the terms of this deal memo.
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSignDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={transitionMutation.isPending}
+              onClick={handleSign}
+            >
+              {transitionMutation.isPending ? "Signing..." : "Sign Deal Memo"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -332,7 +397,18 @@ export default function DealMemoDetail() {
             Print / PDF
           </Button>
           {actions.map((act) =>
-            act.confirm ? (
+            act.signFlow ? (
+              <Button
+                key={`${act.action}-sign`}
+                variant={act.variant}
+                size="sm"
+                onClick={() => setSignDialogOpen(true)}
+                disabled={transitionMutation.isPending}
+              >
+                <act.icon className="size-3.5 mr-1.5" />
+                {act.label}
+              </Button>
+            ) : act.confirm ? (
               <ConfirmAction
                 key={act.action}
                 {...act}
