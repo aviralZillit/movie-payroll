@@ -202,7 +202,51 @@ export async function seedDummyData() {
     createdBy: admin._id,
   });
 
-  console.log('Created 3 productions');
+  // US Production
+  const prod4 = await Production.create({
+    name: 'Shadow Protocol',
+    code: 'SP-2025',
+    productionType: 'feature_film',
+    country: 'US',
+    budget: 50000000,
+    currency: 'USD',
+    startDate: new Date('2025-04-01'),
+    endDate: new Date('2026-03-31'),
+    status: 'pre_production',
+    companyName: 'Apex Studios LLC',
+    companyAddress: '5555 Melrose Avenue, Los Angeles, CA 90038',
+    members: [
+      { userId: admin._id, role: 'Executive Producer', joinedAt: new Date('2025-03-01') },
+      { userId: sarah._id, role: 'Payroll Admin', joinedAt: new Date('2025-03-15') },
+      { userId: david._id, role: 'Production Accountant', joinedAt: new Date('2025-03-15') },
+      { userId: tom._id, role: 'Director', joinedAt: new Date('2025-04-01') },
+      { userId: jake._id, role: '1st AD', joinedAt: new Date('2025-04-01') },
+      { userId: kate._id, role: 'Lead Actor', joinedAt: new Date('2025-04-01') },
+    ],
+    createdBy: admin._id,
+  });
+
+  // US TV Production
+  const prod5 = await Production.create({
+    name: 'The Circuit',
+    code: 'TC-2025',
+    productionType: 'tv_drama',
+    country: 'US',
+    budget: 4000000,
+    currency: 'USD',
+    startDate: new Date('2025-06-01'),
+    endDate: new Date('2025-12-31'),
+    status: 'pre_production',
+    companyName: 'Circuit Television Inc.',
+    companyAddress: '30 Rockefeller Plaza, New York, NY 10112',
+    members: [
+      { userId: admin._id, role: 'Executive Producer', joinedAt: new Date('2025-05-01') },
+      { userId: ben._id, role: 'Editor', joinedAt: new Date('2025-06-01') },
+    ],
+    createdBy: admin._id,
+  });
+
+  console.log('Created 5 productions (3 UK + 2 US)');
 
   // ──────────────────────────────────────────────────
   // 4. DEAL MEMOS
