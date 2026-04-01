@@ -2475,6 +2475,244 @@ export const rateCards = [
     sourceUrl: 'https://union.bectu.org.uk/resource/production.html',
     sourceDocument: 'LPD Production TV rate card',
     notes: 'Set Runner. Band 4 minimum £775/50hr wk. From LPD Production TV card.' },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // EQUITY — WEEKLY PLAYER (Pact/Equity Cinema Films Agreement 2024-2025)
+  // Same rates as LEAD at each budget tier
+  // ════════════════════════════════════════════════════════════════════════
+
+  { unionCode: 'EQUITY', deptCode: 'CAST', desigCode: 'WK_PLR', tierCode: 'FILM_MMP',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-04-01', weeklyRate: 2447, dailyRate: 611.80, hourlyRate: 61.18,
+    overtimeRate1x5: 91.77, overtimeRate2x: 94, sixthDayRate: 917.70, seventhDayRate: 1223.60,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://www.pact.co.uk/resource-hub/contracting-off-screen-talent-crew.html',
+    sourceDocument: 'Pact/Equity Cinema Films Agreement 2024-2025',
+    notes: 'Weekly Player. Same as Lead: base £644 + 280% uplift = £2,447/wk.' },
+  { unionCode: 'EQUITY', deptCode: 'CAST', desigCode: 'WK_PLR', tierCode: 'FILM_1_3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-04-01', weeklyRate: 1127, dailyRate: 281.75, hourlyRate: 28.18,
+    overtimeRate1x5: 42.26, overtimeRate2x: 94, sixthDayRate: 422.63, seventhDayRate: 563.50,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://www.pact.co.uk/resource-hub/contracting-off-screen-talent-crew.html',
+    sourceDocument: 'Pact/Equity Cinema Films Agreement 2024-2025',
+    notes: 'Weekly Player. Base £644 + 75% uplift = £1,127/wk.' },
+  { unionCode: 'EQUITY', deptCode: 'CAST', desigCode: 'WK_PLR', tierCode: 'FILM_U1',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-04-01', weeklyRate: 966, dailyRate: 241.50, hourlyRate: 24.15,
+    overtimeRate1x5: 36.23, overtimeRate2x: 94, sixthDayRate: 362.25, seventhDayRate: 483,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://www.pact.co.uk/resource-hub/contracting-off-screen-talent-crew.html',
+    sourceDocument: 'Pact/Equity Cinema Films Agreement 2024-2025',
+    notes: 'Weekly Player. Base £644 + 50% uplift = £966/wk.' },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // EQUITY — STUNT (individually negotiated, approximate industry rates)
+  // ════════════════════════════════════════════════════════════════════════
+
+  { unionCode: 'EQUITY', deptCode: 'STUNT', desigCode: 'STN_COO', tierCode: 'FILM_MMP',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-04-01', weeklyRate: 3000, dailyRate: 600, hourlyRate: 60,
+    overtimeRate1x5: 90, overtimeRate2x: 94, sixthDayRate: 900, seventhDayRate: 1200,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://www.equity.org.uk',
+    sourceDocument: 'Equity (individually negotiated, approximate)',
+    notes: 'Stunt Coordinator. Individually negotiated. £3,000/wk industry estimate.' },
+  { unionCode: 'EQUITY', deptCode: 'STUNT', desigCode: 'STN_PER', tierCode: 'FILM_MMP',
+    dealType: 'daily', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-04-01', weeklyRate: 3750, dailyRate: 750, hourlyRate: 75,
+    overtimeRate1x5: 94, overtimeRate2x: 94, sixthDayRate: 1125, seventhDayRate: 1500,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://www.equity.org.uk',
+    sourceDocument: 'Equity (individually negotiated, approximate)',
+    notes: 'Stunt Performer. Min £161/day but typically £500-1000 negotiated. £750/day estimate.' },
+  { unionCode: 'EQUITY', deptCode: 'STUNT', desigCode: 'STN_DBL', tierCode: 'FILM_MMP',
+    dealType: 'daily', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-04-01', weeklyRate: 3750, dailyRate: 750, hourlyRate: 75,
+    overtimeRate1x5: 94, overtimeRate2x: 94, sixthDayRate: 1125, seventhDayRate: 1500,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://www.equity.org.uk',
+    sourceDocument: 'Equity (individually negotiated, approximate)',
+    notes: 'Stunt Double. Similar to Stunt Performer. £750/day estimate.' },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // EQUITY — DANCE / CHOREOGRAPHY (individually negotiated, approximate)
+  // ════════════════════════════════════════════════════════════════════════
+
+  { unionCode: 'EQUITY', deptCode: 'DANCE', desigCode: 'CHOREO', tierCode: 'FILM_MMP',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-04-01', weeklyRate: 2000, dailyRate: 400, hourlyRate: 40,
+    overtimeRate1x5: 60, overtimeRate2x: 80, sixthDayRate: 600, seventhDayRate: 800,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://www.equity.org.uk',
+    sourceDocument: 'Equity (individually negotiated, approximate)',
+    notes: 'Choreographer. Individually negotiated. £2,000/wk estimate.' },
+  { unionCode: 'EQUITY', deptCode: 'DANCE', desigCode: 'DANCER', tierCode: 'FILM_MMP',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-04-01', weeklyRate: 2447, dailyRate: 611.80, hourlyRate: 61.18,
+    overtimeRate1x5: 91.77, overtimeRate2x: 94, sixthDayRate: 917.70, seventhDayRate: 1223.60,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://www.equity.org.uk',
+    sourceDocument: 'Equity (individually negotiated, approximate)',
+    notes: 'Dancer. Performer minimum £644/wk with MMP uplift. Uses LEAD tier rates.' },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // EQUITY — VOICE (individually negotiated, approximate)
+  // ════════════════════════════════════════════════════════════════════════
+
+  { unionCode: 'EQUITY', deptCode: 'VOICE', desigCode: 'VO_ART', tierCode: 'FILM_MMP',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-04-01', weeklyRate: 2447, dailyRate: 611.80, hourlyRate: 61.18,
+    overtimeRate1x5: 91.77, overtimeRate2x: 94, sixthDayRate: 917.70, seventhDayRate: 1223.60,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://www.equity.org.uk',
+    sourceDocument: 'Equity (individually negotiated, approximate)',
+    notes: 'Voice Artist. Performer minimum £644/wk with MMP uplift.' },
+  { unionCode: 'EQUITY', deptCode: 'VOICE', desigCode: 'ADR', tierCode: 'FILM_MMP',
+    dealType: 'session', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-04-01', weeklyRate: 400, dailyRate: 80, hourlyRate: 40,
+    overtimeRate1x5: 60, overtimeRate2x: 80, sixthDayRate: 120, seventhDayRate: 160,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://www.equity.org.uk',
+    sourceDocument: 'Equity (individually negotiated, approximate)',
+    notes: 'ADR Artist. Half-day rate ~ half daily perf salary. ~£80/session.' },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // DIRECTORS UK — ALL DESIGNATIONS (individually negotiated, approximate)
+  // No published fee minimums; Pact/Directors UK agreement covers terms only
+  // ════════════════════════════════════════════════════════════════════════
+
+  { unionCode: 'DIRECTORS_UK', deptCode: 'DIR', desigCode: 'DIR_FILM', tierCode: 'FILM_MMP',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 8000, dailyRate: 1600, hourlyRate: 160,
+    overtimeRate1x5: 0, overtimeRate2x: 0, sixthDayRate: 0, seventhDayRate: 0,
+    nightPremiumPct: 0, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://www.directorsuk.com',
+    sourceDocument: 'Directors UK (individually negotiated, approximate)',
+    notes: 'Feature Film Director. Individually negotiated. £8,000/wk industry estimate for MMP.' },
+  { unionCode: 'DIRECTORS_UK', deptCode: 'DIR', desigCode: 'DIR_TV', tierCode: 'TV_BAND4',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 6000, dailyRate: 1200, hourlyRate: 120,
+    overtimeRate1x5: 0, overtimeRate2x: 0, sixthDayRate: 0, seventhDayRate: 0,
+    nightPremiumPct: 0, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://www.directorsuk.com',
+    sourceDocument: 'Directors UK (individually negotiated, approximate)',
+    notes: 'TV Drama Director. Individually negotiated. £6,000/wk estimate for high-end TV drama.' },
+  { unionCode: 'DIRECTORS_UK', deptCode: 'DIR', desigCode: 'DIR_ENT', tierCode: 'TV_BAND4',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 4000, dailyRate: 800, hourlyRate: 80,
+    overtimeRate1x5: 0, overtimeRate2x: 0, sixthDayRate: 0, seventhDayRate: 0,
+    nightPremiumPct: 0, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://www.directorsuk.com',
+    sourceDocument: 'Directors UK (individually negotiated, approximate)',
+    notes: 'TV Entertainment Director. Individually negotiated. £4,000/wk estimate.' },
+  { unionCode: 'DIRECTORS_UK', deptCode: 'DIR', desigCode: '2ND_DIR', tierCode: 'FILM_MMP',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 4500, dailyRate: 900, hourlyRate: 90,
+    overtimeRate1x5: 0, overtimeRate2x: 0, sixthDayRate: 0, seventhDayRate: 0,
+    nightPremiumPct: 0, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://www.directorsuk.com',
+    sourceDocument: 'Directors UK (individually negotiated, approximate)',
+    notes: '2nd Unit Director. Individually negotiated. £4,500/wk estimate.' },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // MUSICIANS UNION — SESSION & ORCHESTRAL (negotiated per session)
+  // Source: musiciansunion.org.uk/working-performing/rates-of-pay
+  // 3hr session model — rates are per session unless noted
+  // ════════════════════════════════════════════════════════════════════════
+
+  { unionCode: 'MU', deptCode: 'SESS', desigCode: 'SESS_MUS', tierCode: 'FILM_MMP',
+    dealType: 'session', guaranteedHoursPerWeek: 15, guaranteedHoursPerDay: 3,
+    effectiveFrom: '2024-01-01', weeklyRate: 2000, dailyRate: 400, hourlyRate: 133.33,
+    overtimeRate1x5: 0, overtimeRate2x: 0, sixthDayRate: 0, seventhDayRate: 0,
+    nightPremiumPct: 0, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://musiciansunion.org.uk/working-performing/rates-of-pay',
+    sourceDocument: 'Musicians Union (negotiated per session, approximate)',
+    notes: 'Session Musician. £400/session (3hr). Negotiated per project.' },
+  { unionCode: 'MU', deptCode: 'SESS', desigCode: 'SESS_LDR', tierCode: 'FILM_MMP',
+    dealType: 'session', guaranteedHoursPerWeek: 15, guaranteedHoursPerDay: 3,
+    effectiveFrom: '2024-01-01', weeklyRate: 2500, dailyRate: 500, hourlyRate: 166.67,
+    overtimeRate1x5: 0, overtimeRate2x: 0, sixthDayRate: 0, seventhDayRate: 0,
+    nightPremiumPct: 0, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://musiciansunion.org.uk/working-performing/rates-of-pay',
+    sourceDocument: 'Musicians Union (negotiated per session, approximate)',
+    notes: 'Session Leader / Fixer. £500/session (3hr).' },
+  { unionCode: 'MU', deptCode: 'ORCH', desigCode: 'ORCH_LDR', tierCode: 'FILM_MMP',
+    dealType: 'session', guaranteedHoursPerWeek: 15, guaranteedHoursPerDay: 3,
+    effectiveFrom: '2024-01-01', weeklyRate: 3000, dailyRate: 600, hourlyRate: 200,
+    overtimeRate1x5: 0, overtimeRate2x: 0, sixthDayRate: 0, seventhDayRate: 0,
+    nightPremiumPct: 0, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://musiciansunion.org.uk/working-performing/rates-of-pay',
+    sourceDocument: 'Musicians Union (negotiated per session, approximate)',
+    notes: 'Orchestral Leader. £600/session (3hr).' },
+  { unionCode: 'MU', deptCode: 'ORCH', desigCode: 'ORCH_PLR', tierCode: 'FILM_MMP',
+    dealType: 'session', guaranteedHoursPerWeek: 15, guaranteedHoursPerDay: 3,
+    effectiveFrom: '2024-01-01', weeklyRate: 1750, dailyRate: 350, hourlyRate: 116.67,
+    overtimeRate1x5: 0, overtimeRate2x: 0, sixthDayRate: 0, seventhDayRate: 0,
+    nightPremiumPct: 0, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://musiciansunion.org.uk/working-performing/rates-of-pay',
+    sourceDocument: 'Musicians Union (negotiated per session, approximate)',
+    notes: 'Orchestral Player. £350/session (3hr).' },
+  { unionCode: 'MU', deptCode: 'ORCH', desigCode: 'ORCH_CON', tierCode: 'FILM_MMP',
+    dealType: 'session', guaranteedHoursPerWeek: 15, guaranteedHoursPerDay: 3,
+    effectiveFrom: '2024-01-01', weeklyRate: 4000, dailyRate: 800, hourlyRate: 266.67,
+    overtimeRate1x5: 0, overtimeRate2x: 0, sixthDayRate: 0, seventhDayRate: 0,
+    nightPremiumPct: 0, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://musiciansunion.org.uk/working-performing/rates-of-pay',
+    sourceDocument: 'Musicians Union (negotiated per session, approximate)',
+    notes: 'Orchestral Contractor. £800/session (3hr).' },
+  { unionCode: 'MU', deptCode: 'COMP', desigCode: 'FILM_CMP', tierCode: 'FILM_MMP',
+    dealType: 'session', guaranteedHoursPerWeek: 15, guaranteedHoursPerDay: 3,
+    effectiveFrom: '2024-01-01', weeklyRate: 5000, dailyRate: 1000, hourlyRate: 333.33,
+    overtimeRate1x5: 0, overtimeRate2x: 0, sixthDayRate: 0, seventhDayRate: 0,
+    nightPremiumPct: 0, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://musiciansunion.org.uk/working-performing/rates-of-pay',
+    sourceDocument: 'Musicians Union (individually negotiated, approximate)',
+    notes: 'Film Composer. Individually negotiated. £5,000/wk estimate.' },
+  { unionCode: 'MU', deptCode: 'COMP', desigCode: 'ORCH_ARR', tierCode: 'FILM_MMP',
+    dealType: 'session', guaranteedHoursPerWeek: 15, guaranteedHoursPerDay: 3,
+    effectiveFrom: '2024-01-01', weeklyRate: 2500, dailyRate: 500, hourlyRate: 166.67,
+    overtimeRate1x5: 0, overtimeRate2x: 0, sixthDayRate: 0, seventhDayRate: 0,
+    nightPremiumPct: 0, holidayPayInclusive: false, isVerified: false,
+    sourceUrl: 'https://musiciansunion.org.uk/working-performing/rates-of-pay',
+    sourceDocument: 'Musicians Union (individually negotiated, approximate)',
+    notes: 'Orchestrator / Arranger. £2,500/wk estimate.' },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // WGGB — TV WRITERS (BBC Script Agreement 2024, flat fees)
+  // Source: writersguild.org.uk/rates-and-agreements
+  // ════════════════════════════════════════════════════════════════════════
+
+  { unionCode: 'WGGB', deptCode: 'TVW', desigCode: 'TVW_ORIG', tierCode: 'TV_BAND4',
+    dealType: 'flat_fee', guaranteedHoursPerWeek: 0, guaranteedHoursPerDay: 0,
+    effectiveFrom: '2024-01-01', weeklyRate: 14040, dailyRate: 14040, hourlyRate: 0,
+    overtimeRate1x5: 0, overtimeRate2x: 0, sixthDayRate: 0, seventhDayRate: 0,
+    nightPremiumPct: 0, holidayPayInclusive: true, isVerified: true,
+    sourceUrl: 'https://writersguild.org.uk/rates-and-agreements/',
+    sourceDocument: 'WGGB/BBC Script Agreement 2024',
+    notes: 'TV Writer Original. 60-min teleplay minimum £14,040. Series = £12,900/60min.' },
+  { unionCode: 'WGGB', deptCode: 'TVW', desigCode: 'TVW_DRAM', tierCode: 'TV_BAND4',
+    dealType: 'flat_fee', guaranteedHoursPerWeek: 0, guaranteedHoursPerDay: 0,
+    effectiveFrom: '2024-01-01', weeklyRate: 9360, dailyRate: 9360, hourlyRate: 0,
+    overtimeRate1x5: 0, overtimeRate2x: 0, sixthDayRate: 0, seventhDayRate: 0,
+    nightPremiumPct: 0, holidayPayInclusive: true, isVerified: true,
+    sourceUrl: 'https://writersguild.org.uk/rates-and-agreements/',
+    sourceDocument: 'WGGB/BBC Script Agreement 2024',
+    notes: 'TV Writer Dramatisation. 60-min minimum £9,360.' },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // FAA — PHOTO DOUBLE (same rate as BG_ART)
+  // Source: castingcollective.co.uk/production/payrates
+  // ════════════════════════════════════════════════════════════════════════
+
+  { unionCode: 'FAA', deptCode: 'BG', desigCode: 'PHT_DBL', tierCode: 'FILM_MMP',
+    dealType: 'daily', guaranteedHoursPerWeek: 45, guaranteedHoursPerDay: 9,
+    effectiveFrom: '2024-04-01', weeklyRate: 556.05, dailyRate: 111.21, hourlyRate: 12.36,
+    overtimeRate1x5: 23.38, overtimeRate2x: 23.38, sixthDayRate: 166.82, seventhDayRate: 166.82,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://www.castingcollective.co.uk/production/payrates',
+    sourceDocument: 'FAA/Pact Agreement 2024-2025',
+    notes: 'Photo Double. Same rate as Background Artist: £111.21/day.' },
 ];
 
 // Departments with rates seeded:
@@ -2497,7 +2735,10 @@ export const rateCards = [
 //   Equity (Pact/Equity Cinema Films Agreement 2024-2025)
 //   WGGB (WGGB Minimum Terms Agreement 2024)
 //
-// STILL APPROXIMATE (no official PDF available):
+// APPROXIMATE (individually negotiated, no published minimums):
 //   Sound, Lighting/Sparks, HMU
+//   Directors UK (all designations — individually negotiated)
+//   Musicians Union (session rates — negotiated per project)
+//   Equity Stunt, Dance, Voice (negotiated — industry estimates)
 //
 // NOT SEEDED: Set Crafts, VFX, Riggers — import via Admin Rates
