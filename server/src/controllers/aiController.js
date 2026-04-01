@@ -197,13 +197,14 @@ async function executeTool(name, input) {
     }
 
     case 'search_users': {
-      const users = await User.find({
-        $or: [
-          { firstName: { $regex: input.query, $options: 'i' } },
-          { lastName: { $regex: input.query, $options: 'i' } },
-          { email: { $regex: input.query, $options: 'i' } },
-        ],
-      }).limit(10).lean();
+      // Split query into words and search each against first/last name
+      const queryWords = input.query.trim().split(/\s+/);
+      const orConditions = queryWords.flatMap(w => [
+        { firstName: { $regex: w, $options: 'i' } },
+        { lastName: { $regex: w, $options: 'i' } },
+        { email: { $regex: w, $options: 'i' } },
+      ]);
+      const users = await User.find({ $or: orConditions }).limit(10).lean();
       return users.map((u) => ({
         id: u._id.toString(),
         firstName: u.firstName,
@@ -214,11 +215,20 @@ async function executeTool(name, input) {
     }
 
     case 'find_designation': {
-      const desigs = await Designation.find({
-        name: { $regex: input.role, $options: 'i' },
-      })
+      // Search by name, code, and individual words for fuzzy matching
+      const role = input.role;
+      const words = role.split(/[\s\/,]+/).filter(w => w.length > 1);
+      const regexPatterns = [
+        role, // exact phrase
+        ...words, // individual words
+      ];
+      const orConditions = regexPatterns.flatMap(p => [
+        { name: { $regex: p, $options: 'i' } },
+        { code: { $regex: p.replace(/\s+/g, '_'), $options: 'i' } },
+      ]);
+      const desigs = await Designation.find({ $or: orConditions })
         .populate({ path: 'departmentId', populate: { path: 'unionId' } })
-        .limit(5)
+        .limit(10)
         .lean();
       return desigs.map((d) => ({
         designationId: d._id.toString(),
@@ -253,15 +263,24 @@ async function executeTool(name, input) {
     }
 
     case 'lookup_rate': {
+      let { unionId, departmentId, designationId, budgetTierId, dealType } = input;
+
+      // If budgetTierId looks invalid (placeholder or non-ObjectId), try to resolve it
+      if (!budgetTierId || budgetTierId.length !== 24 || budgetTierId.includes('placeholder')) {
+        // Try to find MMP tier as default for feature films
+        const fallbackTier = await BudgetTier.findOne({ code: 'FILM_MMP' }).lean();
+        if (fallbackTier) budgetTierId = fallbackTier._id.toString();
+      }
+
       const rateCard = await rateEngine.lookupRate({
-        unionId: input.unionId,
-        departmentId: input.departmentId,
-        designationId: input.designationId,
-        budgetTierId: input.budgetTierId,
-        dealType: input.dealType || '55hr_week',
+        unionId,
+        departmentId,
+        designationId,
+        budgetTierId,
+        dealType: dealType || '55hr_week',
       });
       if (!rateCard) {
-        return { found: false, message: 'No rate card found. Rates must be entered manually.' };
+        return { found: false, message: 'No rate card found. Rates must be entered manually.', budgetTierId };
       }
       return {
         found: true,
@@ -328,7 +347,9 @@ async function handleOpenAI(message) {
 
     for (const toolCall of choice.message.tool_calls) {
       const args = JSON.parse(toolCall.function.arguments);
+      console.log(`[AI Tool] ${toolCall.function.name}(${JSON.stringify(args).slice(0, 200)})`);
       const result = await executeTool(toolCall.function.name, args);
+      console.log(`[AI Result] ${toolCall.function.name} →`, JSON.stringify(result).slice(0, 300));
       messages.push({
         role: 'tool',
         tool_call_id: toolCall.id,
