@@ -1,8 +1,14 @@
+import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { Production, User, Union, Department, Designation, BudgetTier, RateCard, OvertimeRule } from '../models/index.js';
 import * as rateEngine from '../services/rateEngine.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import AppError from '../utils/AppError.js';
+
+// ─── Provider selection via env flag ──────────────────────────────────────────
+// AI_PROVIDER=openai (default) or AI_PROVIDER=anthropic
+// Keys: OPENAI_API_KEY or ANTHROPIC_API_KEY
+const AI_PROVIDER = process.env.AI_PROVIDER || 'openai';
 
 const SYSTEM_PROMPT = `You are a UK film production payroll assistant. Your job is to help create deal memos by looking up the correct data from the production database.
 
@@ -66,11 +72,13 @@ Your response MUST be valid JSON wrapped in <deal_memo_data> tags like:
 
 Also include a "message" field with a human-readable summary of what was filled.`;
 
-const TOOLS = [
+// ─── Tool definitions (shared format, converted per provider) ─────────────────
+
+const TOOL_DEFS = [
   {
     name: 'search_productions',
     description: 'Search productions by name. Returns matching productions with id, name, budget, productionType, status, and members.',
-    input_schema: {
+    parameters: {
       type: 'object',
       properties: {
         query: { type: 'string', description: 'Production name or partial name to search for' },
@@ -81,7 +89,7 @@ const TOOLS = [
   {
     name: 'search_users',
     description: 'Search users by name or email. Returns matching users with id, firstName, lastName, email, role.',
-    input_schema: {
+    parameters: {
       type: 'object',
       properties: {
         query: { type: 'string', description: 'User name or email to search for' },
@@ -91,70 +99,88 @@ const TOOLS = [
   },
   {
     name: 'find_designation',
-    description: 'Find a union, department and designation by role name/description. Searches across all unions and departments to find the best match. Returns unionId, departmentId, designationId with their names and codes.',
-    input_schema: {
+    description: 'Find a union, department and designation by role name. Returns unionId, departmentId, designationId with names.',
+    parameters: {
       type: 'object',
       properties: {
-        role: { type: 'string', description: "Role name like 'Camera Operator', 'Gaffer', 'Boom Operator', 'Lead Actor', '1st AC', 'DOP', etc." },
+        role: { type: 'string', description: "Role name like 'Camera Operator', 'Gaffer', '1st AC', 'Lead Actor', etc." },
       },
       required: ['role'],
     },
   },
   {
     name: 'get_budget_tier',
-    description: "Determine the correct budget tier based on a production's budget amount and type (feature_film or tv_drama). Returns the matching budget tier with id, name, code.",
-    input_schema: {
+    description: 'Determine the correct budget tier from production budget amount and type.',
+    parameters: {
       type: 'object',
       properties: {
         budget: { type: 'number', description: 'Production budget in GBP' },
-        productionType: { type: 'string', description: 'Production type: feature_film, tv_drama, commercial, etc.' },
+        productionType: { type: 'string', description: 'feature_film, tv_drama, commercial, etc.' },
       },
       required: ['budget', 'productionType'],
     },
   },
   {
     name: 'lookup_rate',
-    description: 'Look up the minimum union rate card for a specific role and budget tier. Returns weekly, daily, hourly rates and OT rates from verified union rate cards.',
-    input_schema: {
+    description: 'Look up the minimum union rate card for a specific role and budget tier.',
+    parameters: {
       type: 'object',
       properties: {
         unionId: { type: 'string', description: 'MongoDB ObjectId of the union' },
         departmentId: { type: 'string', description: 'MongoDB ObjectId of the department' },
         designationId: { type: 'string', description: 'MongoDB ObjectId of the designation' },
         budgetTierId: { type: 'string', description: 'MongoDB ObjectId of the budget tier' },
-        dealType: { type: 'string', description: 'Deal type: 50hr_week, 55hr_week, daily, etc. Defaults to 55hr_week for BECTU film.' },
+        dealType: { type: 'string', description: 'Deal type: 50hr_week, 55hr_week, daily, etc.' },
       },
       required: ['unionId', 'departmentId', 'designationId', 'budgetTierId'],
     },
   },
   {
     name: 'get_union_rules',
-    description: 'Get overtime rules, standard work day hours, turnaround requirements, and meal penalty rules for a specific union. Returns complete working conditions.',
-    input_schema: {
+    description: 'Get overtime rules, turnaround, meal penalty rules for a union.',
+    parameters: {
       type: 'object',
       properties: {
         unionId: { type: 'string', description: 'MongoDB ObjectId of the union' },
-        departmentId: { type: 'string', description: 'Optional: MongoDB ObjectId of department for department-specific rules' },
+        departmentId: { type: 'string', description: 'Optional department ObjectId for dept-specific rules' },
       },
       required: ['unionId'],
     },
   },
 ];
 
-// ---------------------------------------------------------------------------
-// Tool execution
-// ---------------------------------------------------------------------------
+// Convert to Anthropic format
+function getAnthropicTools() {
+  return TOOL_DEFS.map((t) => ({
+    name: t.name,
+    description: t.description,
+    input_schema: t.parameters,
+  }));
+}
+
+// Convert to OpenAI format
+function getOpenAITools() {
+  return TOOL_DEFS.map((t) => ({
+    type: 'function',
+    function: {
+      name: t.name,
+      description: t.description,
+      parameters: t.parameters,
+    },
+  }));
+}
+
+// ─── Tool execution (shared) ──────────────────────────────────────────────────
+
 async function executeTool(name, input) {
   switch (name) {
     case 'search_productions': {
-      const { query } = input;
       const productions = await Production.find({
-        name: { $regex: query, $options: 'i' },
+        name: { $regex: input.query, $options: 'i' },
       })
         .populate('members.userId', 'firstName lastName')
         .limit(5)
         .lean();
-
       return productions.map((p) => ({
         id: p._id.toString(),
         name: p.name,
@@ -171,17 +197,13 @@ async function executeTool(name, input) {
     }
 
     case 'search_users': {
-      const { query } = input;
       const users = await User.find({
         $or: [
-          { firstName: { $regex: query, $options: 'i' } },
-          { lastName: { $regex: query, $options: 'i' } },
-          { email: { $regex: query, $options: 'i' } },
+          { firstName: { $regex: input.query, $options: 'i' } },
+          { lastName: { $regex: input.query, $options: 'i' } },
+          { email: { $regex: input.query, $options: 'i' } },
         ],
-      })
-        .limit(10)
-        .lean();
-
+      }).limit(10).lean();
       return users.map((u) => ({
         id: u._id.toString(),
         firstName: u.firstName,
@@ -192,17 +214,12 @@ async function executeTool(name, input) {
     }
 
     case 'find_designation': {
-      const { role } = input;
       const desigs = await Designation.find({
-        name: { $regex: role, $options: 'i' },
+        name: { $regex: input.role, $options: 'i' },
       })
-        .populate({
-          path: 'departmentId',
-          populate: { path: 'unionId' },
-        })
+        .populate({ path: 'departmentId', populate: { path: 'unionId' } })
         .limit(5)
         .lean();
-
       return desigs.map((d) => ({
         designationId: d._id.toString(),
         designationName: d.name,
@@ -218,29 +235,13 @@ async function executeTool(name, input) {
 
     case 'get_budget_tier': {
       const { budget, productionType } = input;
-      const tiers = await BudgetTier.find({
-        isActive: true,
-        $or: [
-          { productionType },
-          { productionType: null },
-        ],
-        minBudget: { $lte: budget },
-        $or: [
-          { maxBudget: { $gte: budget } },
-          { maxBudget: null },
-        ],
-      })
-        .sort({ sortOrder: 1 })
-        .lean();
-
-      // MongoDB $or at the top level gets merged, so do a manual filter
-      const matching = tiers.filter((t) => {
+      const allTiers = await BudgetTier.find({ isActive: true }).sort({ sortOrder: 1 }).lean();
+      const matching = allTiers.filter((t) => {
         const typeMatch = !t.productionType || t.productionType === productionType;
         const minMatch = t.minBudget == null || t.minBudget <= budget;
         const maxMatch = t.maxBudget == null || t.maxBudget >= budget;
         return typeMatch && minMatch && maxMatch;
       });
-
       return matching.map((t) => ({
         id: t._id.toString(),
         name: t.name,
@@ -248,71 +249,50 @@ async function executeTool(name, input) {
         productionType: t.productionType,
         minBudget: t.minBudget,
         maxBudget: t.maxBudget,
-        description: t.description,
       }));
     }
 
     case 'lookup_rate': {
-      const { unionId, departmentId, designationId, budgetTierId, dealType } = input;
       const rateCard = await rateEngine.lookupRate({
-        unionId,
-        departmentId,
-        designationId,
-        budgetTierId,
-        dealType: dealType || '55hr_week',
+        unionId: input.unionId,
+        departmentId: input.departmentId,
+        designationId: input.designationId,
+        budgetTierId: input.budgetTierId,
+        dealType: input.dealType || '55hr_week',
       });
-
       if (!rateCard) {
-        return { found: false, message: 'No rate card found for this combination. Rates will need to be entered manually.' };
+        return { found: false, message: 'No rate card found. Rates must be entered manually.' };
       }
-
       return {
         found: true,
         dealType: rateCard.dealType,
         weeklyRate: rateCard.weeklyRate,
         dailyRate: rateCard.dailyRate,
         hourlyRate: rateCard.hourlyRate,
-        guaranteedHours: rateCard.guaranteedHours,
+        overtimeRate1x5: rateCard.overtimeRate1x5,
+        overtimeRate2x: rateCard.overtimeRate2x,
+        sixthDayRate: rateCard.sixthDayRate,
+        seventhDayRate: rateCard.seventhDayRate,
+        isVerified: rateCard.isVerified,
         sourceUrl: rateCard.sourceUrl,
         sourceDocument: rateCard.sourceDocument,
-        effectiveFrom: rateCard.effectiveFrom,
-        effectiveTo: rateCard.effectiveTo,
       };
     }
 
     case 'get_union_rules': {
-      const { unionId, departmentId } = input;
-      const union = await Union.findById(unionId).lean();
-      const rules = await rateEngine.getOvertimeRules(unionId, departmentId);
-
+      const union = await Union.findById(input.unionId).lean();
+      const rules = await rateEngine.getOvertimeRules(input.unionId, input.departmentId);
       return {
-        union: union
-          ? {
-              id: union._id.toString(),
-              name: union.name,
-              code: union.code,
-              standardWorkDayHrs: union.standardWorkDayHrs,
-              lunchBreakHrs: union.lunchBreakHrs,
-              turnaroundMinHrs: union.turnaroundMinHrs,
-              mealPenaltyEnabled: union.mealPenaltyEnabled,
-              mealPenaltyAmount: union.mealPenaltyAmount,
-              mealPenaltyAfterHrs: union.mealPenaltyAfterHrs,
-              nightPremiumPct: union.nightPremiumPct,
-              sixthDayMultiplier: union.sixthDayMultiplier,
-              seventhDayMultiplier: union.seventhDayMultiplier,
-              holidayPayPct: union.holidayPayPct,
-              employerNiPct: union.employerNiPct,
-              pensionPct: union.pensionPct,
-              apprenticeLevyPct: union.apprenticeLevyPct,
-            }
-          : null,
+        union: union ? {
+          name: union.name, code: union.code,
+          standardWorkDayHrs: union.standardWorkDayHrs,
+          lunchBreakHrs: union.standardLunchHrs,
+          turnaroundMinHrs: union.minTurnaroundHrs,
+          holidayPayPct: union.holidayPayPct,
+        } : null,
         overtimeRules: rules.map((r) => ({
-          id: r._id.toString(),
-          afterHours: r.afterHours,
-          multiplier: r.multiplier,
-          description: r.description,
-          dayType: r.dayType,
-          priority: r.priority,
+          name: r.name, afterHours: r.afterHours, multiplier: r.multiplier,
+          appliesTo: r.appliesTo, isNightRate: r.isNightRate,
         })),
       };
     }
@@ -322,34 +302,68 @@ async function executeTool(name, input) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Main handler
-// ---------------------------------------------------------------------------
-export const aiDealMemo = asyncHandler(async (req, res) => {
-  const { message } = req.body;
+// ─── OpenAI handler ───────────────────────────────────────────────────────────
 
-  if (!message) {
-    throw new AppError('Message is required', 400);
+async function handleOpenAI(message) {
+  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+  let messages = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'user', content: message },
+  ];
+
+  let response = await client.chat.completions.create({
+    model: process.env.OPENAI_MODEL || 'gpt-4o',
+    messages,
+    tools: getOpenAITools(),
+    tool_choice: 'auto',
+    max_tokens: 4096,
+  });
+
+  let choice = response.choices[0];
+
+  // Tool use loop
+  while (choice.finish_reason === 'tool_calls' && choice.message.tool_calls) {
+    messages.push(choice.message);
+
+    for (const toolCall of choice.message.tool_calls) {
+      const args = JSON.parse(toolCall.function.arguments);
+      const result = await executeTool(toolCall.function.name, args);
+      messages.push({
+        role: 'tool',
+        tool_call_id: toolCall.id,
+        content: JSON.stringify(result),
+      });
+    }
+
+    response = await client.chat.completions.create({
+      model: process.env.OPENAI_MODEL || 'gpt-4o',
+      messages,
+      tools: getOpenAITools(),
+      tool_choice: 'auto',
+      max_tokens: 4096,
+    });
+    choice = response.choices[0];
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    throw new AppError('AI not configured. Set ANTHROPIC_API_KEY.', 500);
-  }
+  return choice.message.content || '';
+}
 
+// ─── Anthropic handler ────────────────────────────────────────────────────────
+
+async function handleAnthropic(message) {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
   let messages = [{ role: 'user', content: message }];
 
-  // Initial request to Claude
   let response = await client.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514',
     max_tokens: 4096,
     system: SYSTEM_PROMPT,
-    tools: TOOLS,
+    tools: getAnthropicTools(),
     messages,
   });
 
-  // Tool use loop -- Claude may call multiple tools in sequence
   while (response.stop_reason === 'tool_use') {
     const toolUseBlocks = response.content.filter((b) => b.type === 'tool_use');
     const toolResults = [];
@@ -357,18 +371,9 @@ export const aiDealMemo = asyncHandler(async (req, res) => {
     for (const toolUse of toolUseBlocks) {
       try {
         const result = await executeTool(toolUse.name, toolUse.input);
-        toolResults.push({
-          type: 'tool_result',
-          tool_use_id: toolUse.id,
-          content: JSON.stringify(result),
-        });
+        toolResults.push({ type: 'tool_result', tool_use_id: toolUse.id, content: JSON.stringify(result) });
       } catch (err) {
-        toolResults.push({
-          type: 'tool_result',
-          tool_use_id: toolUse.id,
-          content: JSON.stringify({ error: err.message }),
-          is_error: true,
-        });
+        toolResults.push({ type: 'tool_result', tool_use_id: toolUse.id, content: JSON.stringify({ error: err.message }), is_error: true });
       }
     }
 
@@ -379,27 +384,46 @@ export const aiDealMemo = asyncHandler(async (req, res) => {
     ];
 
     response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514',
       max_tokens: 4096,
       system: SYSTEM_PROMPT,
-      tools: TOOLS,
+      tools: getAnthropicTools(),
       messages,
     });
   }
 
-  // Extract the final text response
   const textBlock = response.content.find((b) => b.type === 'text');
-  const text = textBlock?.text || '';
+  return textBlock?.text || '';
+}
+
+// ─── Main handler ─────────────────────────────────────────────────────────────
+
+export const aiDealMemo = asyncHandler(async (req, res) => {
+  const { message } = req.body;
+  if (!message) throw new AppError('Message is required', 400);
+
+  // Check API key based on provider
+  const provider = AI_PROVIDER;
+  if (provider === 'openai' && !process.env.OPENAI_API_KEY) {
+    throw new AppError('AI not configured. Set OPENAI_API_KEY in environment.', 500);
+  }
+  if (provider === 'anthropic' && !process.env.ANTHROPIC_API_KEY) {
+    throw new AppError('AI not configured. Set ANTHROPIC_API_KEY in environment.', 500);
+  }
+
+  // Call the appropriate provider
+  let text;
+  if (provider === 'anthropic') {
+    text = await handleAnthropic(message);
+  } else {
+    text = await handleOpenAI(message);
+  }
 
   // Parse the deal memo data from the response
   const dataMatch = text.match(/<deal_memo_data>([\s\S]*?)<\/deal_memo_data>/);
   let formData = null;
   if (dataMatch) {
-    try {
-      formData = JSON.parse(dataMatch[1]);
-    } catch (e) {
-      // If JSON parsing fails, formData stays null and raw text is returned
-    }
+    try { formData = JSON.parse(dataMatch[1]); } catch (_e) { /* raw text returned */ }
   }
 
   res.json({
@@ -407,6 +431,7 @@ export const aiDealMemo = asyncHandler(async (req, res) => {
     data: {
       message: text.replace(/<deal_memo_data>[\s\S]*?<\/deal_memo_data>/, '').trim(),
       formData,
+      provider,
     },
   });
 });
