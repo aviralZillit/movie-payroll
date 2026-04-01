@@ -371,14 +371,19 @@ export const rateCards = [
     sourceDocument: 'WGGB Minimum Terms Agreement 2024',
     notes: 'Adaptation screenplay £25,650.' },
 
+
   // ════════════════════════════════════════════════════════════════════════
-  // BECTU — ASSISTANT DIRECTORS (MMP £30m+)
+  // BECTU — ASSISTANT DIRECTORS — ALL TIERS
   // Source: Assistant Directors' Branch rate card 2024
-  // MMP column, 50hr minimum rates. Rates EXCLUDE holiday pay (add 12.07%).
+  // 50hr minimum rates. Rates EXCLUDE holiday pay (add 12.07%).
   // For 55hr deals, add 10% to the 50hr rate.
+  // TV: 1(<1.25m), 2B(1.25-2.125m), 3B(3-5.5m), 4(8m+)
+  // Film: C2(<2.5m), C1(2.5-5m), B3(5-10m), B2(10-20m), B1(20-30m), MMP(30m+)
   // ════════════════════════════════════════════════════════════════════════
 
-  // 1st Assistant Director — MMP 50hr minimum: £4,255
+  // ── 1st Assistant Director ─────────────────────────────────────────────
+
+  // 1AD — FILM_MMP (£30m+) 50hr minimum: £4,255
   { unionCode: 'BECTU', deptCode: 'AD', desigCode: '1AD', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2024-01-01', weeklyRate: 4255, dailyRate: 851, hourlyRate: 85.10,
@@ -387,8 +392,82 @@ export const rateCards = [
     sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
     sourceDocument: "Assistant Directors' Branch rate card 2024",
     notes: 'MMP 50hr minimum £4,255. Excludes holiday pay (add 12.07%). For 55hr deals add 10%.' },
+  // 1AD — FILM_15_30 (£10-20m, B2 column)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: '1AD', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2755, dailyRate: 551, hourlyRate: 55.10,
+    overtimeRate1x5: 82.65, overtimeRate2x: 110.20, sixthDayRate: 551, seventhDayRate: 551,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: '1AD Film B2 (£10-20m) 50hr minimum £2,755.' },
+  // 1AD — FILM_5_15 (£5-10m, B3 column)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: '1AD', tierCode: 'FILM_5_15',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2645, dailyRate: 529, hourlyRate: 52.90,
+    overtimeRate1x5: 79.35, overtimeRate2x: 105.80, sixthDayRate: 529, seventhDayRate: 529,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: '1AD Film B3 (£5-10m) 50hr minimum £2,645.' },
+  // 1AD — FILM_3_5 (£2.5-5m, C1 column)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: '1AD', tierCode: 'FILM_3_5',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2205, dailyRate: 441, hourlyRate: 44.10,
+    overtimeRate1x5: 66.15, overtimeRate2x: 88.20, sixthDayRate: 441, seventhDayRate: 441,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: '1AD Film C1 (£2.5-5m) 50hr minimum £2,205.' },
+  // 1AD — FILM_1_3 (<£2.5m, C2 column)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: '1AD', tierCode: 'FILM_1_3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1985, dailyRate: 397, hourlyRate: 39.70,
+    overtimeRate1x5: 59.55, overtimeRate2x: 79.40, sixthDayRate: 397, seventhDayRate: 397,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: '1AD Film C2 (<£2.5m) 50hr minimum £1,985.' },
+  // 1AD — TV_BAND4 (£8m+)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: '1AD', tierCode: 'TV_BAND4',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 4255, dailyRate: 851, hourlyRate: 85.10,
+    overtimeRate1x5: 127.65, overtimeRate2x: 170.20, sixthDayRate: 851, seventhDayRate: 851,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: '1AD TV Band 4 (£8m+) 50hr minimum £4,255.' },
+  // 1AD — TV_BAND3 (£3-5.5m, 3B column)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: '1AD', tierCode: 'TV_BAND3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2405, dailyRate: 481, hourlyRate: 48.10,
+    overtimeRate1x5: 72.15, overtimeRate2x: 96.20, sixthDayRate: 481, seventhDayRate: 481,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: '1AD TV Band 3 (£3-5.5m) 50hr minimum £2,405.' },
+  // 1AD — TV_BAND2 (£1.25-2.125m, 2B column)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: '1AD', tierCode: 'TV_BAND2',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2095, dailyRate: 419, hourlyRate: 41.90,
+    overtimeRate1x5: 62.85, overtimeRate2x: 83.80, sixthDayRate: 419, seventhDayRate: 419,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: '1AD TV Band 2 (£1.25-2.125m) 50hr minimum £2,095.' },
+  // 1AD — TV_BAND1 (<£1.25m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: '1AD', tierCode: 'TV_BAND1',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1765, dailyRate: 353, hourlyRate: 35.30,
+    overtimeRate1x5: 52.95, overtimeRate2x: 70.60, sixthDayRate: 353, seventhDayRate: 353,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: '1AD TV Band 1 (<£1.25m) 50hr minimum £1,765.' },
 
-  // 2nd Assistant Director (Key) — MMP 50hr minimum: £2,365
+  // ── 2nd Assistant Director (Key) ───────────────────────────────────────
+
+  // 2AD — FILM_MMP (£30m+) 50hr minimum: £2,365
   { unionCode: 'BECTU', deptCode: 'AD', desigCode: '2AD', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2024-01-01', weeklyRate: 2365, dailyRate: 473, hourlyRate: 47.30,
@@ -397,8 +476,82 @@ export const rateCards = [
     sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
     sourceDocument: "Assistant Directors' Branch rate card 2024",
     notes: 'MMP 50hr minimum £2,365 (Key 2nd AD). Excludes holiday pay (add 12.07%).' },
+  // 2AD — FILM_15_30 (B2 £10-20m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: '2AD', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1930, dailyRate: 386, hourlyRate: 38.60,
+    overtimeRate1x5: 57.90, overtimeRate2x: 77.20, sixthDayRate: 386, seventhDayRate: 386,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: '2AD Film B2 (£10-20m) 50hr minimum £1,930.' },
+  // 2AD — FILM_5_15 (B3 £5-10m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: '2AD', tierCode: 'FILM_5_15',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1855, dailyRate: 371, hourlyRate: 37.10,
+    overtimeRate1x5: 55.65, overtimeRate2x: 74.20, sixthDayRate: 371, seventhDayRate: 371,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: '2AD Film B3 (£5-10m) 50hr minimum £1,855.' },
+  // 2AD — FILM_3_5 (C1 £2.5-5m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: '2AD', tierCode: 'FILM_3_5',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1490, dailyRate: 298, hourlyRate: 29.80,
+    overtimeRate1x5: 44.70, overtimeRate2x: 59.60, sixthDayRate: 298, seventhDayRate: 298,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: '2AD Film C1 (£2.5-5m) 50hr minimum £1,490.' },
+  // 2AD — FILM_1_3 (C2 <£2.5m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: '2AD', tierCode: 'FILM_1_3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1380, dailyRate: 276, hourlyRate: 27.60,
+    overtimeRate1x5: 41.40, overtimeRate2x: 55.20, sixthDayRate: 276, seventhDayRate: 276,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: '2AD Film C2 (<£2.5m) 50hr minimum £1,380.' },
+  // 2AD — TV_BAND4 (£8m+)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: '2AD', tierCode: 'TV_BAND4',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2365, dailyRate: 473, hourlyRate: 47.30,
+    overtimeRate1x5: 70.95, overtimeRate2x: 94.60, sixthDayRate: 473, seventhDayRate: 473,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: '2AD TV Band 4 (£8m+) 50hr minimum £2,365.' },
+  // 2AD — TV_BAND3 (3B £3-5.5m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: '2AD', tierCode: 'TV_BAND3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1805, dailyRate: 361, hourlyRate: 36.10,
+    overtimeRate1x5: 54.15, overtimeRate2x: 72.20, sixthDayRate: 361, seventhDayRate: 361,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: '2AD TV Band 3 (£3-5.5m) 50hr minimum £1,805.' },
+  // 2AD — TV_BAND2 (2B £1.25-2.125m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: '2AD', tierCode: 'TV_BAND2',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1435, dailyRate: 287, hourlyRate: 28.70,
+    overtimeRate1x5: 43.05, overtimeRate2x: 57.40, sixthDayRate: 287, seventhDayRate: 287,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: '2AD TV Band 2 (£1.25-2.125m) 50hr minimum £1,435.' },
+  // 2AD — TV_BAND1 (<£1.25m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: '2AD', tierCode: 'TV_BAND1',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1325, dailyRate: 265, hourlyRate: 26.50,
+    overtimeRate1x5: 39.75, overtimeRate2x: 53, sixthDayRate: 265, seventhDayRate: 265,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: '2AD TV Band 1 (<£1.25m) 50hr minimum £1,325.' },
 
-  // 2nd Assistant Director (Crowd) — MMP 50hr minimum: £2,005
+  // ── 2nd Assistant Director (Crowd) ─────────────────────────────────────
+
+  // CRD_AD — FILM_MMP (£30m+) 50hr minimum: £2,005
   { unionCode: 'BECTU', deptCode: 'AD', desigCode: 'CRD_AD', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2024-01-01', weeklyRate: 2005, dailyRate: 401, hourlyRate: 40.10,
@@ -407,8 +560,82 @@ export const rateCards = [
     sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
     sourceDocument: "Assistant Directors' Branch rate card 2024",
     notes: 'MMP 50hr minimum £2,005 (Crowd 2nd AD). Excludes holiday pay (add 12.07%).' },
+  // CRD_AD — FILM_15_30 (B2 £10-20m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: 'CRD_AD', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1655, dailyRate: 331, hourlyRate: 33.10,
+    overtimeRate1x5: 49.65, overtimeRate2x: 66.20, sixthDayRate: 331, seventhDayRate: 331,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: 'Crowd AD Film B2 (£10-20m) 50hr minimum £1,655.' },
+  // CRD_AD — FILM_5_15 (B3 £5-10m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: 'CRD_AD', tierCode: 'FILM_5_15',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1380, dailyRate: 276, hourlyRate: 27.60,
+    overtimeRate1x5: 41.40, overtimeRate2x: 55.20, sixthDayRate: 276, seventhDayRate: 276,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: 'Crowd AD Film B3 (£5-10m) 50hr minimum £1,380.' },
+  // CRD_AD — FILM_3_5 (C1 £2.5-5m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: 'CRD_AD', tierCode: 'FILM_3_5',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1355, dailyRate: 271, hourlyRate: 27.10,
+    overtimeRate1x5: 40.65, overtimeRate2x: 54.20, sixthDayRate: 271, seventhDayRate: 271,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: 'Crowd AD Film C1 (£2.5-5m) 50hr minimum £1,355.' },
+  // CRD_AD — FILM_1_3 (C2 <£2.5m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: 'CRD_AD', tierCode: 'FILM_1_3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1325, dailyRate: 265, hourlyRate: 26.50,
+    overtimeRate1x5: 39.75, overtimeRate2x: 53, sixthDayRate: 265, seventhDayRate: 265,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: 'Crowd AD Film C2 (<£2.5m) 50hr minimum £1,325.' },
+  // CRD_AD — TV_BAND4 (£8m+)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: 'CRD_AD', tierCode: 'TV_BAND4',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2005, dailyRate: 401, hourlyRate: 40.10,
+    overtimeRate1x5: 60.15, overtimeRate2x: 80.20, sixthDayRate: 401, seventhDayRate: 401,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: 'Crowd AD TV Band 4 (£8m+) 50hr minimum £2,005.' },
+  // CRD_AD — TV_BAND3 (3B £3-5.5m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: 'CRD_AD', tierCode: 'TV_BAND3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1750, dailyRate: 350, hourlyRate: 35,
+    overtimeRate1x5: 52.50, overtimeRate2x: 70, sixthDayRate: 350, seventhDayRate: 350,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: 'Crowd AD TV Band 3 (£3-5.5m) 50hr minimum £1,750.' },
+  // CRD_AD — TV_BAND2 (2B £1.25-2.125m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: 'CRD_AD', tierCode: 'TV_BAND2',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1380, dailyRate: 276, hourlyRate: 27.60,
+    overtimeRate1x5: 41.40, overtimeRate2x: 55.20, sixthDayRate: 276, seventhDayRate: 276,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: 'Crowd AD TV Band 2 (£1.25-2.125m) 50hr minimum £1,380.' },
+  // CRD_AD — TV_BAND1 (<£1.25m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: 'CRD_AD', tierCode: 'TV_BAND1',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1215, dailyRate: 243, hourlyRate: 24.30,
+    overtimeRate1x5: 36.45, overtimeRate2x: 48.60, sixthDayRate: 243, seventhDayRate: 243,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: 'Crowd AD TV Band 1 (<£1.25m) 50hr minimum £1,215.' },
 
-  // 3rd Assistant Director — MMP 50hr minimum: £1,300
+  // ── 3rd Assistant Director ─────────────────────────────────────────────
+
+  // 3AD — FILM_MMP (£30m+) 50hr minimum: £1,300
   { unionCode: 'BECTU', deptCode: 'AD', desigCode: '3AD', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2024-01-01', weeklyRate: 1300, dailyRate: 260, hourlyRate: 26,
@@ -417,8 +644,82 @@ export const rateCards = [
     sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
     sourceDocument: "Assistant Directors' Branch rate card 2024",
     notes: 'MMP 50hr minimum £1,300. Excludes holiday pay (add 12.07%).' },
+  // 3AD — FILM_15_30 (B2 £10-20m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: '3AD', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1140, dailyRate: 228, hourlyRate: 22.80,
+    overtimeRate1x5: 34.20, overtimeRate2x: 45.60, sixthDayRate: 228, seventhDayRate: 228,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: '3AD Film B2 (£10-20m) 50hr minimum £1,140.' },
+  // 3AD — FILM_5_15 (B3 £5-10m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: '3AD', tierCode: 'FILM_5_15',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1095, dailyRate: 219, hourlyRate: 21.90,
+    overtimeRate1x5: 32.85, overtimeRate2x: 43.80, sixthDayRate: 219, seventhDayRate: 219,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: '3AD Film B3 (£5-10m) 50hr minimum £1,095.' },
+  // 3AD — FILM_3_5 (C1 £2.5-5m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: '3AD', tierCode: 'FILM_3_5',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1095, dailyRate: 219, hourlyRate: 21.90,
+    overtimeRate1x5: 32.85, overtimeRate2x: 43.80, sixthDayRate: 219, seventhDayRate: 219,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: '3AD Film C1 (£2.5-5m) 50hr minimum £1,095.' },
+  // 3AD — FILM_1_3 (C2 <£2.5m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: '3AD', tierCode: 'FILM_1_3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 985, dailyRate: 197, hourlyRate: 19.70,
+    overtimeRate1x5: 29.55, overtimeRate2x: 39.40, sixthDayRate: 197, seventhDayRate: 197,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: '3AD Film C2 (<£2.5m) 50hr minimum £985.' },
+  // 3AD — TV_BAND4 (£8m+)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: '3AD', tierCode: 'TV_BAND4',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1300, dailyRate: 260, hourlyRate: 26,
+    overtimeRate1x5: 39, overtimeRate2x: 52, sixthDayRate: 260, seventhDayRate: 260,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: '3AD TV Band 4 (£8m+) 50hr minimum £1,300.' },
+  // 3AD — TV_BAND3 (3B £3-5.5m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: '3AD', tierCode: 'TV_BAND3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1140, dailyRate: 228, hourlyRate: 22.80,
+    overtimeRate1x5: 34.20, overtimeRate2x: 45.60, sixthDayRate: 228, seventhDayRate: 228,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: '3AD TV Band 3 (£3-5.5m) 50hr minimum £1,140.' },
+  // 3AD — TV_BAND2 (2B £1.25-2.125m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: '3AD', tierCode: 'TV_BAND2',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1095, dailyRate: 219, hourlyRate: 21.90,
+    overtimeRate1x5: 32.85, overtimeRate2x: 43.80, sixthDayRate: 219, seventhDayRate: 219,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: '3AD TV Band 2 (£1.25-2.125m) 50hr minimum £1,095.' },
+  // 3AD — TV_BAND1 (<£1.25m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: '3AD', tierCode: 'TV_BAND1',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 985, dailyRate: 197, hourlyRate: 19.70,
+    overtimeRate1x5: 29.55, overtimeRate2x: 39.40, sixthDayRate: 197, seventhDayRate: 197,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: '3AD TV Band 1 (<£1.25m) 50hr minimum £985.' },
 
-  // AD Runner — MMP 50hr minimum: £650
+  // ── AD Runner / Floor Runner ───────────────────────────────────────────
+
+  // FLR_RUN — FILM_MMP (£30m+) 50hr minimum: £650
   { unionCode: 'BECTU', deptCode: 'AD', desigCode: 'FLR_RUN', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2024-01-01', weeklyRate: 650, dailyRate: 130, hourlyRate: 13,
@@ -427,7 +728,78 @@ export const rateCards = [
     sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
     sourceDocument: "Assistant Directors' Branch rate card 2024",
     notes: 'AD Runner MMP 50hr minimum £650. Excludes holiday pay (add 12.07%).' },
-
+  // FLR_RUN — FILM_15_30 (B2 £10-20m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: 'FLR_RUN', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 620, dailyRate: 124, hourlyRate: 12.40,
+    overtimeRate1x5: 18.60, overtimeRate2x: 24.80, sixthDayRate: 124, seventhDayRate: 124,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: 'AD Runner Film B2 (£10-20m) 50hr minimum £620.' },
+  // FLR_RUN — FILM_5_15 (B3 £5-10m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: 'FLR_RUN', tierCode: 'FILM_5_15',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 590, dailyRate: 118, hourlyRate: 11.80,
+    overtimeRate1x5: 17.70, overtimeRate2x: 23.60, sixthDayRate: 118, seventhDayRate: 118,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: 'AD Runner Film B3 (£5-10m) 50hr minimum £590.' },
+  // FLR_RUN — FILM_3_5 (C1 £2.5-5m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: 'FLR_RUN', tierCode: 'FILM_3_5',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 590, dailyRate: 118, hourlyRate: 11.80,
+    overtimeRate1x5: 17.70, overtimeRate2x: 23.60, sixthDayRate: 118, seventhDayRate: 118,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: 'AD Runner Film C1 (£2.5-5m) 50hr minimum £590.' },
+  // FLR_RUN — FILM_1_3 (C2 <£2.5m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: 'FLR_RUN', tierCode: 'FILM_1_3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 590, dailyRate: 118, hourlyRate: 11.80,
+    overtimeRate1x5: 17.70, overtimeRate2x: 23.60, sixthDayRate: 118, seventhDayRate: 118,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: 'AD Runner Film C2 (<£2.5m) 50hr minimum £590.' },
+  // FLR_RUN — TV_BAND4 (£8m+)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: 'FLR_RUN', tierCode: 'TV_BAND4',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 650, dailyRate: 130, hourlyRate: 13,
+    overtimeRate1x5: 19.50, overtimeRate2x: 26, sixthDayRate: 130, seventhDayRate: 130,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: 'AD Runner TV Band 4 (£8m+) 50hr minimum £650.' },
+  // FLR_RUN — TV_BAND3 (3B £3-5.5m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: 'FLR_RUN', tierCode: 'TV_BAND3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 620, dailyRate: 124, hourlyRate: 12.40,
+    overtimeRate1x5: 18.60, overtimeRate2x: 24.80, sixthDayRate: 124, seventhDayRate: 124,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: 'AD Runner TV Band 3 (£3-5.5m) 50hr minimum £620.' },
+  // FLR_RUN — TV_BAND2 (2B £1.25-2.125m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: 'FLR_RUN', tierCode: 'TV_BAND2',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 590, dailyRate: 118, hourlyRate: 11.80,
+    overtimeRate1x5: 17.70, overtimeRate2x: 23.60, sixthDayRate: 118, seventhDayRate: 118,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: 'AD Runner TV Band 2 (£1.25-2.125m) 50hr minimum £590.' },
+  // FLR_RUN — TV_BAND1 (<£1.25m)
+  { unionCode: 'BECTU', deptCode: 'AD', desigCode: 'FLR_RUN', tierCode: 'TV_BAND1',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 590, dailyRate: 118, hourlyRate: 11.80,
+    overtimeRate1x5: 17.70, overtimeRate2x: 23.60, sixthDayRate: 118, seventhDayRate: 118,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/ads.html',
+    sourceDocument: "Assistant Directors' Branch rate card 2024",
+    notes: 'AD Runner TV Band 1 (<£1.25m) 50hr minimum £590.' },
   // ════════════════════════════════════════════════════════════════════════
   // BECTU — CONSTRUCTION (MMP £30m+)
   // Source: PACT/Bectu Construction Rate Card for MMP April 2021 (as amended)
@@ -547,12 +919,15 @@ export const rateCards = [
     notes: 'Stagehand (standard, not NVQ/BLSS). Net weekly £1,314.85. OT capped £52.59/hr.' },
 
   // ════════════════════════════════════════════════════════════════════════
-  // BECTU — COSTUME (MMP £30m+)
+  // BECTU — COSTUME — ALL FILM TIERS
   // Source: BECTU Costume Dept Film Rate Card July 2023
-  // MMP (£30m+) 50hr week, Starting rate. All rates INCLUDE holiday pay.
+  // 50hr week Starting rate. All rates INCLUDE holiday pay.
+  // Tiers: £1m-4m, £4m-15m, £15m-30m, MMP (£30m+)
   // ════════════════════════════════════════════════════════════════════════
 
-  // Costume Designer — own negotiation at MMP
+  // ── Costume Designer ───────────────────────────────────────────────────
+
+  // COS_DES — FILM_MMP: own negotiation
   { unionCode: 'BECTU', deptCode: 'COS', desigCode: 'COS_DES', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2023-07-01', weeklyRate: 0, dailyRate: 0, hourlyRate: 0,
@@ -561,8 +936,37 @@ export const rateCards = [
     sourceUrl: 'https://union.bectu.org.uk/resource/costume-film.html',
     sourceDocument: 'BECTU Costume Dept Film Rate Card July 2023',
     notes: 'Costume Designer is own negotiation at MMP tier. Rate set to 0.' },
+  // COS_DES — FILM_15_30: own negotiation
+  { unionCode: 'BECTU', deptCode: 'COS', desigCode: 'COS_DES', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2023-07-01', weeklyRate: 0, dailyRate: 0, hourlyRate: 0,
+    overtimeRate1x5: 0, overtimeRate2x: 0, sixthDayRate: 0, seventhDayRate: 0,
+    nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/costume-film.html',
+    sourceDocument: 'BECTU Costume Dept Film Rate Card July 2023',
+    notes: 'Costume Designer own negotiation at £15-30m tier.' },
+  // COS_DES — FILM_5_15: £1,963/50hr starting
+  { unionCode: 'BECTU', deptCode: 'COS', desigCode: 'COS_DES', tierCode: 'FILM_5_15',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2023-07-01', weeklyRate: 1963, dailyRate: 392.60, hourlyRate: 39.26,
+    overtimeRate1x5: 58.89, overtimeRate2x: 78.52, sixthDayRate: 392.60, seventhDayRate: 392.60,
+    nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/costume-film.html',
+    sourceDocument: 'BECTU Costume Dept Film Rate Card July 2023',
+    notes: 'Costume Designer £4-15m 50hr starting £1,963 inc hols.' },
+  // COS_DES — FILM_1_3: £1,649.50/50hr starting
+  { unionCode: 'BECTU', deptCode: 'COS', desigCode: 'COS_DES', tierCode: 'FILM_1_3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2023-07-01', weeklyRate: 1649.50, dailyRate: 329.90, hourlyRate: 32.99,
+    overtimeRate1x5: 49.49, overtimeRate2x: 65.98, sixthDayRate: 329.90, seventhDayRate: 329.90,
+    nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/costume-film.html',
+    sourceDocument: 'BECTU Costume Dept Film Rate Card July 2023',
+    notes: 'Costume Designer £1-4m 50hr starting £1,649.50 inc hols.' },
 
-  // Costume Supervisor — MMP 50hr starting £2,650.50 (inc hols)
+  // ── Costume Supervisor ─────────────────────────────────────────────────
+
+  // COS_SUP — FILM_MMP: £2,650.50 (inc hols)
   { unionCode: 'BECTU', deptCode: 'COS', desigCode: 'COS_SUP', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2023-07-01', weeklyRate: 2650.50, dailyRate: 530.10, hourlyRate: 53.01,
@@ -571,8 +975,37 @@ export const rateCards = [
     sourceUrl: 'https://union.bectu.org.uk/resource/costume-film.html',
     sourceDocument: 'BECTU Costume Dept Film Rate Card July 2023',
     notes: 'MMP 50hr starting £2,650.50 inc hols. Experienced £3,141.50. Camera OT £81, Dept OT £79.52.' },
+  // COS_SUP — FILM_15_30: £2,356.56
+  { unionCode: 'BECTU', deptCode: 'COS', desigCode: 'COS_SUP', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2023-07-01', weeklyRate: 2356.56, dailyRate: 471.31, hourlyRate: 47.13,
+    overtimeRate1x5: 70.70, overtimeRate2x: 81, sixthDayRate: 471.31, seventhDayRate: 471.31,
+    nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/costume-film.html',
+    sourceDocument: 'BECTU Costume Dept Film Rate Card July 2023',
+    notes: 'Costume Supervisor £15-30m 50hr starting £2,356.56 inc hols.' },
+  // COS_SUP — FILM_5_15: £1,801
+  { unionCode: 'BECTU', deptCode: 'COS', desigCode: 'COS_SUP', tierCode: 'FILM_5_15',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2023-07-01', weeklyRate: 1801, dailyRate: 360.20, hourlyRate: 36.02,
+    overtimeRate1x5: 54.03, overtimeRate2x: 72.04, sixthDayRate: 360.20, seventhDayRate: 360.20,
+    nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/costume-film.html',
+    sourceDocument: 'BECTU Costume Dept Film Rate Card July 2023',
+    notes: 'Costume Supervisor £4-15m 50hr starting £1,801 inc hols.' },
+  // COS_SUP — FILM_1_3: £1,325.50
+  { unionCode: 'BECTU', deptCode: 'COS', desigCode: 'COS_SUP', tierCode: 'FILM_1_3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2023-07-01', weeklyRate: 1325.50, dailyRate: 265.10, hourlyRate: 26.51,
+    overtimeRate1x5: 39.77, overtimeRate2x: 53.02, sixthDayRate: 265.10, seventhDayRate: 265.10,
+    nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/costume-film.html',
+    sourceDocument: 'BECTU Costume Dept Film Rate Card July 2023',
+    notes: 'Costume Supervisor £1-4m 50hr starting £1,325.50 inc hols.' },
 
-  // Assistant Costume Designer — MMP 50hr starting £1,963 (inc hols)
+  // ── Assistant Costume Designer ─────────────────────────────────────────
+
+  // AST_COS — FILM_MMP: £1,963 (inc hols)
   { unionCode: 'BECTU', deptCode: 'COS', desigCode: 'AST_COS', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2023-07-01', weeklyRate: 1963, dailyRate: 392.60, hourlyRate: 39.26,
@@ -580,9 +1013,38 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/costume-film.html',
     sourceDocument: 'BECTU Costume Dept Film Rate Card July 2023',
-    notes: 'MMP 50hr starting £1,963 inc hols. Experienced £2,250. Camera OT £78.52, Dept OT £58.89.' },
+    notes: 'MMP 50hr starting £1,963 inc hols. Experienced £2,250.' },
+  // AST_COS — FILM_15_30: £1,767
+  { unionCode: 'BECTU', deptCode: 'COS', desigCode: 'AST_COS', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2023-07-01', weeklyRate: 1767, dailyRate: 353.40, hourlyRate: 35.34,
+    overtimeRate1x5: 53.01, overtimeRate2x: 70.68, sixthDayRate: 353.40, seventhDayRate: 353.40,
+    nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/costume-film.html',
+    sourceDocument: 'BECTU Costume Dept Film Rate Card July 2023',
+    notes: 'Asst Costume Designer £15-30m 50hr starting £1,767 inc hols.' },
+  // AST_COS — FILM_5_15: £1,551
+  { unionCode: 'BECTU', deptCode: 'COS', desigCode: 'AST_COS', tierCode: 'FILM_5_15',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2023-07-01', weeklyRate: 1551, dailyRate: 310.20, hourlyRate: 31.02,
+    overtimeRate1x5: 46.53, overtimeRate2x: 62.04, sixthDayRate: 310.20, seventhDayRate: 310.20,
+    nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/costume-film.html',
+    sourceDocument: 'BECTU Costume Dept Film Rate Card July 2023',
+    notes: 'Asst Costume Designer £4-15m 50hr starting £1,551 inc hols.' },
+  // AST_COS — FILM_1_3: £1,423
+  { unionCode: 'BECTU', deptCode: 'COS', desigCode: 'AST_COS', tierCode: 'FILM_1_3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2023-07-01', weeklyRate: 1423, dailyRate: 284.60, hourlyRate: 28.46,
+    overtimeRate1x5: 42.69, overtimeRate2x: 56.92, sixthDayRate: 284.60, seventhDayRate: 284.60,
+    nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/costume-film.html',
+    sourceDocument: 'BECTU Costume Dept Film Rate Card July 2023',
+    notes: 'Asst Costume Designer £1-4m 50hr starting £1,423 inc hols.' },
 
-  // Costume Standby (Assistant Costume Supervisor) — MMP 50hr starting £1,934 (inc hols)
+  // ── Costume Standby (Assistant Costume Supervisor) ─────────────────────
+
+  // COS_STBY — FILM_MMP: £1,934 (inc hols)
   { unionCode: 'BECTU', deptCode: 'COS', desigCode: 'COS_STBY', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2023-07-01', weeklyRate: 1934, dailyRate: 386.80, hourlyRate: 38.68,
@@ -590,9 +1052,20 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/costume-film.html',
     sourceDocument: 'BECTU Costume Dept Film Rate Card July 2023',
-    notes: 'Assistant Costume Supervisor / Costume Standby. MMP 50hr starting £1,934 inc hols. Experienced £2,200.' },
+    notes: 'Assistant Costume Supervisor / Costume Standby. MMP 50hr starting £1,934 inc hols.' },
+  // COS_STBY — FILM_15_30: £1,817
+  { unionCode: 'BECTU', deptCode: 'COS', desigCode: 'COS_STBY', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2023-07-01', weeklyRate: 1817, dailyRate: 363.40, hourlyRate: 36.34,
+    overtimeRate1x5: 54.51, overtimeRate2x: 72.68, sixthDayRate: 363.40, seventhDayRate: 363.40,
+    nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/costume-film.html',
+    sourceDocument: 'BECTU Costume Dept Film Rate Card July 2023',
+    notes: 'Costume Standby £15-30m 50hr starting £1,817 inc hols. Role not available at lower tiers.' },
 
-  // 2nd Assistant Costume Designer (Costume Daily/Dresser) — MMP 50hr starting £1,717.50 (inc hols)
+  // ── 2nd Asst Costume Designer (Costume Daily/Dresser) ──────────────────
+
+  // COS_DRS — FILM_MMP: £1,717.50 (inc hols)
   { unionCode: 'BECTU', deptCode: 'COS', desigCode: 'COS_DRS', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2023-07-01', weeklyRate: 1717.50, dailyRate: 343.50, hourlyRate: 34.35,
@@ -600,9 +1073,38 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/costume-film.html',
     sourceDocument: 'BECTU Costume Dept Film Rate Card July 2023',
-    notes: '2nd Asst Costume Designer. MMP 50hr starting £1,717.50 inc hols. Experienced £1,963.' },
+    notes: '2nd Asst Costume Designer. MMP 50hr starting £1,717.50 inc hols.' },
+  // COS_DRS — FILM_15_30: £1,472.50
+  { unionCode: 'BECTU', deptCode: 'COS', desigCode: 'COS_DRS', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2023-07-01', weeklyRate: 1472.50, dailyRate: 294.50, hourlyRate: 29.45,
+    overtimeRate1x5: 44.18, overtimeRate2x: 58.90, sixthDayRate: 294.50, seventhDayRate: 294.50,
+    nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/costume-film.html',
+    sourceDocument: 'BECTU Costume Dept Film Rate Card July 2023',
+    notes: '2nd Asst Costume Designer £15-30m 50hr starting £1,472.50 inc hols.' },
+  // COS_DRS — FILM_5_15: £1,286
+  { unionCode: 'BECTU', deptCode: 'COS', desigCode: 'COS_DRS', tierCode: 'FILM_5_15',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2023-07-01', weeklyRate: 1286, dailyRate: 257.20, hourlyRate: 25.72,
+    overtimeRate1x5: 38.58, overtimeRate2x: 51.44, sixthDayRate: 257.20, seventhDayRate: 257.20,
+    nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/costume-film.html',
+    sourceDocument: 'BECTU Costume Dept Film Rate Card July 2023',
+    notes: '2nd Asst Costume Designer £4-15m 50hr starting £1,286 inc hols.' },
+  // COS_DRS — FILM_1_3: £1,119
+  { unionCode: 'BECTU', deptCode: 'COS', desigCode: 'COS_DRS', tierCode: 'FILM_1_3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2023-07-01', weeklyRate: 1119, dailyRate: 223.80, hourlyRate: 22.38,
+    overtimeRate1x5: 33.57, overtimeRate2x: 44.76, sixthDayRate: 223.80, seventhDayRate: 223.80,
+    nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/costume-film.html',
+    sourceDocument: 'BECTU Costume Dept Film Rate Card July 2023',
+    notes: '2nd Asst Costume Designer £1-4m 50hr starting £1,119 inc hols.' },
 
-  // Junior Asst Costume Designer (Costume Trainee) — MMP 50hr starting £913 (inc hols)
+  // ── Junior Asst Costume Designer (Costume Trainee) ─────────────────────
+
+  // COS_TRN — FILM_MMP: £913 (inc hols)
   { unionCode: 'BECTU', deptCode: 'COS', desigCode: 'COS_TRN', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2023-07-01', weeklyRate: 913, dailyRate: 182.60, hourlyRate: 18.26,
@@ -610,16 +1112,25 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/costume-film.html',
     sourceDocument: 'BECTU Costume Dept Film Rate Card July 2023',
-    notes: 'Junior Asst Costume Designer. MMP 50hr starting £913 inc hols. Experienced £1,104.' },
+    notes: 'Junior Asst Costume Designer. MMP 50hr starting £913 inc hols.' },
+  // COS_TRN — FILM_15_30: £873.50
+  { unionCode: 'BECTU', deptCode: 'COS', desigCode: 'COS_TRN', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2023-07-01', weeklyRate: 873.50, dailyRate: 174.70, hourlyRate: 17.47,
+    overtimeRate1x5: 26.21, overtimeRate2x: 34.94, sixthDayRate: 174.70, seventhDayRate: 174.70,
+    nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/costume-film.html',
+    sourceDocument: 'BECTU Costume Dept Film Rate Card July 2023',
+    notes: 'Junior Asst Costume Designer £15-30m 50hr starting £873.50 inc hols. Role not available at lower tiers.' },
 
   // ════════════════════════════════════════════════════════════════════════
-  // BECTU — GRIP (MMP £30m+)
-  // Source: Grips Branch rate card 2024 — Feature Films £30m+
-  // Film rates are based on 11hrs work + 1hr lunch (55hr equivalent).
+  // BECTU — GRIP — ALL TIERS
+  // Source: Grips Branch rate card 2024 — TV/SVOD & Feature Films
+  // TV: 10+1 day (50hr week). Film: 11+1 day (55hr week).
   // Rates exclude holiday pay.
   // ════════════════════════════════════════════════════════════════════════
 
-  // Key Grip — Individually negotiated
+  // Key Grip — Individually negotiated at all tiers
   { unionCode: 'BECTU', deptCode: 'GRP', desigCode: 'KEY_GRP', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2024-01-01', weeklyRate: 0, dailyRate: 0, hourlyRate: 0,
@@ -629,7 +1140,8 @@ export const rateCards = [
     sourceDocument: 'Grips Branch rate card 2024',
     notes: 'Key Grip is individually negotiated at all tiers.' },
 
-  // Best Boy Grip — £30m+: weekly £2,820, daily £564, hourly £56
+  // ── Best Boy Grip ──────────────────────────────────────────────────────
+
   { unionCode: 'BECTU', deptCode: 'GRP', desigCode: 'BB_GRP', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2024-01-01', weeklyRate: 2820, dailyRate: 564, hourlyRate: 56,
@@ -637,9 +1149,58 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/grips.html',
     sourceDocument: 'Grips Branch rate card 2024',
-    notes: 'Best Boy Grip MMP £30m+. Weekly £2,820, daily £564, hourly £56. Excludes holiday pay.' },
+    notes: 'Best Boy Grip MMP £30m+. Weekly £2,820. 11+1 day. Excludes holiday pay.' },
+  { unionCode: 'BECTU', deptCode: 'GRP', desigCode: 'BB_GRP', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2640, dailyRate: 528, hourlyRate: 53,
+    overtimeRate1x5: 79.50, overtimeRate2x: 106, sixthDayRate: 528, seventhDayRate: 528,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/grips.html',
+    sourceDocument: 'Grips Branch rate card 2024',
+    notes: 'Best Boy Grip Film <£30m. Weekly £2,640.' },
+  { unionCode: 'BECTU', deptCode: 'GRP', desigCode: 'BB_GRP', tierCode: 'FILM_5_15',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2400, dailyRate: 480, hourlyRate: 48,
+    overtimeRate1x5: 72, overtimeRate2x: 96, sixthDayRate: 480, seventhDayRate: 480,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/grips.html',
+    sourceDocument: 'Grips Branch rate card 2024',
+    notes: 'Best Boy Grip Film <£10m. Weekly £2,400.' },
+  { unionCode: 'BECTU', deptCode: 'GRP', desigCode: 'BB_GRP', tierCode: 'TV_BAND4',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2565, dailyRate: 513, hourlyRate: 51,
+    overtimeRate1x5: 76.50, overtimeRate2x: 102, sixthDayRate: 513, seventhDayRate: 513,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/grips.html',
+    sourceDocument: 'Grips Branch rate card 2024',
+    notes: 'Best Boy Grip TV Band 4. Weekly £2,565. 10+1 day.' },
+  { unionCode: 'BECTU', deptCode: 'GRP', desigCode: 'BB_GRP', tierCode: 'TV_BAND3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2400, dailyRate: 480, hourlyRate: 48,
+    overtimeRate1x5: 72, overtimeRate2x: 96, sixthDayRate: 480, seventhDayRate: 480,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/grips.html',
+    sourceDocument: 'Grips Branch rate card 2024',
+    notes: 'Best Boy Grip TV Band 3. Weekly £2,400.' },
+  { unionCode: 'BECTU', deptCode: 'GRP', desigCode: 'BB_GRP', tierCode: 'TV_BAND2',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2320, dailyRate: 464, hourlyRate: 46,
+    overtimeRate1x5: 69, overtimeRate2x: 92, sixthDayRate: 464, seventhDayRate: 464,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/grips.html',
+    sourceDocument: 'Grips Branch rate card 2024',
+    notes: 'Best Boy Grip TV Band 2. Weekly £2,320.' },
+  { unionCode: 'BECTU', deptCode: 'GRP', desigCode: 'BB_GRP', tierCode: 'TV_BAND1',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2180, dailyRate: 436, hourlyRate: 44,
+    overtimeRate1x5: 66, overtimeRate2x: 88, sixthDayRate: 436, seventhDayRate: 436,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/grips.html',
+    sourceDocument: 'Grips Branch rate card 2024',
+    notes: 'Best Boy Grip TV Band 1. Weekly £2,180.' },
 
-  // Dolly Grip (A Cam Grip) — £30m+: weekly £2,705, daily £541, hourly £54
+  // ── Dolly Grip (A Cam Grip) ────────────────────────────────────────────
+
   { unionCode: 'BECTU', deptCode: 'GRP', desigCode: 'DLY_GRP', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2024-01-01', weeklyRate: 2705, dailyRate: 541, hourlyRate: 54,
@@ -647,9 +1208,58 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/grips.html',
     sourceDocument: 'Grips Branch rate card 2024',
-    notes: 'A Cam Grip / Dolly Grip MMP £30m+. Weekly £2,705, daily £541, hourly £54. Excludes holiday pay.' },
+    notes: 'A Cam Grip / Dolly Grip MMP £30m+. Weekly £2,705.' },
+  { unionCode: 'BECTU', deptCode: 'GRP', desigCode: 'DLY_GRP', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2580, dailyRate: 516, hourlyRate: 52,
+    overtimeRate1x5: 78, overtimeRate2x: 104, sixthDayRate: 516, seventhDayRate: 516,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/grips.html',
+    sourceDocument: 'Grips Branch rate card 2024',
+    notes: 'A Cam Grip Film <£30m. Weekly £2,580.' },
+  { unionCode: 'BECTU', deptCode: 'GRP', desigCode: 'DLY_GRP', tierCode: 'FILM_5_15',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2330, dailyRate: 466, hourlyRate: 47,
+    overtimeRate1x5: 70.50, overtimeRate2x: 94, sixthDayRate: 466, seventhDayRate: 466,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/grips.html',
+    sourceDocument: 'Grips Branch rate card 2024',
+    notes: 'A Cam Grip Film <£10m. Weekly £2,330.' },
+  { unionCode: 'BECTU', deptCode: 'GRP', desigCode: 'DLY_GRP', tierCode: 'TV_BAND4',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2460, dailyRate: 492, hourlyRate: 49,
+    overtimeRate1x5: 73.50, overtimeRate2x: 98, sixthDayRate: 492, seventhDayRate: 492,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/grips.html',
+    sourceDocument: 'Grips Branch rate card 2024',
+    notes: 'A Cam Grip TV Band 4. Weekly £2,460.' },
+  { unionCode: 'BECTU', deptCode: 'GRP', desigCode: 'DLY_GRP', tierCode: 'TV_BAND3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2345, dailyRate: 469, hourlyRate: 47,
+    overtimeRate1x5: 70.50, overtimeRate2x: 94, sixthDayRate: 469, seventhDayRate: 469,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/grips.html',
+    sourceDocument: 'Grips Branch rate card 2024',
+    notes: 'A Cam Grip TV Band 3. Weekly £2,345.' },
+  { unionCode: 'BECTU', deptCode: 'GRP', desigCode: 'DLY_GRP', tierCode: 'TV_BAND2',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2290, dailyRate: 458, hourlyRate: 46,
+    overtimeRate1x5: 69, overtimeRate2x: 92, sixthDayRate: 458, seventhDayRate: 458,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/grips.html',
+    sourceDocument: 'Grips Branch rate card 2024',
+    notes: 'A Cam Grip TV Band 2. Weekly £2,290.' },
+  { unionCode: 'BECTU', deptCode: 'GRP', desigCode: 'DLY_GRP', tierCode: 'TV_BAND1',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2120, dailyRate: 424, hourlyRate: 42,
+    overtimeRate1x5: 63, overtimeRate2x: 84, sixthDayRate: 424, seventhDayRate: 424,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/grips.html',
+    sourceDocument: 'Grips Branch rate card 2024',
+    notes: 'A Cam Grip TV Band 1. Weekly £2,120.' },
 
-  // Grip — £30m+: weekly £2,535, daily £507, hourly £51
+  // ── Grip ───────────────────────────────────────────────────────────────
+
   { unionCode: 'BECTU', deptCode: 'GRP', desigCode: 'GRP', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2024-01-01', weeklyRate: 2535, dailyRate: 507, hourlyRate: 51,
@@ -657,9 +1267,57 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/grips.html',
     sourceDocument: 'Grips Branch rate card 2024',
-    notes: 'Grip MMP £30m+. Weekly £2,535, daily £507, hourly £51. Excludes holiday pay.' },
+    notes: 'Grip MMP £30m+. Weekly £2,535.' },
+  { unionCode: 'BECTU', deptCode: 'GRP', desigCode: 'GRP', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2430, dailyRate: 486, hourlyRate: 49,
+    overtimeRate1x5: 73.50, overtimeRate2x: 98, sixthDayRate: 486, seventhDayRate: 486,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/grips.html',
+    sourceDocument: 'Grips Branch rate card 2024',
+    notes: 'Grip Film <£30m. Weekly £2,430.' },
+  { unionCode: 'BECTU', deptCode: 'GRP', desigCode: 'GRP', tierCode: 'FILM_5_15',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2330, dailyRate: 466, hourlyRate: 47,
+    overtimeRate1x5: 70.50, overtimeRate2x: 94, sixthDayRate: 466, seventhDayRate: 466,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/grips.html',
+    sourceDocument: 'Grips Branch rate card 2024',
+    notes: 'Grip Film <£10m. Weekly £2,330.' },
+  { unionCode: 'BECTU', deptCode: 'GRP', desigCode: 'GRP', tierCode: 'TV_BAND4',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2305, dailyRate: 461, hourlyRate: 46,
+    overtimeRate1x5: 69, overtimeRate2x: 92, sixthDayRate: 461, seventhDayRate: 461,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/grips.html',
+    sourceDocument: 'Grips Branch rate card 2024',
+    notes: 'Grip TV Band 4. Weekly £2,305.' },
+  { unionCode: 'BECTU', deptCode: 'GRP', desigCode: 'GRP', tierCode: 'TV_BAND3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2210, dailyRate: 442, hourlyRate: 44,
+    overtimeRate1x5: 66, overtimeRate2x: 88, sixthDayRate: 442, seventhDayRate: 442,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/grips.html',
+    sourceDocument: 'Grips Branch rate card 2024',
+    notes: 'Grip TV Band 3. Weekly £2,210.' },
+  { unionCode: 'BECTU', deptCode: 'GRP', desigCode: 'GRP', tierCode: 'TV_BAND2',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2155, dailyRate: 431, hourlyRate: 43,
+    overtimeRate1x5: 64.50, overtimeRate2x: 86, sixthDayRate: 431, seventhDayRate: 431,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/grips.html',
+    sourceDocument: 'Grips Branch rate card 2024',
+    notes: 'Grip TV Band 2. Weekly £2,155.' },
+  { unionCode: 'BECTU', deptCode: 'GRP', desigCode: 'GRP', tierCode: 'TV_BAND1',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2120, dailyRate: 424, hourlyRate: 42,
+    overtimeRate1x5: 63, overtimeRate2x: 84, sixthDayRate: 424, seventhDayRate: 424,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/grips.html',
+    sourceDocument: 'Grips Branch rate card 2024',
+    notes: 'Grip TV Band 1. Weekly £2,120.' },
 
-  // Grip Trainee — not listed on Grips rate card; using Grip rate minus standard trainee discount
+  // Grip Trainee — not listed on Grips rate card
   { unionCode: 'BECTU', deptCode: 'GRP', desigCode: 'GRP_TRN', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2024-01-01', weeklyRate: 0, dailyRate: 0, hourlyRate: 0,
@@ -668,7 +1326,6 @@ export const rateCards = [
     sourceUrl: 'https://union.bectu.org.uk/resource/grips.html',
     sourceDocument: 'Grips Branch rate card 2024',
     notes: 'Grip Trainee not listed on official rate card. Set to 0 — negotiate individually.' },
-
   // ════════════════════════════════════════════════════════════════════════
   // BECTU — ART DEPARTMENT (MMP £30m+) — VERIFIED from official BFDG PDF
   // Source: britishfilmdesigners.com/wp-content/uploads/2026/01/FILM-TV-ART-DEPT-2025-RATE-CARD.pdf
@@ -733,13 +1390,15 @@ export const rateCards = [
     notes: 'Art Dept / Set Dec Trainee. Flat rate across all tiers.' },
 
   // ════════════════════════════════════════════════════════════════════════
-  // BECTU — LOCATIONS (MMP £30mil+)
+  // BECTU — LOCATIONS — ALL TIERS
   // Source: Locations Branch Film & Scripted TV rate card 2026
-  // Major Feature Film column, 55hr week (film uses 11+1 day), Starting rate.
+  // TV: 50hr week (10+1 day). Film: 55hr week (11+1 day). Starting rates.
   // Rates exclude holiday pay.
   // ════════════════════════════════════════════════════════════════════════
 
-  // Supervising Location Manager — MMP 55hr starting: £2,990
+  // ── Supervising Location Manager ───────────────────────────────────────
+
+  // SUP_LOC — FILM_MMP (£30mil+) 55hr starting: £2,990
   { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'SUP_LOC', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2026-01-01', weeklyRate: 2990, dailyRate: 598, hourlyRate: 54.36,
@@ -747,9 +1406,55 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
     sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
-    notes: 'SLM MMP 55hr starting £2,990. Hourly £54.36. Excludes holiday pay. By negotiation for experienced rate.' },
+    notes: 'SLM MMP 55hr starting £2,990. Excludes holiday pay.' },
+  // SUP_LOC — FILM_15_30 (£10-30mil)
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'SUP_LOC', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2026-01-01', weeklyRate: 2560, dailyRate: 512, hourlyRate: 46.55,
+    overtimeRate1x5: 69.83, overtimeRate2x: 93.10, sixthDayRate: 512, seventhDayRate: 512,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'SLM Mid-budget Feature (£10-30m) 55hr starting £2,560.' },
+  // SUP_LOC — FILM_5_15 (Film below £10mil)
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'SUP_LOC', tierCode: 'FILM_5_15',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2026-01-01', weeklyRate: 2130, dailyRate: 426, hourlyRate: 38.73,
+    overtimeRate1x5: 58.10, overtimeRate2x: 77.46, sixthDayRate: 426, seventhDayRate: 426,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'SLM Low-budget Feature (<£10m) 55hr starting £2,130.' },
+  // SUP_LOC — TV_BAND4 (Streamers £8m+)
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'SUP_LOC', tierCode: 'TV_BAND4',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2026-01-01', weeklyRate: 2795, dailyRate: 559, hourlyRate: 55.90,
+    overtimeRate1x5: 83.85, overtimeRate2x: 111.80, sixthDayRate: 559, seventhDayRate: 559,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'SLM TV Streamers Band 4 (£8m+) 50hr starting £2,795.' },
+  // SUP_LOC — TV_BAND3 (HETV £3-8m)
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'SUP_LOC', tierCode: 'TV_BAND3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2026-01-01', weeklyRate: 2585, dailyRate: 517, hourlyRate: 51.70,
+    overtimeRate1x5: 77.55, overtimeRate2x: 103.40, sixthDayRate: 517, seventhDayRate: 517,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'SLM TV HETV Band 3 (£3-8m) 50hr starting £2,585.' },
+  // SUP_LOC — TV_BAND2 (£1.25-3m)
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'SUP_LOC', tierCode: 'TV_BAND2',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2026-01-01', weeklyRate: 2005, dailyRate: 401, hourlyRate: 40.10,
+    overtimeRate1x5: 60.15, overtimeRate2x: 80.20, sixthDayRate: 401, seventhDayRate: 401,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'SLM TV Band 2 (£1.25-3m) 50hr starting £2,005. N/A at Band 1.' },
 
-  // Location Manager — MMP 55hr starting: £2,090
+  // ── Location Manager ───────────────────────────────────────────────────
+
   { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'LOC_MGR', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2026-01-01', weeklyRate: 2090, dailyRate: 418, hourlyRate: 38,
@@ -757,9 +1462,58 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
     sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
-    notes: 'LM MMP 55hr starting £2,090. Recommended experienced £2,670. LM rates with SLM above.' },
+    notes: 'LM MMP 55hr starting £2,090. LM rates with SLM above.' },
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'LOC_MGR', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2026-01-01', weeklyRate: 1915, dailyRate: 383, hourlyRate: 34.82,
+    overtimeRate1x5: 52.23, overtimeRate2x: 69.64, sixthDayRate: 383, seventhDayRate: 383,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'LM Mid-budget Feature (£10-30m) 55hr starting £1,915.' },
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'LOC_MGR', tierCode: 'FILM_5_15',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2026-01-01', weeklyRate: 1715, dailyRate: 343, hourlyRate: 31.18,
+    overtimeRate1x5: 46.77, overtimeRate2x: 62.36, sixthDayRate: 343, seventhDayRate: 343,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'LM Low-budget Feature (<£10m) 55hr starting £1,715.' },
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'LOC_MGR', tierCode: 'TV_BAND4',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2026-01-01', weeklyRate: 1980, dailyRate: 396, hourlyRate: 39.60,
+    overtimeRate1x5: 59.40, overtimeRate2x: 79.20, sixthDayRate: 396, seventhDayRate: 396,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'LM TV Streamers Band 4 (£8m+) 50hr starting £1,980.' },
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'LOC_MGR', tierCode: 'TV_BAND3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2026-01-01', weeklyRate: 1875, dailyRate: 375, hourlyRate: 37.50,
+    overtimeRate1x5: 56.25, overtimeRate2x: 75, sixthDayRate: 375, seventhDayRate: 375,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'LM TV HETV Band 3 (£3-8m) 50hr starting £1,875.' },
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'LOC_MGR', tierCode: 'TV_BAND2',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2026-01-01', weeklyRate: 1770, dailyRate: 354, hourlyRate: 35.40,
+    overtimeRate1x5: 53.10, overtimeRate2x: 70.80, sixthDayRate: 354, seventhDayRate: 354,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'LM TV Band 2 (£1.25-3m) 50hr starting £1,770.' },
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'LOC_MGR', tierCode: 'TV_BAND1',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2026-01-01', weeklyRate: 1610, dailyRate: 322, hourlyRate: 32.20,
+    overtimeRate1x5: 48.30, overtimeRate2x: 64.40, sixthDayRate: 322, seventhDayRate: 322,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'LM TV Band 1 (<£1.25m) 50hr starting £1,610.' },
 
-  // Unit Manager — MMP 55hr starting: £1,715
+  // ── Unit Manager ───────────────────────────────────────────────────────
+
   { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'UNIT_MGR', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2026-01-01', weeklyRate: 1715, dailyRate: 343, hourlyRate: 31.18,
@@ -767,9 +1521,58 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
     sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
-    notes: 'Unit Manager MMP 55hr starting £1,715. Recommended experienced £2,145.' },
+    notes: 'Unit Manager MMP 55hr starting £1,715.' },
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'UNIT_MGR', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2026-01-01', weeklyRate: 1625, dailyRate: 325, hourlyRate: 29.55,
+    overtimeRate1x5: 44.33, overtimeRate2x: 59.10, sixthDayRate: 325, seventhDayRate: 325,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'Unit Manager Mid-budget Feature (£10-30m) 55hr starting £1,625.' },
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'UNIT_MGR', tierCode: 'FILM_5_15',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2026-01-01', weeklyRate: 1335, dailyRate: 267, hourlyRate: 24.27,
+    overtimeRate1x5: 36.41, overtimeRate2x: 48.54, sixthDayRate: 267, seventhDayRate: 267,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'Unit Manager Low-budget Feature (<£10m) 55hr starting £1,335.' },
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'UNIT_MGR', tierCode: 'TV_BAND4',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2026-01-01', weeklyRate: 1585, dailyRate: 317, hourlyRate: 31.70,
+    overtimeRate1x5: 47.55, overtimeRate2x: 63.40, sixthDayRate: 317, seventhDayRate: 317,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'Unit Manager TV Band 4 (£8m+) 50hr starting £1,585.' },
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'UNIT_MGR', tierCode: 'TV_BAND3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2026-01-01', weeklyRate: 1530, dailyRate: 306, hourlyRate: 30.60,
+    overtimeRate1x5: 45.90, overtimeRate2x: 61.20, sixthDayRate: 306, seventhDayRate: 306,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'Unit Manager TV Band 3 (£3-8m) 50hr starting £1,530.' },
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'UNIT_MGR', tierCode: 'TV_BAND2',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2026-01-01', weeklyRate: 1375, dailyRate: 275, hourlyRate: 27.50,
+    overtimeRate1x5: 41.25, overtimeRate2x: 55, sixthDayRate: 275, seventhDayRate: 275,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'Unit Manager TV Band 2 (£1.25-3m) 50hr starting £1,375.' },
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'UNIT_MGR', tierCode: 'TV_BAND1',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2026-01-01', weeklyRate: 1320, dailyRate: 264, hourlyRate: 26.40,
+    overtimeRate1x5: 39.60, overtimeRate2x: 52.80, sixthDayRate: 264, seventhDayRate: 264,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'Unit Manager TV Band 1 (<£1.25m) 50hr starting £1,320.' },
 
-  // Location Scout — MMP 55hr starting: £1,830
+  // ── Location Scout ─────────────────────────────────────────────────────
+
   { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'LOC_SCT', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2026-01-01', weeklyRate: 1830, dailyRate: 366, hourlyRate: 33.27,
@@ -777,17 +1580,66 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
     sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
-    notes: 'Location Scout MMP 55hr starting £1,830. Recommended experienced £2,265.' },
+    notes: 'Location Scout MMP 55hr starting £1,830.' },
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'LOC_SCT', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2026-01-01', weeklyRate: 1715, dailyRate: 343, hourlyRate: 31.18,
+    overtimeRate1x5: 46.77, overtimeRate2x: 62.36, sixthDayRate: 343, seventhDayRate: 343,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'Location Scout Mid-budget Feature (£10-30m) 55hr starting £1,715.' },
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'LOC_SCT', tierCode: 'FILM_5_15',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2026-01-01', weeklyRate: 1335, dailyRate: 267, hourlyRate: 24.27,
+    overtimeRate1x5: 36.41, overtimeRate2x: 48.54, sixthDayRate: 267, seventhDayRate: 267,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'Location Scout Low-budget Feature (<£10m) 55hr starting £1,335.' },
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'LOC_SCT', tierCode: 'TV_BAND4',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2026-01-01', weeklyRate: 1791.80, dailyRate: 358.36, hourlyRate: 35.90,
+    overtimeRate1x5: 53.85, overtimeRate2x: 71.80, sixthDayRate: 358.36, seventhDayRate: 358.36,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'Location Scout TV Band 4 (£8m+) 50hr starting £1,791.80.' },
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'LOC_SCT', tierCode: 'TV_BAND3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2026-01-01', weeklyRate: 1686.40, dailyRate: 337.28, hourlyRate: 33.80,
+    overtimeRate1x5: 50.70, overtimeRate2x: 67.60, sixthDayRate: 337.28, seventhDayRate: 337.28,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'Location Scout TV Band 3 (£3-8m) 50hr starting £1,686.40.' },
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'LOC_SCT', tierCode: 'TV_BAND2',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2026-01-01', weeklyRate: 1581, dailyRate: 316.20, hourlyRate: 31.70,
+    overtimeRate1x5: 47.55, overtimeRate2x: 63.40, sixthDayRate: 316.20, seventhDayRate: 316.20,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'Location Scout TV Band 2 (£1.25-3m) 50hr starting £1,581.' },
+  { unionCode: 'BECTU', deptCode: 'LOC', desigCode: 'LOC_SCT', tierCode: 'TV_BAND1',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2026-01-01', weeklyRate: 1317.50, dailyRate: 263.50, hourlyRate: 26.40,
+    overtimeRate1x5: 39.60, overtimeRate2x: 52.80, sixthDayRate: 263.50, seventhDayRate: 263.50,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/locations.html',
+    sourceDocument: 'Locations Branch Film & Scripted TV rate card 2026',
+    notes: 'Location Scout TV Band 1 (<£1.25m) 50hr starting £1,317.50.' },
 
   // ════════════════════════════════════════════════════════════════════════
-  // BECTU — POST PRODUCTION (MMP £30M+)
+  // BECTU — POST PRODUCTION — ALL FILM TIERS
   // Source: Post-Production & Facilities Branch Rate Card 2023-2024
-  // Feature Film rates — Premium (£30M AND OVER) column.
-  // Rates based on 55hr week (base x 55). Excludes holiday pay.
-  // Editor at Premium tier is "Negotiate".
+  // Feature Film rates. 55hr week (base x 55). Excludes holiday pay.
+  // Tiers: Micro (<£1m), Low (£1-5m), Medium (£5-15m), High (£15-30m), Premium (£30M+)
   // ════════════════════════════════════════════════════════════════════════
 
-  // Editor — Negotiate at Premium £30M+
+  // ── Editor ─────────────────────────────────────────────────────────────
+
+  // EDITOR — FILM_MMP: Negotiate
   { unionCode: 'BECTU', deptCode: 'POST', desigCode: 'EDITOR', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2023-01-01', weeklyRate: 0, dailyRate: 0, hourlyRate: 0,
@@ -795,9 +1647,37 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
     sourceDocument: 'Post-Production & Facilities Branch Rate Card 2023-2024',
-    notes: 'Editor at Premium (£30M+) is Negotiate. Medium budget (£5-15M): £3,220/55hr wk.' },
+    notes: 'Editor at Premium (£30M+) is Negotiate.' },
+  // EDITOR — FILM_5_15: £3,220/55hr (£58.55/hr)
+  { unionCode: 'BECTU', deptCode: 'POST', desigCode: 'EDITOR', tierCode: 'FILM_5_15',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2023-01-01', weeklyRate: 3220, dailyRate: 644, hourlyRate: 58.55,
+    overtimeRate1x5: 87.83, overtimeRate2x: 117.10, sixthDayRate: 644, seventhDayRate: 644,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
+    sourceDocument: 'Post-Production & Facilities Branch Rate Card 2023-2024',
+    notes: 'Editor Medium Budget (£5-15m): £58.55/hr, £3,220/55hr wk.' },
+  // EDITOR — FILM_1_3: £2,310/55hr (£42/hr)
+  { unionCode: 'BECTU', deptCode: 'POST', desigCode: 'EDITOR', tierCode: 'FILM_1_3',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2023-01-01', weeklyRate: 2310, dailyRate: 462, hourlyRate: 42,
+    overtimeRate1x5: 63, overtimeRate2x: 84, sixthDayRate: 462, seventhDayRate: 462,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
+    sourceDocument: 'Post-Production & Facilities Branch Rate Card 2023-2024',
+    notes: 'Editor Low Budget (£1-5m): £42/hr, £2,310/55hr wk.' },
+  // EDITOR — FILM_U1: £1,430/55hr (£26/hr)
+  { unionCode: 'BECTU', deptCode: 'POST', desigCode: 'EDITOR', tierCode: 'FILM_U1',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2023-01-01', weeklyRate: 1430, dailyRate: 286, hourlyRate: 26,
+    overtimeRate1x5: 39, overtimeRate2x: 52, sixthDayRate: 286, seventhDayRate: 286,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
+    sourceDocument: 'Post-Production & Facilities Branch Rate Card 2023-2024',
+    notes: 'Editor Micro Budget (<£1m): £26/hr, £1,430/55hr wk.' },
 
-  // Assembly Editor — Premium £30M+: £3,220/55hr (£58.55/hr)
+  // ── Assembly Editor ────────────────────────────────────────────────────
+
   { unionCode: 'BECTU', deptCode: 'POST', desigCode: 'ASM_ED', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2023-01-01', weeklyRate: 3220, dailyRate: 644, hourlyRate: 58.55,
@@ -805,9 +1685,28 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
     sourceDocument: 'Post-Production & Facilities Branch Rate Card 2023-2024',
-    notes: 'Additional/Assembly Editor. Premium (£30M+): £58.55/hr, £644/11hr day, £3,220/55hr wk.' },
+    notes: 'Assembly Editor Premium (£30M+): £58.55/hr, £3,220/55hr wk.' },
+  // ASM_ED — FILM_15_30: £2,700/55hr (£49.10/hr)
+  { unionCode: 'BECTU', deptCode: 'POST', desigCode: 'ASM_ED', tierCode: 'FILM_15_30',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2023-01-01', weeklyRate: 2700, dailyRate: 540, hourlyRate: 49.10,
+    overtimeRate1x5: 73.65, overtimeRate2x: 98.20, sixthDayRate: 540, seventhDayRate: 540,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
+    sourceDocument: 'Post-Production & Facilities Branch Rate Card 2023-2024',
+    notes: 'Assembly Editor High Budget (£15-30m): £49.10/hr, £2,700/55hr wk.' },
+  // ASM_ED — FILM_5_15: £2,310/55hr (£42/hr)
+  { unionCode: 'BECTU', deptCode: 'POST', desigCode: 'ASM_ED', tierCode: 'FILM_5_15',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2023-01-01', weeklyRate: 2310, dailyRate: 462, hourlyRate: 42,
+    overtimeRate1x5: 63, overtimeRate2x: 84, sixthDayRate: 462, seventhDayRate: 462,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
+    sourceDocument: 'Post-Production & Facilities Branch Rate Card 2023-2024',
+    notes: 'Assembly Editor Medium Budget (£5-15m): £42/hr, £2,310/55hr wk.' },
 
-  // VFX Editor — Premium £30M+: £2,610/55hr (£47.45/hr)
+  // ── VFX Editor ─────────────────────────────────────────────────────────
+
   { unionCode: 'BECTU', deptCode: 'POST', desigCode: 'VFX_ED', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2023-01-01', weeklyRate: 2610, dailyRate: 522, hourlyRate: 47.45,
@@ -815,9 +1714,28 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
     sourceDocument: 'Post-Production & Facilities Branch Rate Card 2023-2024',
-    notes: 'VFX Editor. Premium (£30M+): £47.45/hr, £522/11hr day, £2,610/55hr wk.' },
+    notes: 'VFX Editor Premium (£30M+): £47.45/hr, £2,610/55hr wk.' },
+  // VFX_ED — FILM_15_30: £2,230/55hr (£40.55/hr)
+  { unionCode: 'BECTU', deptCode: 'POST', desigCode: 'VFX_ED', tierCode: 'FILM_15_30',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2023-01-01', weeklyRate: 2230, dailyRate: 446, hourlyRate: 40.55,
+    overtimeRate1x5: 60.83, overtimeRate2x: 81.10, sixthDayRate: 446, seventhDayRate: 446,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
+    sourceDocument: 'Post-Production & Facilities Branch Rate Card 2023-2024',
+    notes: 'VFX Editor High Budget (£15-30m): £40.55/hr, £2,230/55hr wk.' },
+  // VFX_ED — FILM_5_15: £1,970/55hr (£35.82/hr)
+  { unionCode: 'BECTU', deptCode: 'POST', desigCode: 'VFX_ED', tierCode: 'FILM_5_15',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2023-01-01', weeklyRate: 1970, dailyRate: 394, hourlyRate: 35.82,
+    overtimeRate1x5: 53.73, overtimeRate2x: 71.64, sixthDayRate: 394, seventhDayRate: 394,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
+    sourceDocument: 'Post-Production & Facilities Branch Rate Card 2023-2024',
+    notes: 'VFX Editor Medium Budget (£5-15m): £35.82/hr, £1,970/55hr wk.' },
 
-  // 1st Assistant Editor — Premium £30M+: £2,460/55hr (£44.73/hr)
+  // ── 1st Assistant Editor ───────────────────────────────────────────────
+
   { unionCode: 'BECTU', deptCode: 'POST', desigCode: 'AST_ED', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2023-01-01', weeklyRate: 2460, dailyRate: 492, hourlyRate: 44.73,
@@ -825,9 +1743,46 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
     sourceDocument: 'Post-Production & Facilities Branch Rate Card 2023-2024',
-    notes: '1st Assistant Editor. Premium (£30M+): £44.73/hr, £492/11hr day, £2,460/55hr wk.' },
+    notes: '1st Assistant Editor Premium (£30M+): £44.73/hr, £2,460/55hr wk.' },
+  // AST_ED — FILM_15_30: £2,225/55hr (£40.45/hr)
+  { unionCode: 'BECTU', deptCode: 'POST', desigCode: 'AST_ED', tierCode: 'FILM_15_30',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2023-01-01', weeklyRate: 2225, dailyRate: 445, hourlyRate: 40.45,
+    overtimeRate1x5: 60.68, overtimeRate2x: 80.90, sixthDayRate: 445, seventhDayRate: 445,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
+    sourceDocument: 'Post-Production & Facilities Branch Rate Card 2023-2024',
+    notes: '1st Asst Editor High Budget (£15-30m): £40.45/hr, £2,225/55hr wk.' },
+  // AST_ED — FILM_5_15: £1,970/55hr (£35.82/hr)
+  { unionCode: 'BECTU', deptCode: 'POST', desigCode: 'AST_ED', tierCode: 'FILM_5_15',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2023-01-01', weeklyRate: 1970, dailyRate: 394, hourlyRate: 35.82,
+    overtimeRate1x5: 53.73, overtimeRate2x: 71.64, sixthDayRate: 394, seventhDayRate: 394,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
+    sourceDocument: 'Post-Production & Facilities Branch Rate Card 2023-2024',
+    notes: '1st Asst Editor Medium Budget (£5-15m): £35.82/hr, £1,970/55hr wk.' },
+  // AST_ED — FILM_1_3: £1,650/55hr (£30/hr)
+  { unionCode: 'BECTU', deptCode: 'POST', desigCode: 'AST_ED', tierCode: 'FILM_1_3',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2023-01-01', weeklyRate: 1650, dailyRate: 330, hourlyRate: 30,
+    overtimeRate1x5: 45, overtimeRate2x: 60, sixthDayRate: 330, seventhDayRate: 330,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
+    sourceDocument: 'Post-Production & Facilities Branch Rate Card 2023-2024',
+    notes: '1st Asst Editor Low Budget (£1-5m): £30/hr, £1,650/55hr wk.' },
+  // AST_ED — FILM_U1: £1,155/55hr (£21/hr)
+  { unionCode: 'BECTU', deptCode: 'POST', desigCode: 'AST_ED', tierCode: 'FILM_U1',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2023-01-01', weeklyRate: 1155, dailyRate: 231, hourlyRate: 21,
+    overtimeRate1x5: 31.50, overtimeRate2x: 42, sixthDayRate: 231, seventhDayRate: 231,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
+    sourceDocument: 'Post-Production & Facilities Branch Rate Card 2023-2024',
+    notes: '1st Asst Editor Micro Budget (<£1m): £21/hr, £1,155/55hr wk.' },
 
-  // Post Production Trainee (Editorial Trainee) — Premium £30M+: £18.91/hr
+  // ── Post Production Trainee (Editorial Trainee) ────────────────────────
+
   { unionCode: 'BECTU', deptCode: 'POST', desigCode: 'POST_TRN', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2023-01-01', weeklyRate: 1040, dailyRate: 208, hourlyRate: 18.91,
@@ -835,17 +1790,43 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
     sourceDocument: 'Post-Production & Facilities Branch Rate Card 2023-2024',
-    notes: 'Editorial Trainee. Premium (£30M+): £18.91/hr. Weekly = £18.91 x 55 = £1,040 (55hr); shown as 50hr equivalent.' },
+    notes: 'Editorial Trainee Premium (£30M+): £18.91/hr.' },
+  // POST_TRN — FILM_15_30: £16.37/hr = £900/55hr
+  { unionCode: 'BECTU', deptCode: 'POST', desigCode: 'POST_TRN', tierCode: 'FILM_15_30',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2023-01-01', weeklyRate: 900, dailyRate: 180, hourlyRate: 16.37,
+    overtimeRate1x5: 24.56, overtimeRate2x: 32.74, sixthDayRate: 180, seventhDayRate: 180,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
+    sourceDocument: 'Post-Production & Facilities Branch Rate Card 2023-2024',
+    notes: 'Editorial Trainee High Budget (£15-30m): £16.37/hr.' },
+  // POST_TRN — FILM_5_15: £14.91/hr = £820/55hr
+  { unionCode: 'BECTU', deptCode: 'POST', desigCode: 'POST_TRN', tierCode: 'FILM_5_15',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2023-01-01', weeklyRate: 820, dailyRate: 164, hourlyRate: 14.91,
+    overtimeRate1x5: 22.37, overtimeRate2x: 29.82, sixthDayRate: 164, seventhDayRate: 164,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
+    sourceDocument: 'Post-Production & Facilities Branch Rate Card 2023-2024',
+    notes: 'Editorial Trainee Medium Budget (£5-15m): £14.91/hr.' },
+  // POST_TRN — FILM_1_3: £14.55/hr = £800/55hr
+  { unionCode: 'BECTU', deptCode: 'POST', desigCode: 'POST_TRN', tierCode: 'FILM_1_3',
+    dealType: '55hr_week', guaranteedHoursPerWeek: 55, guaranteedHoursPerDay: 11,
+    effectiveFrom: '2023-01-01', weeklyRate: 800, dailyRate: 160, hourlyRate: 14.55,
+    overtimeRate1x5: 21.83, overtimeRate2x: 29.10, sixthDayRate: 160, seventhDayRate: 160,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/post-film.html',
+    sourceDocument: 'Post-Production & Facilities Branch Rate Card 2023-2024',
+    notes: 'Editorial Trainee Low Budget (£1-5m): £14.55/hr.' },
 
   // ════════════════════════════════════════════════════════════════════════
-  // BECTU — PRODUCTION OFFICE (MMP / Band 4 £7m+)
+  // BECTU — PRODUCTION OFFICE — ALL TV BANDS
   // Source: LPD Production TV rate card
-  // Band 4 (£7m+) minimum rate, 50hr week (5 x 10hr + 1hr lunch).
-  // TV card used as closest official source for prod office.
-  // Film MMP rates typically negotiated above these minimums.
+  // 50hr week (5 x 10hr + 1hr lunch). Minimum rates.
   // ════════════════════════════════════════════════════════════════════════
 
-  // Production Manager — Band 4 MR: £2,600/50hr
+  // ── Production Manager ─────────────────────────────────────────────────
+
   { unionCode: 'BECTU', deptCode: 'PROD', desigCode: 'PROD_MGR', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2024-01-01', weeklyRate: 2600, dailyRate: 520, hourlyRate: 52,
@@ -853,9 +1834,42 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/production.html',
     sourceDocument: 'LPD Production TV rate card',
-    notes: 'Production Manager Band 4 (£7m+) minimum £2,600/50hr wk. Recommended £2,850. 55hr: £2,860.' },
+    notes: 'Production Manager Band 4 (£7m+) minimum £2,600/50hr wk.' },
+  { unionCode: 'BECTU', deptCode: 'PROD', desigCode: 'PROD_MGR', tierCode: 'TV_BAND4',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2600, dailyRate: 520, hourlyRate: 52,
+    overtimeRate1x5: 78, overtimeRate2x: 104, sixthDayRate: 520, seventhDayRate: 520,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/production.html',
+    sourceDocument: 'LPD Production TV rate card',
+    notes: 'PM TV Band 4 (£7m+) minimum £2,600/50hr wk.' },
+  { unionCode: 'BECTU', deptCode: 'PROD', desigCode: 'PROD_MGR', tierCode: 'TV_BAND3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 2075, dailyRate: 415, hourlyRate: 41.50,
+    overtimeRate1x5: 62.25, overtimeRate2x: 83, sixthDayRate: 415, seventhDayRate: 415,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/production.html',
+    sourceDocument: 'LPD Production TV rate card',
+    notes: 'PM TV Band 3 (£3-7m) minimum £2,075/50hr wk.' },
+  { unionCode: 'BECTU', deptCode: 'PROD', desigCode: 'PROD_MGR', tierCode: 'TV_BAND2',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1875, dailyRate: 375, hourlyRate: 37.50,
+    overtimeRate1x5: 56.25, overtimeRate2x: 75, sixthDayRate: 375, seventhDayRate: 375,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/production.html',
+    sourceDocument: 'LPD Production TV rate card',
+    notes: 'PM TV Band 2 (£850k-£3m) minimum £1,875/50hr wk.' },
+  { unionCode: 'BECTU', deptCode: 'PROD', desigCode: 'PROD_MGR', tierCode: 'TV_BAND1',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1550, dailyRate: 310, hourlyRate: 31,
+    overtimeRate1x5: 46.50, overtimeRate2x: 62, sixthDayRate: 310, seventhDayRate: 310,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/production.html',
+    sourceDocument: 'LPD Production TV rate card',
+    notes: 'PM TV Band 1 (<£850k) minimum £1,550/50hr wk.' },
 
-  // Production Coordinator — Band 4 MR: £1,875/50hr
+  // ── Production Coordinator ─────────────────────────────────────────────
+
   { unionCode: 'BECTU', deptCode: 'PROD', desigCode: 'PROD_COO', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2024-01-01', weeklyRate: 1875, dailyRate: 375, hourlyRate: 37.50,
@@ -863,9 +1877,42 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/production.html',
     sourceDocument: 'LPD Production TV rate card',
-    notes: 'Production Coordinator Band 4 (£7m+) minimum £1,875/50hr wk. Recommended £2,300.' },
+    notes: 'Production Coordinator Band 4 (£7m+) minimum £1,875/50hr wk.' },
+  { unionCode: 'BECTU', deptCode: 'PROD', desigCode: 'PROD_COO', tierCode: 'TV_BAND4',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1875, dailyRate: 375, hourlyRate: 37.50,
+    overtimeRate1x5: 56.25, overtimeRate2x: 75, sixthDayRate: 375, seventhDayRate: 375,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/production.html',
+    sourceDocument: 'LPD Production TV rate card',
+    notes: 'Prod Coordinator TV Band 4 (£7m+) minimum £1,875/50hr wk.' },
+  { unionCode: 'BECTU', deptCode: 'PROD', desigCode: 'PROD_COO', tierCode: 'TV_BAND3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1675, dailyRate: 335, hourlyRate: 33.50,
+    overtimeRate1x5: 50.25, overtimeRate2x: 67, sixthDayRate: 335, seventhDayRate: 335,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/production.html',
+    sourceDocument: 'LPD Production TV rate card',
+    notes: 'Prod Coordinator TV Band 3 (£3-7m) minimum £1,675/50hr wk.' },
+  { unionCode: 'BECTU', deptCode: 'PROD', desigCode: 'PROD_COO', tierCode: 'TV_BAND2',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1450, dailyRate: 290, hourlyRate: 29,
+    overtimeRate1x5: 43.50, overtimeRate2x: 58, sixthDayRate: 290, seventhDayRate: 290,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/production.html',
+    sourceDocument: 'LPD Production TV rate card',
+    notes: 'Prod Coordinator TV Band 2 (£850k-£3m) minimum £1,450/50hr wk.' },
+  { unionCode: 'BECTU', deptCode: 'PROD', desigCode: 'PROD_COO', tierCode: 'TV_BAND1',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1300, dailyRate: 260, hourlyRate: 26,
+    overtimeRate1x5: 39, overtimeRate2x: 52, sixthDayRate: 260, seventhDayRate: 260,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/production.html',
+    sourceDocument: 'LPD Production TV rate card',
+    notes: 'Prod Coordinator TV Band 1 (<£850k) minimum £1,300/50hr wk.' },
 
-  // Assistant Production Coordinator — Band 4 MR: £1,275/50hr
+  // ── Assistant Production Coordinator ────────────────────────────────────
+
   { unionCode: 'BECTU', deptCode: 'PROD', desigCode: 'AST_COO', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2024-01-01', weeklyRate: 1275, dailyRate: 255, hourlyRate: 25.50,
@@ -873,9 +1920,42 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/production.html',
     sourceDocument: 'LPD Production TV rate card',
-    notes: 'Asst Production Coordinator Band 4 (£7m+) minimum £1,275/50hr wk. Recommended £1,425.' },
+    notes: 'Asst Production Coordinator Band 4 (£7m+) minimum £1,275/50hr wk.' },
+  { unionCode: 'BECTU', deptCode: 'PROD', desigCode: 'AST_COO', tierCode: 'TV_BAND4',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1275, dailyRate: 255, hourlyRate: 25.50,
+    overtimeRate1x5: 38.25, overtimeRate2x: 51, sixthDayRate: 255, seventhDayRate: 255,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/production.html',
+    sourceDocument: 'LPD Production TV rate card',
+    notes: 'Asst Prod Coordinator TV Band 4 minimum £1,275/50hr wk.' },
+  { unionCode: 'BECTU', deptCode: 'PROD', desigCode: 'AST_COO', tierCode: 'TV_BAND3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1200, dailyRate: 240, hourlyRate: 24,
+    overtimeRate1x5: 36, overtimeRate2x: 48, sixthDayRate: 240, seventhDayRate: 240,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/production.html',
+    sourceDocument: 'LPD Production TV rate card',
+    notes: 'Asst Prod Coordinator TV Band 3 minimum £1,200/50hr wk.' },
+  { unionCode: 'BECTU', deptCode: 'PROD', desigCode: 'AST_COO', tierCode: 'TV_BAND2',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1125, dailyRate: 225, hourlyRate: 22.50,
+    overtimeRate1x5: 33.75, overtimeRate2x: 45, sixthDayRate: 225, seventhDayRate: 225,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/production.html',
+    sourceDocument: 'LPD Production TV rate card',
+    notes: 'Asst Prod Coordinator TV Band 2 minimum £1,125/50hr wk.' },
+  { unionCode: 'BECTU', deptCode: 'PROD', desigCode: 'AST_COO', tierCode: 'TV_BAND1',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1050, dailyRate: 210, hourlyRate: 21,
+    overtimeRate1x5: 31.50, overtimeRate2x: 42, sixthDayRate: 210, seventhDayRate: 210,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/production.html',
+    sourceDocument: 'LPD Production TV rate card',
+    notes: 'Asst Prod Coordinator TV Band 1 minimum £1,050/50hr wk.' },
 
-  // Production Secretary — Band 4 MR: £1,000/50hr
+  // ── Production Secretary ───────────────────────────────────────────────
+
   { unionCode: 'BECTU', deptCode: 'PROD', desigCode: 'PROD_SEC', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2024-01-01', weeklyRate: 1000, dailyRate: 200, hourlyRate: 20,
@@ -883,7 +1963,39 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/production.html',
     sourceDocument: 'LPD Production TV rate card',
-    notes: 'Production Secretary Band 4 (£7m+) minimum £1,000/50hr wk. Recommended £1,100.' },
+    notes: 'Production Secretary Band 4 (£7m+) minimum £1,000/50hr wk.' },
+  { unionCode: 'BECTU', deptCode: 'PROD', desigCode: 'PROD_SEC', tierCode: 'TV_BAND4',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 1000, dailyRate: 200, hourlyRate: 20,
+    overtimeRate1x5: 30, overtimeRate2x: 40, sixthDayRate: 200, seventhDayRate: 200,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/production.html',
+    sourceDocument: 'LPD Production TV rate card',
+    notes: 'Prod Secretary TV Band 4 minimum £1,000/50hr wk.' },
+  { unionCode: 'BECTU', deptCode: 'PROD', desigCode: 'PROD_SEC', tierCode: 'TV_BAND3',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 925, dailyRate: 185, hourlyRate: 18.50,
+    overtimeRate1x5: 27.75, overtimeRate2x: 37, sixthDayRate: 185, seventhDayRate: 185,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/production.html',
+    sourceDocument: 'LPD Production TV rate card',
+    notes: 'Prod Secretary TV Band 3 minimum £925/50hr wk.' },
+  { unionCode: 'BECTU', deptCode: 'PROD', desigCode: 'PROD_SEC', tierCode: 'TV_BAND2',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 875, dailyRate: 175, hourlyRate: 17.50,
+    overtimeRate1x5: 26.25, overtimeRate2x: 35, sixthDayRate: 175, seventhDayRate: 175,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/production.html',
+    sourceDocument: 'LPD Production TV rate card',
+    notes: 'Prod Secretary TV Band 2 minimum £875/50hr wk.' },
+  { unionCode: 'BECTU', deptCode: 'PROD', desigCode: 'PROD_SEC', tierCode: 'TV_BAND1',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2024-01-01', weeklyRate: 825, dailyRate: 165, hourlyRate: 16.50,
+    overtimeRate1x5: 24.75, overtimeRate2x: 33, sixthDayRate: 165, seventhDayRate: 165,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/production.html',
+    sourceDocument: 'LPD Production TV rate card',
+    notes: 'Prod Secretary TV Band 1 minimum £825/50hr wk.' },
 
   // Production Accountant — not on Production TV card; keeping as approximate
   { unionCode: 'BECTU', deptCode: 'PROD', desigCode: 'PROD_ACC', tierCode: 'FILM_MMP',
@@ -895,14 +2007,17 @@ export const rateCards = [
     sourceDocument: 'BECTU Production (approximate)',
     notes: 'Production Accountant not on the LPD Production TV card. Approximate rate retained.' },
 
+  // Script Supervisor (on Camera Branch card) — Major Feature
+  // Script Supervisor MMP already defined in Camera Branch section above
+
   // ════════════════════════════════════════════════════════════════════════
-  // BECTU — PROPS (MMP £30m+)
+  // BECTU — PROPS — ALL FILM TIERS
   // Source: Film & TV Props Department 2025/26 Rates
-  // Film Rates, £30 million+ column. 5-day week recommended rates.
+  // Film Rates: £30m+ and <£30m columns. 5-day week recommended rates.
   // Rates INCLUDE holiday pay at 12.07%.
   // ════════════════════════════════════════════════════════════════════════
 
-  // Property Master — Negotiable at MMP
+  // Property Master — Negotiable at all tiers
   { unionCode: 'BECTU', deptCode: 'PRP', desigCode: 'PROP_MST', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2025-01-01', weeklyRate: 0, dailyRate: 0, hourlyRate: 0,
@@ -911,8 +2026,17 @@ export const rateCards = [
     sourceUrl: 'https://union.bectu.org.uk/resource/props.html',
     sourceDocument: 'Film & TV Props Department 2025/26 Rates',
     notes: 'Property Master is Negotiable at MMP tier (£30m+). Rate set to 0.' },
+  { unionCode: 'BECTU', deptCode: 'PRP', desigCode: 'PROP_MST', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2025-01-01', weeklyRate: 0, dailyRate: 0, hourlyRate: 0,
+    overtimeRate1x5: 0, overtimeRate2x: 0, sixthDayRate: 0, seventhDayRate: 0,
+    nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/props.html',
+    sourceDocument: 'Film & TV Props Department 2025/26 Rates',
+    notes: 'Property Master Negotiable at <£30m tier.' },
 
-  // Standby Props — MMP: £1,850/wk, £370/day (inc holiday pay)
+  // ── Standby Props ──────────────────────────────────────────────────────
+
   { unionCode: 'BECTU', deptCode: 'PRP', desigCode: 'STBY_PRP', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2025-01-01', weeklyRate: 1850, dailyRate: 370, hourlyRate: 37,
@@ -921,8 +2045,17 @@ export const rateCards = [
     sourceUrl: 'https://union.bectu.org.uk/resource/props.html',
     sourceDocument: 'Film & TV Props Department 2025/26 Rates',
     notes: 'Standby Props MMP: £370/day, £1,850/wk. Inc holiday pay 12.07%.' },
+  { unionCode: 'BECTU', deptCode: 'PRP', desigCode: 'STBY_PRP', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2025-01-01', weeklyRate: 1600, dailyRate: 320, hourlyRate: 32,
+    overtimeRate1x5: 48, overtimeRate2x: 64, sixthDayRate: 320, seventhDayRate: 320,
+    nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/props.html',
+    sourceDocument: 'Film & TV Props Department 2025/26 Rates',
+    notes: 'Standby Props <£30m: £320/day, £1,600/wk. Inc holiday pay.' },
 
-  // Props Buyer (Supervising Chargehand Props) — MMP: £2,000/wk, £400/day (inc holiday pay)
+  // ── Props Buyer (Supervising Chargehand Props) ─────────────────────────
+
   { unionCode: 'BECTU', deptCode: 'PRP', desigCode: 'PRP_BUY', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2025-01-01', weeklyRate: 2000, dailyRate: 400, hourlyRate: 40,
@@ -930,9 +2063,18 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/props.html',
     sourceDocument: 'Film & TV Props Department 2025/26 Rates',
-    notes: 'Supervising Chargehand Props / Storeperson. MMP: £400/day, £2,000/wk. Inc holiday pay.' },
+    notes: 'Supervising Chargehand Props / Storeperson. MMP: £400/day, £2,000/wk.' },
+  { unionCode: 'BECTU', deptCode: 'PRP', desigCode: 'PRP_BUY', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2025-01-01', weeklyRate: 1800, dailyRate: 360, hourlyRate: 36,
+    overtimeRate1x5: 54, overtimeRate2x: 72, sixthDayRate: 360, seventhDayRate: 360,
+    nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/props.html',
+    sourceDocument: 'Film & TV Props Department 2025/26 Rates',
+    notes: 'Supervising Chargehand Props <£30m: £360/day, £1,800/wk.' },
 
-  // Chargehand Props — MMP: £1,850/wk, £370/day (inc holiday pay)
+  // ── Chargehand Props ───────────────────────────────────────────────────
+
   { unionCode: 'BECTU', deptCode: 'PRP', desigCode: 'CHG_PRP', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2025-01-01', weeklyRate: 1850, dailyRate: 370, hourlyRate: 37,
@@ -940,9 +2082,18 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/props.html',
     sourceDocument: 'Film & TV Props Department 2025/26 Rates',
-    notes: 'Chargehand Props MMP: £370/day, £1,850/wk. Inc holiday pay 12.07%.' },
+    notes: 'Chargehand Props MMP: £370/day, £1,850/wk.' },
+  { unionCode: 'BECTU', deptCode: 'PRP', desigCode: 'CHG_PRP', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2025-01-01', weeklyRate: 1650, dailyRate: 330, hourlyRate: 33,
+    overtimeRate1x5: 49.50, overtimeRate2x: 66, sixthDayRate: 330, seventhDayRate: 330,
+    nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/props.html',
+    sourceDocument: 'Film & TV Props Department 2025/26 Rates',
+    notes: 'Chargehand Props <£30m: £330/day, £1,650/wk.' },
 
-  // Props Hand / Dressing Props — MMP: £1,650/wk, £330/day (inc holiday pay)
+  // ── Props Hand / Dressing Props ────────────────────────────────────────
+
   { unionCode: 'BECTU', deptCode: 'PRP', desigCode: 'PRP_HND', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2025-01-01', weeklyRate: 1650, dailyRate: 330, hourlyRate: 33,
@@ -950,9 +2101,18 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/props.html',
     sourceDocument: 'Film & TV Props Department 2025/26 Rates',
-    notes: 'Prop Hand MMP: £330/day, £1,650/wk. Inc holiday pay 12.07%.' },
+    notes: 'Prop Hand MMP: £330/day, £1,650/wk.' },
+  { unionCode: 'BECTU', deptCode: 'PRP', desigCode: 'PRP_HND', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2025-01-01', weeklyRate: 1550, dailyRate: 310, hourlyRate: 31,
+    overtimeRate1x5: 46.50, overtimeRate2x: 62, sixthDayRate: 310, seventhDayRate: 310,
+    nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/props.html',
+    sourceDocument: 'Film & TV Props Department 2025/26 Rates',
+    notes: 'Prop Hand <£30m: £310/day, £1,550/wk.' },
 
-  // Props Maker — MMP: same as Prop Hand £1,650/wk (Prop Coordinator same rate)
+  // ── Props Maker / Prop Coordinator ─────────────────────────────────────
+
   { unionCode: 'BECTU', deptCode: 'PRP', desigCode: 'PRP_MKR', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2025-01-01', weeklyRate: 1650, dailyRate: 330, hourlyRate: 33,
@@ -960,9 +2120,18 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/props.html',
     sourceDocument: 'Film & TV Props Department 2025/26 Rates',
-    notes: 'Props Maker / Prop Coordinator. MMP: £330/day, £1,650/wk. Inc holiday pay.' },
+    notes: 'Props Maker / Prop Coordinator. MMP: £330/day, £1,650/wk.' },
+  { unionCode: 'BECTU', deptCode: 'PRP', desigCode: 'PRP_MKR', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2025-01-01', weeklyRate: 1550, dailyRate: 310, hourlyRate: 31,
+    overtimeRate1x5: 46.50, overtimeRate2x: 62, sixthDayRate: 310, seventhDayRate: 310,
+    nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/props.html',
+    sourceDocument: 'Film & TV Props Department 2025/26 Rates',
+    notes: 'Props Maker / Prop Coordinator <£30m: £310/day, £1,550/wk.' },
 
-  // Props Trainee — MMP: £750/wk, £150/day (inc holiday pay)
+  // ── Props Trainee ──────────────────────────────────────────────────────
+
   { unionCode: 'BECTU', deptCode: 'PRP', desigCode: 'PRP_TRN', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2025-01-01', weeklyRate: 750, dailyRate: 150, hourlyRate: 15,
@@ -970,8 +2139,15 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/props.html',
     sourceDocument: 'Film & TV Props Department 2025/26 Rates',
-    notes: 'Props Trainee MMP: £150/day, £750/wk. Inc holiday pay 12.07%.' },
-
+    notes: 'Props Trainee MMP: £150/day, £750/wk.' },
+  { unionCode: 'BECTU', deptCode: 'PRP', desigCode: 'PRP_TRN', tierCode: 'FILM_15_30',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2025-01-01', weeklyRate: 750, dailyRate: 150, hourlyRate: 15,
+    overtimeRate1x5: 22.50, overtimeRate2x: 30, sixthDayRate: 150, seventhDayRate: 150,
+    nightPremiumPct: 0.5, holidayPayInclusive: true, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/props.html',
+    sourceDocument: 'Film & TV Props Department 2025/26 Rates',
+    notes: 'Props Trainee <£30m: same rate £150/day, £750/wk.' },
   // ════════════════════════════════════════════════════════════════════════
   // BECTU — SPECIAL EFFECTS (MMP)
   // Source: Special Effects Rate Card 2025
@@ -1020,13 +2196,13 @@ export const rateCards = [
     notes: 'SFX Assistant Technician. £29.78/hr, £327.59/11hr SWD. OT 1.5T=£44.68, 2T=£59.56. Weekly = daily x 5.' },
 
   // ════════════════════════════════════════════════════════════════════════
-  // BECTU — UNIT DRIVERS (High Budget £3m+)
-  // Source: BECTU Production Transport rate card — High Budget TV Drama
+  // BECTU — UNIT DRIVERS — ALL TIERS
+  // Source: BECTU Production Transport rate card
+  // High Budget (£3m+) and Mid-Budget (£850k-3m) TV Drama rates.
   // Valid from 1 January 2021. 60hr week (12hr day x 5).
-  // Base rates shown; holiday-inclusive rates in parentheses.
   // ════════════════════════════════════════════════════════════════════════
 
-  // Transport Captain — not on rate card; individually negotiated
+  // Transport Captain — individually negotiated
   { unionCode: 'BECTU', deptCode: 'DRV', desigCode: 'TRANS_CPT', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2021-01-01', weeklyRate: 0, dailyRate: 0, hourlyRate: 0,
@@ -1036,7 +2212,9 @@ export const rateCards = [
     sourceDocument: 'BECTU Production Transport rate card',
     notes: 'Transport Captain not on official rate card. Individually negotiated.' },
 
-  // Unit Driver — High Budget base: £18.06/hr, £216.66/12hr day, £1,083.33/60hr wk
+  // ── Unit Driver ────────────────────────────────────────────────────────
+
+  // High Budget (£3m+) base: £18.06/hr
   { unionCode: 'BECTU', deptCode: 'DRV', desigCode: 'UNIT_DRV', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2021-01-01', weeklyRate: 1083.33, dailyRate: 216.66, hourlyRate: 18.06,
@@ -1044,9 +2222,19 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/unit-drivers.html',
     sourceDocument: 'BECTU Production Transport rate card',
-    notes: 'Unit Driver High Budget (£3m+) base: £18.06/hr, £216.66/12hr day, £1,083.33/60hr wk. Inc hols: £1,200/wk.' },
+    notes: 'Unit Driver High Budget (£3m+) base: £18.06/hr, £1,083.33/60hr wk.' },
+  // Mid-Budget (£850k-3m) base: £16.55/hr
+  { unionCode: 'BECTU', deptCode: 'DRV', desigCode: 'UNIT_DRV', tierCode: 'TV_BAND2',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2021-01-01', weeklyRate: 993.05, dailyRate: 198.60, hourlyRate: 16.55,
+    overtimeRate1x5: 24.84, overtimeRate2x: 33.11, sixthDayRate: 198.60, seventhDayRate: 198.60,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/unit-drivers.html',
+    sourceDocument: 'BECTU Production Transport rate card',
+    notes: 'Unit Driver Mid-Budget (£850k-3m) base: £16.55/hr, £993.05/60hr wk.' },
 
-  // Minibus Driver — same rate as Unit Driver
+  // ── Minibus Driver ─────────────────────────────────────────────────────
+
   { unionCode: 'BECTU', deptCode: 'DRV', desigCode: 'MINI_DRV', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2021-01-01', weeklyRate: 1083.33, dailyRate: 216.66, hourlyRate: 18.06,
@@ -1055,8 +2243,17 @@ export const rateCards = [
     sourceUrl: 'https://union.bectu.org.uk/resource/unit-drivers.html',
     sourceDocument: 'BECTU Production Transport rate card',
     notes: 'Minibus Driver. Same rate as Unit Driver. High Budget base £1,083.33/60hr wk.' },
+  { unionCode: 'BECTU', deptCode: 'DRV', desigCode: 'MINI_DRV', tierCode: 'TV_BAND2',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2021-01-01', weeklyRate: 993.05, dailyRate: 198.60, hourlyRate: 16.55,
+    overtimeRate1x5: 24.84, overtimeRate2x: 33.11, sixthDayRate: 198.60, seventhDayRate: 198.60,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/unit-drivers.html',
+    sourceDocument: 'BECTU Production Transport rate card',
+    notes: 'Minibus Driver Mid-Budget (£850k-3m) base £993.05/60hr wk.' },
 
-  // HGV Driver — same rate as Unit Driver (rate card does not differentiate)
+  // ── HGV Driver ─────────────────────────────────────────────────────────
+
   { unionCode: 'BECTU', deptCode: 'DRV', desigCode: 'HGV_DRV', tierCode: 'FILM_MMP',
     dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
     effectiveFrom: '2021-01-01', weeklyRate: 1083.33, dailyRate: 216.66, hourlyRate: 18.06,
@@ -1064,9 +2261,15 @@ export const rateCards = [
     nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
     sourceUrl: 'https://union.bectu.org.uk/resource/unit-drivers.html',
     sourceDocument: 'BECTU Production Transport rate card',
-    notes: 'HGV Driver. Same rate as Unit Driver on rate card. High Budget base £1,083.33/60hr wk.' },
-
-  // ════════════════════════════════════════════════════════════════════════
+    notes: 'HGV Driver. Same rate as Unit Driver. High Budget base £1,083.33/60hr wk.' },
+  { unionCode: 'BECTU', deptCode: 'DRV', desigCode: 'HGV_DRV', tierCode: 'TV_BAND2',
+    dealType: '50hr_week', guaranteedHoursPerWeek: 50, guaranteedHoursPerDay: 10,
+    effectiveFrom: '2021-01-01', weeklyRate: 993.05, dailyRate: 198.60, hourlyRate: 16.55,
+    overtimeRate1x5: 24.84, overtimeRate2x: 33.11, sixthDayRate: 198.60, seventhDayRate: 198.60,
+    nightPremiumPct: 0.5, holidayPayInclusive: false, isVerified: true,
+    sourceUrl: 'https://union.bectu.org.uk/resource/unit-drivers.html',
+    sourceDocument: 'BECTU Production Transport rate card',
+    notes: 'HGV Driver Mid-Budget (£850k-3m) base £993.05/60hr wk.' },
   // BECTU — SOUND DEPARTMENT — VERIFIED from official PDF
   // Source: bectu-production-sound-rates-jan-2024.pdf
   // Feature Film £30m+ column. All rates INCLUDE holiday pay.
