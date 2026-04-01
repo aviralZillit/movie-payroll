@@ -27,6 +27,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import DealMemoWizard from "@/components/deal-memo/DealMemoWizard";
 import RateFieldWithInfo from "@/components/deal-memo/RateFieldWithInfo";
+import AIDealMemoChat from "@/components/deal-memo/AIDealMemoChat";
 
 import {
   useProductions,
@@ -53,6 +54,7 @@ import {
   Info,
   ChevronLeft,
   CalendarDays,
+  Sparkles,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -204,6 +206,7 @@ export default function DealMemoNew() {
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [rateSource, setRateSource] = useState(null);
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
 
   // Store display labels for the review step
   const [classificationLabels, setClassificationLabels] = useState({
@@ -377,6 +380,71 @@ export default function DealMemoNew() {
     });
   });
 
+  // ---- AI Auto-Fill ----
+  const handleAIApply = useCallback(
+    (formData) => {
+      if (!formData) return;
+
+      // Map each AI-returned field onto the react-hook-form
+      const fieldMap = {
+        productionId: formData.productionId,
+        personId: formData.personId,
+        unionId: formData.unionId,
+        departmentId: formData.departmentId,
+        designationId: formData.designationId,
+        budgetTierId: formData.budgetTierId,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        weeklyRate: formData.weeklyRate,
+        dailyRate: formData.dailyRate,
+        hourlyRate: formData.hourlyRate,
+        guaranteedHours: formData.guaranteedHours,
+        holidayPayPct: formData.holidayPayPct,
+        employerNiPct: formData.employerNiPct,
+        pensionPct: formData.pensionPct,
+        apprenticeLevyPct: formData.apprenticeLevyPct,
+        standardWorkDayHrs: formData.standardWorkDayHrs,
+        lunchBreakHrs: formData.lunchBreakHrs,
+        sixthDayMultiplier: formData.sixthDayMultiplier,
+        seventhDayMultiplier: formData.seventhDayMultiplier,
+        nightPremiumPct: formData.nightPremiumPct,
+        mealPenaltyEnabled: formData.mealPenaltyEnabled,
+        mealPenaltyAmount: formData.mealPenaltyAmount,
+        mealPenaltyAfterHrs: formData.mealPenaltyAfterHrs,
+        turnaroundMinHrs: formData.turnaroundMinHrs,
+        kitAllowance: formData.kitAllowance,
+        travelAllowance: formData.travelAllowance,
+        perDiem: formData.perDiem,
+        phoneAllowance: formData.phoneAllowance,
+        computerAllowance: formData.computerAllowance,
+        carAllowance: formData.carAllowance,
+      };
+
+      for (const [key, value] of Object.entries(fieldMap)) {
+        if (value !== undefined && value !== null) {
+          setValue(key, value, { shouldValidate: false });
+        }
+      }
+
+      // Store classification labels for the review step
+      if (formData.labels) {
+        setClassificationLabels({
+          union: formData.labels.union || "",
+          department: formData.labels.department || "",
+          designation: formData.labels.designation || "",
+          budgetTier: formData.labels.budgetTier || "",
+        });
+      }
+
+      // Jump to review step
+      setDirection(1);
+      setCurrentStep(6);
+      setAiPanelOpen(false);
+      toast.success("AI auto-fill applied! Review the deal memo below.");
+    },
+    [setValue, setClassificationLabels, setDirection, setCurrentStep]
+  );
+
   // ---- Render steps ----
   const renderStep = () => {
     switch (currentStep) {
@@ -453,13 +521,29 @@ export default function DealMemoNew() {
         <Button variant="ghost" size="icon" onClick={() => navigate("/deal-memos")}>
           <ChevronLeft className="size-5" />
         </Button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-bold tracking-tight">New Deal Memo</h1>
           <p className="text-sm text-muted-foreground">
             Set up compensation terms for a crew member
           </p>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          onClick={() => setAiPanelOpen(true)}
+        >
+          <Sparkles className="size-4" />
+          AI Auto-Fill
+        </Button>
       </div>
+
+      {/* AI Chat Panel */}
+      <AIDealMemoChat
+        open={aiPanelOpen}
+        onClose={() => setAiPanelOpen(false)}
+        onApplyFormData={handleAIApply}
+      />
 
       {/* Wizard */}
       <Card>
