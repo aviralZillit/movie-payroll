@@ -56,6 +56,7 @@ import {
   ChevronLeft,
   CalendarDays,
   Sparkles,
+  AlertCircle,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -850,6 +851,14 @@ function StepRates({ control, errors, watch, setValue, rateSource }) {
   const designationId = watch("designationId");
   const budgetTierId = watch("budgetTierId");
 
+  const weeklyRate = watch("weeklyRate") || 0;
+  const hourlyRate = watch("hourlyRate") || 0;
+  const guaranteedHours = watch("guaranteedHours") || 0;
+
+  // Mismatch detection
+  const expectedWeekly = hourlyRate > 0 && guaranteedHours > 0 ? Math.round(hourlyRate * guaranteedHours * 100) / 100 : 0;
+  const hasMismatch = weeklyRate > 0 && expectedWeekly > 0 && Math.abs(weeklyRate - expectedWeekly) > 1;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 text-primary">
@@ -860,6 +869,16 @@ function StepRates({ control, errors, watch, setValue, rateSource }) {
         Rates have been auto-populated from the rate engine. Adjust as needed. Green indicates the
         rate meets or exceeds the union minimum; yellow means it falls below.
       </p>
+
+      {hasMismatch && (
+        <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+          <AlertCircle className="size-4 text-amber-500 mt-0.5 shrink-0" />
+          <div className="text-xs text-amber-600 dark:text-amber-400">
+            <span className="font-medium">Rate mismatch:</span> Weekly rate (£{weeklyRate.toLocaleString()}) doesn't match hourly (£{hourlyRate}) × guaranteed hours ({guaranteedHours}) = £{expectedWeekly.toLocaleString()}.
+            This is normal for packaged weekly deals where the weekly rate is negotiated independently.
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <Controller
