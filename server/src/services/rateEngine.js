@@ -66,23 +66,34 @@ export const lookupRate = async ({ unionId, departmentId, designationId, budgetT
 export const lookupAllDealTypes = async ({ unionId, departmentId, designationId, budgetTierId, date }) => {
   const queryDate = date ? new Date(date) : new Date();
 
-  const rateCards = await RateCard.find({
+  const baseQuery = {
     unionId,
     departmentId,
     designationId,
-    budgetTierId,
     isActive: true,
     effectiveFrom: { $lte: queryDate },
     $or: [
       { effectiveTo: null },
       { effectiveTo: { $gte: queryDate } },
     ],
-  })
+  };
+
+  let rateCards = await RateCard.find({ ...baseQuery, budgetTierId })
     .sort({ dealType: 1, effectiveFrom: -1 })
     .populate('unionId', 'code name')
     .populate('departmentId', 'code name')
     .populate('designationId', 'code name')
     .populate('budgetTierId', 'code name');
+
+  // Fallback: if no exact tier match, try any tier for this role
+  if (rateCards.length === 0) {
+    rateCards = await RateCard.find(baseQuery)
+      .sort({ dealType: 1, effectiveFrom: -1 })
+      .populate('unionId', 'code name')
+      .populate('departmentId', 'code name')
+      .populate('designationId', 'code name')
+      .populate('budgetTierId', 'code name');
+  }
 
   // Deduplicate — keep only the most recent per dealType
   const seen = new Map();

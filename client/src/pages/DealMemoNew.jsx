@@ -323,9 +323,11 @@ export default function DealMemoNew() {
             // Auto-populate from deal type
             if (data?.guaranteedHoursPerDay > 0) setValue("standardWorkDayHrs", data.guaranteedHoursPerDay, { shouldDirty: true });
           },
-          onError: () => {
-            // No rate card found — leave fields at defaults, user fills manually
-            toast.info("No rate card found for this combination. Please enter rates manually.");
+          onError: (err) => {
+            // Only show toast if it's a real 404, not a network error
+            if (err?.response?.status === 404) {
+              toast.info("No exact rate card found. Using closest available rate as starting point.");
+            }
           },
         }
       );
