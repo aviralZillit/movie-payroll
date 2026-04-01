@@ -11,6 +11,13 @@ import { rateCards } from './rateCards.js';
 import { overtimeRules } from './overtimeRules.js';
 import { seedDummyData } from './dummyData.js';
 
+// US seed data
+import { usUnions } from './usUnions.js';
+import { usDepartmentsByUnion } from './usDepartments.js';
+import { usDesignationsByDept } from './usDesignations.js';
+import { usBudgetTiers } from './usBudgetTiers.js';
+import { usRateCards } from './usRateCards.js';
+
 async function seed() {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
@@ -27,15 +34,22 @@ async function seed() {
     ]);
     console.log('Cleared existing data');
 
-    // 1. Seed unions
-    const createdUnions = await Union.insertMany(unions);
+    // 1. Seed unions (UK + US)
+    const createdUkUnions = await Union.insertMany(unions);
+    const createdUsUnions = await Union.insertMany(usUnions);
     const unionMap = {};
-    createdUnions.forEach((u) => { unionMap[u.code] = u._id; });
-    console.log(`Seeded ${createdUnions.length} unions`);
+    createdUkUnions.forEach((u) => { unionMap[u.code] = u._id; });
+    createdUsUnions.forEach((u) => { unionMap[u.code] = u._id; });
+    console.log(`Seeded ${createdUkUnions.length} UK unions + ${createdUsUnions.length} US unions`);
 
-    // 2. Seed departments
+    // 2. Seed departments (UK + US)
     const deptDocs = [];
     for (const [unionCode, depts] of Object.entries(departmentsByUnion)) {
+      for (const dept of depts) {
+        deptDocs.push({ ...dept, unionId: unionMap[unionCode] });
+      }
+    }
+    for (const [unionCode, depts] of Object.entries(usDepartmentsByUnion)) {
       for (const dept of depts) {
         deptDocs.push({ ...dept, unionId: unionMap[unionCode] });
       }
@@ -43,11 +57,12 @@ async function seed() {
     const createdDepts = await Department.insertMany(deptDocs);
     const deptMap = {};
     createdDepts.forEach((d) => { deptMap[`${d.unionId}_${d.code}`] = d._id; });
-    console.log(`Seeded ${createdDepts.length} departments`);
+    console.log(`Seeded ${createdDepts.length} departments (UK + US)`);
 
-    // 3. Seed designations
+    // 3. Seed designations (UK + US)
     const desigDocs = [];
-    for (const [key, desigs] of Object.entries(designationsByDept)) {
+    const allDesigSets = { ...designationsByDept, ...usDesignationsByDept };
+    for (const [key, desigs] of Object.entries(allDesigSets)) {
       const lastUnderscore = key.lastIndexOf('_');
       const unionCode = key.slice(0, lastUnderscore);
       const deptCode = key.slice(lastUnderscore + 1);
@@ -62,22 +77,25 @@ async function seed() {
     createdDesigs.forEach((d) => {
       desigMap[`${d.departmentId}_${d.code}`] = d._id;
     });
-    console.log(`Seeded ${createdDesigs.length} designations`);
+    console.log(`Seeded ${createdDesigs.length} designations (UK + US)`);
 
-    // 4. Seed budget tiers
-    const tierDocs = budgetTiers.map((t) => ({
+    // 4. Seed budget tiers (UK + US)
+    const allTiers = [...budgetTiers, ...usBudgetTiers];
+    const tierDocs = allTiers.map((t) => ({
       ...t,
+      country: t.country || 'UK',
       unionId: t.unionCode ? unionMap[t.unionCode] : null,
     }));
     tierDocs.forEach((t) => delete t.unionCode);
     const createdTiers = await BudgetTier.insertMany(tierDocs);
     const tierMap = {};
     createdTiers.forEach((t) => { tierMap[t.code] = t._id; });
-    console.log(`Seeded ${createdTiers.length} budget tiers`);
+    console.log(`Seeded ${createdTiers.length} budget tiers (UK + US)`);
 
-    // 5. Seed rate cards
+    // 5. Seed rate cards (UK + US)
+    const allRateCards = [...rateCards, ...usRateCards];
     const rcDocs = [];
-    for (const rc of rateCards) {
+    for (const rc of allRateCards) {
       const unionId = unionMap[rc.unionCode];
       const deptId = deptMap[`${unionId}_${rc.deptCode}`];
       const desigId = deptId ? desigMap[`${deptId}_${rc.desigCode}`] : null;
@@ -107,10 +125,17 @@ async function seed() {
         notes: rc.notes || null,
         isActive: true,
         isVerified: rc.isVerified || false,
+        // US per-episode / studio-location fields
+        episodeLength: rc.episodeLength || null,
+        prepDays: rc.prepDays,
+        shootDays: rc.shootDays,
+        overageRate: rc.overageRate,
+        studioRate: rc.studioRate,
+        locationRate: rc.locationRate,
       });
     }
     const createdRcs = await RateCard.insertMany(rcDocs);
-    console.log(`Seeded ${createdRcs.length} rate cards`);
+    console.log(`Seeded ${createdRcs.length} rate cards (UK + US)`);
 
     // 6. Seed overtime rules
     const otDocs = [];

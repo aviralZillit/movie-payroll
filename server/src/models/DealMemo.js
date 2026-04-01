@@ -21,6 +21,21 @@ const dealMemoSchema = new mongoose.Schema(
     designationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Designation', required: true },
     budgetTierId: { type: mongoose.Schema.Types.ObjectId, ref: 'BudgetTier', required: true },
 
+    // Country (derived from production)
+    country: { type: String, default: 'UK' },
+    state: String,  // US state for tax purposes (CA, NY, etc.)
+    currency: { type: String, default: 'GBP' },
+
+    // US-specific fields (TV per-episode deals)
+    episodeLength: { type: String, enum: ['30min', '60min', '90min', '120min', 'pilot', null], default: null },
+    episodeCount: Number,
+    prepDays: Number,
+    shootDays: Number,
+    postDays: Number,
+    programFee: Number,  // per-episode fee (TV directors)
+    overageRate: Number,  // daily rate beyond guaranteed days
+    studioOrLocation: { type: String, enum: ['studio', 'location', null], default: null },
+
     // Status
     status: {
       type: String,
@@ -37,7 +52,7 @@ const dealMemoSchema = new mongoose.Schema(
     // Rates
     dealType: {
       type: String,
-      enum: ['50hr_week', '55hr_week', '60hr_week', 'daily', 'flat_fee', 'session'],
+      enum: ['50hr_week', '55hr_week', '60hr_week', 'daily', 'flat_fee', 'session', 'per_episode', 'per_film'],
       default: '55hr_week',
     },
     guaranteedHoursPerWeek: { type: Number, default: 55 },

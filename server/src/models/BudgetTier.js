@@ -13,6 +13,7 @@ const budgetTierSchema = new mongoose.Schema(
     minBudget: Number,
     maxBudget: Number,
     description: String,
+    country: { type: String, default: 'UK' },
     sortOrder: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
   },

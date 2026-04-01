@@ -10,7 +10,7 @@ const rateCardSchema = new mongoose.Schema(
     // Deal type — how the weekly rate is structured
     dealType: {
       type: String,
-      enum: ['50hr_week', '55hr_week', '60hr_week', 'daily', 'flat_fee', 'session'],
+      enum: ['50hr_week', '55hr_week', '60hr_week', 'daily', 'flat_fee', 'session', 'per_episode', 'per_film'],
       default: '55hr_week',
     },
     guaranteedHoursPerWeek: { type: Number }, // 50, 55, 60
@@ -28,6 +28,14 @@ const rateCardSchema = new mongoose.Schema(
     sixthDayRate: Number,
     seventhDayRate: Number,
     nightPremiumPct: Number,
+
+    // US TV per-episode fields
+    episodeLength: { type: String, enum: ['30min', '60min', '90min', '120min', 'pilot', null], default: null },
+    prepDays: Number,
+    shootDays: Number,
+    overageRate: Number,
+    studioRate: Number,   // studio weekly rate (UPM/AD)
+    locationRate: Number,  // location weekly rate (UPM/AD)
 
     // Metadata
     holidayPayInclusive: { type: Boolean, default: false },
