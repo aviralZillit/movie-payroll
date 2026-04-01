@@ -183,6 +183,13 @@ export const getAll = asyncHandler(async (req, res) => {
   if (req.query.status) filter.status = req.query.status;
   if (req.query.productionId) filter.productionId = req.query.productionId;
 
+  // Crew members only see their own deal memos
+  if (req.user.role === 'crew_member') {
+    filter.personId = req.user._id;
+  }
+  // Dept heads see deals for their department's productions
+  // (for now, they see all — can be scoped later)
+
   const page = parseInt(req.query.page, 10) || 1;
   const limit = parseInt(req.query.limit, 10) || 20;
   const skip = (page - 1) * limit;

@@ -266,6 +266,11 @@ export const getAll = asyncHandler(async (req, res) => {
   if (req.query.productionId) filter.productionId = req.query.productionId;
   if (req.query.weekStarting) filter.weekStarting = new Date(req.query.weekStarting);
 
+  // Crew members only see their own timecards
+  if (req.user.role === 'crew_member') {
+    filter.ownerId = req.user._id;
+  }
+
   const page = parseInt(req.query.page, 10) || 1;
   const limit = parseInt(req.query.limit, 10) || 20;
   const skip = (page - 1) * limit;

@@ -7,6 +7,13 @@ import AppError from '../utils/AppError.js';
  * Returns aggregate stats: total productions, active deals, pending timecards, payroll stats
  */
 export const getOverview = asyncHandler(async (req, res) => {
+  const isCrew = req.user.role === 'crew_member';
+  const userId = req.user._id;
+
+  // Crew members see only their own data
+  const dealFilter = isCrew ? { personId: userId } : {};
+  const tcFilter = isCrew ? { ownerId: userId } : {};
+
   const [
     totalProductions,
     activeProductions,
@@ -20,17 +27,17 @@ export const getOverview = asyncHandler(async (req, res) => {
     paidPayrollRuns,
     payrollAggregates,
   ] = await Promise.all([
-    Production.countDocuments(),
-    Production.countDocuments({ status: { $in: ['pre_production', 'production', 'post_production'] } }),
-    DealMemo.countDocuments(),
-    DealMemo.countDocuments({ status: { $in: ['signed', 'active'] } }),
-    Timecard.countDocuments({ status: 'draft' }),
-    Timecard.countDocuments({ status: 'submitted' }),
-    Timecard.countDocuments({ status: 'dept_approved' }),
-    Timecard.countDocuments({ status: 'payroll_approved' }),
-    PayrollRun.countDocuments(),
-    PayrollRun.countDocuments({ status: 'paid' }),
-    PayrollRun.aggregate([
+    isCrew ? 0 : Production.countDocuments(),
+    isCrew ? 0 : Production.countDocuments({ status: { $in: ['pre_production', 'production', 'post_production'] } }),
+    DealMemo.countDocuments(dealFilter),
+    DealMemo.countDocuments({ ...dealFilter, status: { $in: ['signed', 'active'] } }),
+    Timecard.countDocuments({ ...tcFilter, status: 'draft' }),
+    Timecard.countDocuments({ ...tcFilter, status: 'submitted' }),
+    Timecard.countDocuments({ ...tcFilter, status: 'dept_approved' }),
+    Timecard.countDocuments({ ...tcFilter, status: 'payroll_approved' }),
+    isCrew ? 0 : PayrollRun.countDocuments(),
+    isCrew ? 0 : PayrollRun.countDocuments({ status: 'paid' }),
+    isCrew ? [null] : PayrollRun.aggregate([
       { $match: { status: { $in: ['approved', 'exported', 'paid'] } } },
       {
         $group: {
