@@ -22,6 +22,7 @@ import PayrollDetail from "@/pages/PayrollDetail";
 import RateCards from "@/pages/RateCards";
 import Settings from "@/pages/Settings";
 import AdminRateCards from "@/pages/AdminRateCards";
+import UserManagement from "@/pages/UserManagement";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -69,6 +70,7 @@ export default function App() {
                 <Route path="/rate-cards" element={<RateCards />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/admin/rate-cards" element={<AdminRateCards />} />
+                <Route path="/users" element={<UserManagement />} />
               </Route>
 
               {/* Default redirect */}

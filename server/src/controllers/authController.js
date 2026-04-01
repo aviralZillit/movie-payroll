@@ -150,3 +150,67 @@ export const logout = asyncHandler(async (req, res) => {
     message: 'Logged out successfully.',
   });
 });
+
+/**
+ * GET /api/users
+ * Protected - super_admin, payroll_admin only
+ * Query params: role, search, isActive
+ */
+export const getUsers = asyncHandler(async (req, res) => {
+  const { role, search, isActive } = req.query;
+  const filter = {};
+
+  if (role) {
+    filter.role = role;
+  }
+
+  if (isActive !== undefined) {
+    filter.isActive = isActive === 'true';
+  }
+
+  if (search) {
+    const regex = new RegExp(search, 'i');
+    filter.$or = [
+      { firstName: regex },
+      { lastName: regex },
+      { email: regex },
+    ];
+  }
+
+  const users = await User.find(filter).sort({ createdAt: -1 });
+
+  res.json({
+    success: true,
+    data: { users },
+  });
+});
+
+/**
+ * PUT /api/users/:id
+ * Protected - super_admin, payroll_admin only
+ * Editable: firstName, lastName, phone, role, isActive
+ */
+export const updateUser = asyncHandler(async (req, res) => {
+  const { firstName, lastName, phone, role, isActive } = req.body;
+
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    throw new AppError('User not found.', 404);
+  }
+
+  if (firstName !== undefined) user.firstName = firstName;
+  if (lastName !== undefined) user.lastName = lastName;
+  if (phone !== undefined) user.phone = phone;
+  if (role !== undefined) user.role = role;
+  if (isActive !== undefined) user.isActive = isActive;
+
+  await user.save({ validateBeforeSave: false });
+
+  const userObj = user.toJSON();
+  delete userObj.passwordHash;
+
+  res.json({
+    success: true,
+    data: { user: userObj },
+  });
+});
