@@ -29,12 +29,28 @@ export const lookupRate = async ({ unionId, departmentId, designationId, budgetT
     query.dealType = dealType;
   }
 
-  const rateCard = await RateCard.findOne(query)
+  let rateCard = await RateCard.findOne(query)
     .sort({ effectiveFrom: -1 })
     .populate('unionId', 'code name')
     .populate('departmentId', 'code name')
     .populate('designationId', 'code name')
     .populate('budgetTierId', 'code name');
+
+  // Fallback: if no exact tier match, try any tier for this role
+  if (!rateCard) {
+    const fallbackQuery = { ...query };
+    delete fallbackQuery.budgetTierId;
+    rateCard = await RateCard.findOne(fallbackQuery)
+      .sort({ effectiveFrom: -1 })
+      .populate('unionId', 'code name')
+      .populate('departmentId', 'code name')
+      .populate('designationId', 'code name')
+      .populate('budgetTierId', 'code name');
+    if (rateCard) {
+      rateCard = rateCard.toObject();
+      rateCard._tierFallback = true; // flag that this is a fallback
+    }
+  }
 
   if (!rateCard) {
     return null;
