@@ -3,11 +3,14 @@ import api from "@/lib/axios";
 
 const STALE_TIME = 1000 * 60 * 10; // 10 minutes
 
-export function useUnions() {
+export function useUnions(country) {
   return useQuery({
-    queryKey: ["rate-cards", "unions"],
+    queryKey: ["rate-cards", "unions", country],
     queryFn: async () => {
       const { data } = await api.get("/rate-cards/unions");
+      if (country) {
+        return data.data.filter((u) => u.country === country);
+      }
       return data.data;
     },
     staleTime: STALE_TIME,
@@ -42,13 +45,16 @@ export function useDesignations(departmentId) {
   });
 }
 
-export function useBudgetTiers(unionId) {
+export function useBudgetTiers(unionId, country) {
   return useQuery({
-    queryKey: ["rate-cards", "budget-tiers", unionId],
+    queryKey: ["rate-cards", "budget-tiers", unionId, country],
     queryFn: async () => {
       const { data } = await api.get("/rate-cards/budget-tiers", {
         params: { unionId },
       });
+      if (country) {
+        return data.data.filter((t) => t.country === country);
+      }
       return data.data;
     },
     enabled: !!unionId,

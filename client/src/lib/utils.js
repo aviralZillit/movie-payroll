@@ -6,14 +6,20 @@ export function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount) {
-  if (amount == null) return "£0.00";
-  return new Intl.NumberFormat("en-GB", {
+export function formatCurrency(amount, country) {
+  const isUS = country === "US";
+  const fallback = isUS ? "$0.00" : "£0.00";
+  if (amount == null) return fallback;
+  return new Intl.NumberFormat(isUS ? "en-US" : "en-GB", {
     style: "currency",
-    currency: "GBP",
+    currency: isUS ? "USD" : "GBP",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount);
+}
+
+export function currencySymbol(country) {
+  return country === "US" ? "$" : "£";
 }
 
 export function formatDate(date) {

@@ -1,10 +1,8 @@
 import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  PoundSterling,
   Clock,
   CalendarDays,
-  Moon,
   AlertCircle,
   Search,
   ShieldCheck,
@@ -44,15 +42,18 @@ import {
   useOvertimeRules,
 } from "@/hooks/useRateCards";
 
+import { Button } from "@/components/ui/button";
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatGBP(value) {
+function formatMoney(value, country) {
   if (value == null) return "--";
-  return new Intl.NumberFormat("en-GB", {
+  const isUS = country === "US";
+  return new Intl.NumberFormat(isUS ? "en-US" : "en-GB", {
     style: "currency",
-    currency: "GBP",
+    currency: isUS ? "USD" : "GBP",
     minimumFractionDigits: 2,
   }).format(value);
 }
@@ -61,6 +62,11 @@ function formatPercent(value) {
   if (value == null) return "--";
   return `${value}%`;
 }
+
+const COUNTRY_OPTIONS = [
+  { value: "UK", label: "\uD83C\uDDEC\uD83C\uDDE7 UK" },
+  { value: "US", label: "\uD83C\uDDFA\uD83C\uDDF8 US" },
+];
 
 // ---------------------------------------------------------------------------
 // Animation variants
@@ -256,20 +262,31 @@ function OvertimeRulesTable({ rules }) {
 // ---------------------------------------------------------------------------
 
 export default function RateCards() {
-  // Selection state
+  // Country & selection state
+  const [country, setCountry] = useState("UK");
   const [unionId, setUnionId] = useState(null);
   const [departmentId, setDepartmentId] = useState(null);
   const [designationId, setDesignationId] = useState(null);
   const [budgetTierId, setBudgetTierId] = useState(null);
 
-  // Data hooks
-  const { data: unions, isLoading: unionsLoading } = useUnions();
+  // Data hooks (country-aware)
+  const { data: unions, isLoading: unionsLoading } = useUnions(country);
   const { data: departments, isLoading: deptsLoading } = useDepartments(unionId);
   const { data: designations, isLoading: desigsLoading } = useDesignations(departmentId);
-  const { data: budgetTiers, isLoading: tiersLoading } = useBudgetTiers(unionId);
+  const { data: budgetTiers, isLoading: tiersLoading } = useBudgetTiers(unionId, country);
   const { data: overtimeRules } = useOvertimeRules(unionId);
 
   const rateLookup = useRateLookup();
+
+  // Reset all selects when country changes
+  const handleCountryChange = useCallback((newCountry) => {
+    setCountry(newCountry);
+    setUnionId(null);
+    setDepartmentId(null);
+    setDesignationId(null);
+    setBudgetTierId(null);
+    rateLookup.reset();
+  }, []);
 
   // Reset downstream selections when upstream changes
   const handleUnionChange = useCallback((id) => {
@@ -324,14 +341,23 @@ export default function RateCards() {
       <Card className="bg-card/80 backdrop-blur-sm">
         <CardContent className="pt-1">
           <div className="flex flex-wrap items-end gap-4">
-            <FilterSelect
-              label="Country"
-              placeholder="United Kingdom"
-              value="uk"
-              onValueChange={() => {}}
-              options={[{ _id: "uk", name: "United Kingdom" }]}
-              disabled
-            />
+            {/* Country toggle */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Country</label>
+              <div className="flex rounded-md border bg-muted/40 p-0.5">
+                {COUNTRY_OPTIONS.map((opt) => (
+                  <Button
+                    key={opt.value}
+                    variant={country === opt.value ? "default" : "ghost"}
+                    size="sm"
+                    className={`px-3 text-sm ${country === opt.value ? "" : "text-muted-foreground"}`}
+                    onClick={() => handleCountryChange(opt.value)}
+                  >
+                    {opt.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
 
             <FilterSelect
               label="Union"
@@ -426,7 +452,7 @@ export default function RateCards() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <StatCard
                 label="Weekly Rate"
-                value={formatGBP(rates.weeklyRate)}
+                value={formatMoney(rates.weeklyRate, country)}
                 icon={CalendarDays}
                 accent
                 sourceUrl={rates.sourceUrl}
@@ -435,7 +461,7 @@ export default function RateCards() {
               />
               <StatCard
                 label="Daily Rate"
-                value={formatGBP(rates.dailyRate)}
+                value={formatMoney(rates.dailyRate, country)}
                 icon={CalendarDays}
                 sourceUrl={rates.sourceUrl}
                 sourceDocument={rates.sourceDocument}
@@ -443,7 +469,7 @@ export default function RateCards() {
               />
               <StatCard
                 label="Hourly Rate"
-                value={formatGBP(rates.hourlyRate)}
+                value={formatMoney(rates.hourlyRate, country)}
                 icon={Clock}
                 sourceUrl={rates.sourceUrl}
                 sourceDocument={rates.sourceDocument}
@@ -455,28 +481,28 @@ export default function RateCards() {
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
               <SmallStatCard
                 label="OT 1.5x"
-                value={formatGBP(rates.overtimeRate1x5)}
+                value={formatMoney(rates.overtimeRate1x5, country)}
                 sourceUrl={rates.sourceUrl}
                 sourceDocument={rates.sourceDocument}
                 isVerified={rates.isVerified}
               />
               <SmallStatCard
                 label="OT 2x"
-                value={formatGBP(rates.overtimeRate2x)}
+                value={formatMoney(rates.overtimeRate2x, country)}
                 sourceUrl={rates.sourceUrl}
                 sourceDocument={rates.sourceDocument}
                 isVerified={rates.isVerified}
               />
               <SmallStatCard
                 label="6th Day"
-                value={formatGBP(rates.sixthDayRate)}
+                value={formatMoney(rates.sixthDayRate, country)}
                 sourceUrl={rates.sourceUrl}
                 sourceDocument={rates.sourceDocument}
                 isVerified={rates.isVerified}
               />
               <SmallStatCard
                 label="7th Day"
-                value={formatGBP(rates.seventhDayRate)}
+                value={formatMoney(rates.seventhDayRate, country)}
                 sourceUrl={rates.sourceUrl}
                 sourceDocument={rates.sourceDocument}
                 isVerified={rates.isVerified}

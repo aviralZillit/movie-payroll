@@ -3,6 +3,8 @@ import { calculateDayHours } from './overtimeCalculator.js';
 import { calculateMealPenalty } from './mealPenaltyCalculator.js';
 import { checkTurnaround } from './turnaroundCalculator.js';
 import { calculateFringes } from './fringeCalculator.js';
+import { calculateUSFringes } from './usFringeCalculator.js';
+import { calculateUSTax } from './usTaxCalculator.js';
 import { getOvertimeRules } from './rateEngine.js';
 
 /**
@@ -148,26 +150,61 @@ export const calculatePayrollItem = async (timecard, dealMemo) => {
     .plus(computerAllowance)
     .plus(carAllowance);
 
-  // Fringes
-  const fringes = calculateFringes(grossPay.toNumber(), dealMemo);
+  // Country-based fringes and deductions
+  let holidayPayVal, employerNiVal, employerPensionVal, apprenticeshipLevyVal, totalFringesVal;
+  let employeeNiVal, incomeTaxVal, employeePensionVal, totalDeductionsVal;
+  // US-specific fields
+  let usFringeDetail = null;
+  let usTaxDetail = null;
 
-  // Employee deductions (placeholder - real PAYE/NI calculations are complex)
-  // Employee NI: 8% of earnings above GBP 242/week (primary threshold 2024/25)
-  const employeeNiThreshold = new Decimal(242);
-  const employeeNiable = Decimal.max(grossPay.minus(employeeNiThreshold), 0);
-  const employeeNi = employeeNiable.times(0.08);
+  if (dealMemo.country === 'US') {
+    // --- US fringes ---
+    const usFringes = calculateUSFringes(grossPay.toNumber(), dealMemo);
+    usFringeDetail = usFringes;
 
-  // PAYE placeholder: ~20% basic rate on earnings above GBP 242/week (personal allowance split weekly)
-  const payeThreshold = new Decimal(242);
-  const taxable = Decimal.max(grossPay.minus(payeThreshold), 0);
-  const incomeTax = taxable.times(0.20);
+    holidayPayVal = new Decimal(usFringes.vacationHoliday);
+    employerNiVal = new Decimal(usFringes.socialSecurity).plus(new Decimal(usFringes.medicare));
+    employerPensionVal = new Decimal(usFringes.pensionHealth);
+    apprenticeshipLevyVal = new Decimal(usFringes.workersComp).plus(new Decimal(usFringes.futa));
+    totalFringesVal = new Decimal(usFringes.totalFringes);
 
-  // Employee pension (default 5%)
-  const employeePension = grossPay.times(0.05);
+    // --- US employee deductions ---
+    const usTax = calculateUSTax(grossPay.toNumber(), dealMemo);
+    usTaxDetail = usTax;
 
-  const totalDeductions = employeeNi.plus(incomeTax).plus(employeePension);
-  const netPay = grossPay.minus(totalDeductions);
-  const totalCost = grossPay.plus(new Decimal(fringes.totalFringes));
+    employeeNiVal = new Decimal(usTax.employeeSS).plus(new Decimal(usTax.employeeMedicare));
+    incomeTaxVal = new Decimal(usTax.federalTax);
+    employeePensionVal = new Decimal(usTax.stateTax);
+    totalDeductionsVal = new Decimal(usTax.totalDeductions);
+  } else {
+    // --- UK fringes (default) ---
+    const fringes = calculateFringes(grossPay.toNumber(), dealMemo);
+
+    holidayPayVal = new Decimal(fringes.holidayPay);
+    employerNiVal = new Decimal(fringes.employerNi);
+    employerPensionVal = new Decimal(fringes.employerPension);
+    apprenticeshipLevyVal = new Decimal(fringes.apprenticeshipLevy);
+    totalFringesVal = new Decimal(fringes.totalFringes);
+
+    // --- UK employee deductions ---
+    // Employee NI: 8% of earnings above GBP 242/week (primary threshold 2024/25)
+    const employeeNiThreshold = new Decimal(242);
+    const employeeNiable = Decimal.max(grossPay.minus(employeeNiThreshold), 0);
+    employeeNiVal = employeeNiable.times(0.08);
+
+    // PAYE placeholder: ~20% basic rate on earnings above GBP 242/week
+    const payeThreshold = new Decimal(242);
+    const taxable = Decimal.max(grossPay.minus(payeThreshold), 0);
+    incomeTaxVal = taxable.times(0.20);
+
+    // Employee pension (default 5%)
+    employeePensionVal = grossPay.times(0.05);
+
+    totalDeductionsVal = employeeNiVal.plus(incomeTaxVal).plus(employeePensionVal);
+  }
+
+  const netPay = grossPay.minus(totalDeductionsVal);
+  const totalCost = grossPay.plus(totalFringesVal);
 
   return {
     basePay: basePay.toDecimalPlaces(2).toNumber(),
@@ -187,18 +224,21 @@ export const calculatePayrollItem = async (timecard, dealMemo) => {
     otherEarnings: 0,
     grossPay: grossPay.toDecimalPlaces(2).toNumber(),
     // Fringes
-    holidayPay: fringes.holidayPay,
-    employerNi: fringes.employerNi,
-    employerPension: fringes.employerPension,
-    apprenticeshipLevy: fringes.apprenticeshipLevy,
-    totalFringes: fringes.totalFringes,
+    holidayPay: holidayPayVal.toDecimalPlaces(2).toNumber(),
+    employerNi: employerNiVal.toDecimalPlaces(2).toNumber(),
+    employerPension: employerPensionVal.toDecimalPlaces(2).toNumber(),
+    apprenticeshipLevy: apprenticeshipLevyVal.toDecimalPlaces(2).toNumber(),
+    totalFringes: totalFringesVal.toDecimalPlaces(2).toNumber(),
     // Employee deductions
-    employeeNi: employeeNi.toDecimalPlaces(2).toNumber(),
-    incomeTax: incomeTax.toDecimalPlaces(2).toNumber(),
-    employeePension: employeePension.toDecimalPlaces(2).toNumber(),
+    employeeNi: employeeNiVal.toDecimalPlaces(2).toNumber(),
+    incomeTax: incomeTaxVal.toDecimalPlaces(2).toNumber(),
+    employeePension: employeePensionVal.toDecimalPlaces(2).toNumber(),
     studentLoan: 0,
     otherDeductions: 0,
-    totalDeductions: totalDeductions.toDecimalPlaces(2).toNumber(),
+    totalDeductions: totalDeductionsVal.toDecimalPlaces(2).toNumber(),
+    // US-specific detail (null for UK)
+    usFringeDetail,
+    usTaxDetail,
     netPay: netPay.toDecimalPlaces(2).toNumber(),
     totalCost: totalCost.toDecimalPlaces(2).toNumber(),
     // Summary hours

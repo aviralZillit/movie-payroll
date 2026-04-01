@@ -43,7 +43,7 @@ import {
 } from "@/hooks/useRateCards";
 
 import useAuthStore from "@/store/authStore";
-import { cn, formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency, currencySymbol } from "@/lib/utils";
 import {
   Film,
   Users,
@@ -78,11 +78,23 @@ const dealMemoSchema = z.object({
   dailyRate: z.number().nullable().optional(),
   weeklyRate: z.number().min(0.01, "Weekly rate is required"),
   guaranteedHours: z.number().min(0).optional(),
-  // Step 4 - fringes
+  // US-specific rate fields
+  programFee: z.number().min(0).optional(),
+  overageRate: z.number().min(0).optional(),
+  prepDays: z.number().min(0).optional(),
+  shootDays: z.number().min(0).optional(),
+  studioOrLocation: z.enum(["studio", "location"]).optional(),
+  episodeLength: z.number().min(0).optional(),
+  // Step 4 - fringes (UK)
   holidayPayPct: z.number().min(0).max(100),
   employerNiPct: z.number().min(0).max(100),
   pensionPct: z.number().min(0).max(100),
   apprenticeLevyPct: z.number().min(0).max(100),
+  // Step 4 - fringes (US)
+  phPct: z.number().min(0).max(100).optional(),
+  vacationPct: z.number().min(0).max(100).optional(),
+  ficaPct: z.number().min(0).max(100).optional(),
+  stateTaxState: z.string().optional(),
   // Step 5 - overtime & penalties
   standardWorkDayHrs: z.number().min(1).max(24),
   lunchBreakHrs: z.number().min(0).max(4),
@@ -115,10 +127,24 @@ const DEFAULT_VALUES = {
   dailyRate: null,
   weeklyRate: 0,
   guaranteedHours: 40,
+  // US-specific rate fields
+  programFee: 0,
+  overageRate: 0,
+  prepDays: 0,
+  shootDays: 0,
+  studioOrLocation: "studio",
+  episodeLength: 0,
+  // UK fringes
   holidayPayPct: 12.07,
   employerNiPct: 13.8,
   pensionPct: 3,
   apprenticeLevyPct: 0.5,
+  // US fringes
+  phPct: 20,
+  vacationPct: 8.583,
+  ficaPct: 7.65,
+  stateTaxState: "",
+  // Overtime & penalties
   standardWorkDayHrs: 10,
   lunchBreakHrs: 1,
   sixthDayMultiplier: 1.5,
@@ -134,6 +160,19 @@ const DEFAULT_VALUES = {
   phoneAllowance: 0,
   computerAllowance: 0,
   carAllowance: 0,
+};
+
+const UK_FRINGE_DEFAULTS = {
+  holidayPayPct: 12.07,
+  employerNiPct: 13.8,
+  pensionPct: 3,
+  apprenticeLevyPct: 0.5,
+};
+
+const US_FRINGE_DEFAULTS = {
+  phPct: 20,
+  vacationPct: 8.583,
+  ficaPct: 7.65,
 };
 
 // Which schema fields belong to which step (for partial validation)
@@ -253,17 +292,21 @@ export default function DealMemoNew() {
   const watchedBudgetTierId = watch("budgetTierId");
   const watchedProductionId = watch("productionId");
 
-  // API-driven cascading selects
-  const { data: unions, isLoading: unionsLoading } = useUnions();
-  const { data: departments, isLoading: deptsLoading } = useDepartments(watchedUnionId);
-  const { data: designations, isLoading: desigsLoading } = useDesignations(watchedDepartmentId);
-  const { data: budgetTiers, isLoading: tiersLoading } = useBudgetTiers(watchedUnionId);
-
   // Build person list from the selected production's members
   const selectedProduction = useMemo(
     () => productions?.find((p) => p._id === watchedProductionId),
     [productions, watchedProductionId]
   );
+
+  // Derive country from the selected production
+  const productionCountry = selectedProduction?.country || "UK";
+  const cSymbol = currencySymbol(productionCountry);
+
+  // API-driven cascading selects (country-aware)
+  const { data: unions, isLoading: unionsLoading } = useUnions(productionCountry);
+  const { data: departments, isLoading: deptsLoading } = useDepartments(watchedUnionId);
+  const { data: designations, isLoading: desigsLoading } = useDesignations(watchedDepartmentId);
+  const { data: budgetTiers, isLoading: tiersLoading } = useBudgetTiers(watchedUnionId, productionCountry);
 
   const personOptions = useMemo(() => {
     if (!selectedProduction?.members) return [];
@@ -280,6 +323,31 @@ export default function DealMemoNew() {
         };
       });
   }, [selectedProduction]);
+
+  // Reset classification when production (country) changes
+  useEffect(() => {
+    if (watchedProductionId) {
+      setValue("unionId", "");
+      setValue("departmentId", "");
+      setValue("designationId", "");
+      setValue("budgetTierId", "");
+      // Set country-appropriate fringe defaults
+      if (productionCountry === "US") {
+        Object.entries(US_FRINGE_DEFAULTS).forEach(([k, v]) => setValue(k, v));
+        // Reset UK fringes to 0
+        setValue("holidayPayPct", 0);
+        setValue("employerNiPct", 0);
+        setValue("pensionPct", 0);
+        setValue("apprenticeLevyPct", 0);
+      } else {
+        Object.entries(UK_FRINGE_DEFAULTS).forEach(([k, v]) => setValue(k, v));
+        // Reset US fringes to 0
+        setValue("phPct", 0);
+        setValue("vacationPct", 0);
+        setValue("ficaPct", 0);
+      }
+    }
+  }, [watchedProductionId, productionCountry, setValue]);
 
   // ---- Step navigation ----
   const goNext = useCallback(async () => {
@@ -359,10 +427,24 @@ export default function DealMemoNew() {
       dailyRate: data.dailyRate,
       hourlyRate: data.hourlyRate,
       guaranteedHours: data.guaranteedHours,
+      // UK fringes
       holidayPayPct: data.holidayPayPct,
       employerNiPct: data.employerNiPct,
       pensionPct: data.pensionPct,
       apprenticeLevyPct: data.apprenticeLevyPct,
+      // US fringes
+      phPct: data.phPct,
+      vacationPct: data.vacationPct,
+      ficaPct: data.ficaPct,
+      stateTaxState: data.stateTaxState || undefined,
+      // US-specific rate fields
+      programFee: data.programFee || undefined,
+      overageRate: data.overageRate || undefined,
+      prepDays: data.prepDays || undefined,
+      shootDays: data.shootDays || undefined,
+      studioOrLocation: data.studioOrLocation || undefined,
+      episodeLength: data.episodeLength || undefined,
+      // Overtime & penalties
       standardWorkDayHrs: data.standardWorkDayHrs,
       lunchBreakHrs: data.lunchBreakHrs,
       sixthDayMultiplier: data.sixthDayMultiplier,
@@ -499,14 +581,16 @@ export default function DealMemoNew() {
             watch={watch}
             setValue={setValue}
             rateSource={rateSource}
+            country={productionCountry}
+            cSymbol={cSymbol}
           />
         );
       case 3:
-        return <StepFringes control={control} errors={errors} watch={watch} setValue={setValue} />;
+        return <StepFringes control={control} errors={errors} watch={watch} setValue={setValue} country={productionCountry} />;
       case 4:
-        return <StepOvertime control={control} errors={errors} watch={watch} setValue={setValue} />;
+        return <StepOvertime control={control} errors={errors} watch={watch} setValue={setValue} country={productionCountry} cSymbol={cSymbol} />;
       case 5:
-        return <StepAllowances control={control} errors={errors} watch={watch} setValue={setValue} />;
+        return <StepAllowances control={control} errors={errors} watch={watch} setValue={setValue} country={productionCountry} cSymbol={cSymbol} />;
       case 6:
         return (
           <StepReview
@@ -514,6 +598,7 @@ export default function DealMemoNew() {
             productions={productions}
             personOptions={personOptions}
             classificationLabels={classificationLabels}
+            country={productionCountry}
           />
         );
       default:
@@ -845,11 +930,12 @@ function StepClassification({
 }
 
 // ---- Step 3: Rates ----
-function StepRates({ control, errors, watch, setValue, rateSource }) {
+function StepRates({ control, errors, watch, setValue, rateSource, country, cSymbol }) {
   const unionId = watch("unionId");
   const departmentId = watch("departmentId");
   const designationId = watch("designationId");
   const budgetTierId = watch("budgetTierId");
+  const isUS = country === "US";
 
   const weeklyRate = watch("weeklyRate") || 0;
   const hourlyRate = watch("hourlyRate") || 0;
@@ -874,7 +960,7 @@ function StepRates({ control, errors, watch, setValue, rateSource }) {
         <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
           <AlertCircle className="size-4 text-amber-500 mt-0.5 shrink-0" />
           <div className="text-xs text-amber-600 dark:text-amber-400">
-            <span className="font-medium">Rate mismatch:</span> Weekly rate (£{weeklyRate.toLocaleString()}) doesn't match hourly (£{hourlyRate}) × guaranteed hours ({guaranteedHours}) = £{expectedWeekly.toLocaleString()}.
+            <span className="font-medium">Rate mismatch:</span> Weekly rate ({cSymbol}{weeklyRate.toLocaleString()}) doesn't match hourly ({cSymbol}{hourlyRate}) x guaranteed hours ({guaranteedHours}) = {cSymbol}{expectedWeekly.toLocaleString()}.
             This is normal for packaged weekly deals where the weekly rate is negotiated independently.
           </div>
         </div>
@@ -955,18 +1041,162 @@ function StepRates({ control, errors, watch, setValue, rateSource }) {
           )}
         />
       </div>
+
+      {/* US-specific rate fields */}
+      {isUS && (
+        <>
+          <Separator />
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <h3 className="text-sm font-semibold uppercase tracking-wide">US Deal Terms</h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <Controller
+              name="programFee"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-1.5">
+                  <Label>Program Fee</Label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      {cSymbol}
+                    </span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      value={field.value ?? ""}
+                      onChange={(e) => field.onChange(e.target.value === "" ? 0 : Number(e.target.value))}
+                      className="pl-7 tabular-nums"
+                    />
+                  </div>
+                </div>
+              )}
+            />
+
+            <Controller
+              name="overageRate"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-1.5">
+                  <Label>Overage Rate</Label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      {cSymbol}
+                    </span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      value={field.value ?? ""}
+                      onChange={(e) => field.onChange(e.target.value === "" ? 0 : Number(e.target.value))}
+                      className="pl-7 tabular-nums"
+                    />
+                  </div>
+                </div>
+              )}
+            />
+
+            <Controller
+              name="episodeLength"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-1.5">
+                  <Label>Episode Length (min)</Label>
+                  <Input
+                    type="number"
+                    step="1"
+                    min={0}
+                    value={field.value ?? ""}
+                    onChange={(e) => field.onChange(e.target.value === "" ? 0 : Number(e.target.value))}
+                    className="tabular-nums"
+                  />
+                </div>
+              )}
+            />
+
+            <Controller
+              name="prepDays"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-1.5">
+                  <Label>Prep Days</Label>
+                  <Input
+                    type="number"
+                    step="1"
+                    min={0}
+                    value={field.value ?? ""}
+                    onChange={(e) => field.onChange(e.target.value === "" ? 0 : Number(e.target.value))}
+                    className="tabular-nums"
+                  />
+                </div>
+              )}
+            />
+
+            <Controller
+              name="shootDays"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-1.5">
+                  <Label>Shoot Days</Label>
+                  <Input
+                    type="number"
+                    step="1"
+                    min={0}
+                    value={field.value ?? ""}
+                    onChange={(e) => field.onChange(e.target.value === "" ? 0 : Number(e.target.value))}
+                    className="tabular-nums"
+                  />
+                </div>
+              )}
+            />
+
+            <Controller
+              name="studioOrLocation"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-1.5">
+                  <Label>Studio / Location</Label>
+                  <Select value={field.value || "studio"} onValueChange={field.onChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="studio">Studio</SelectItem>
+                      <SelectItem value="location">Location</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
 // ---- Step 4: Fringes ----
-function StepFringes({ control, errors, watch, setValue }) {
-  const fringeFields = [
+function StepFringes({ control, errors, watch, setValue, country }) {
+  const isUS = country === "US";
+
+  const ukFringeFields = [
     { name: "holidayPayPct", label: "Holiday Pay %", info: "Statutory holiday pay accrual percentage" },
     { name: "employerNiPct", label: "Employer NI %", info: "Employer National Insurance contribution rate" },
     { name: "pensionPct", label: "Pension %", info: "Auto-enrolment pension employer contribution" },
     { name: "apprenticeLevyPct", label: "Apprenticeship Levy %", info: "Applicable for pay bills over 3M" },
   ];
+
+  const usFringeFields = [
+    { name: "phPct", label: "P&H %", info: "Pension & Health contribution percentage" },
+    { name: "vacationPct", label: "Vacation %", info: "Vacation pay accrual percentage" },
+    { name: "ficaPct", label: "FICA %", info: "Federal Insurance Contributions Act (employer share)" },
+  ];
+
+  const fringeFields = isUS ? usFringeFields : ukFringeFields;
+
+  const totalFringe = isUS
+    ? (watch("phPct") || 0) + (watch("vacationPct") || 0) + (watch("ficaPct") || 0)
+    : (watch("holidayPayPct") || 0) + (watch("employerNiPct") || 0) + (watch("pensionPct") || 0) + (watch("apprenticeLevyPct") || 0);
 
   return (
     <div className="space-y-6">
@@ -975,7 +1205,9 @@ function StepFringes({ control, errors, watch, setValue }) {
         <h2 className="text-lg font-semibold">Fringes</h2>
       </div>
       <p className="text-sm text-muted-foreground">
-        Employer-side costs applied on top of the base rate. Defaults are pre-filled based on current UK regulations.
+        {isUS
+          ? "Employer-side costs applied on top of the base rate. Defaults are pre-filled based on US union standards."
+          : "Employer-side costs applied on top of the base rate. Defaults are pre-filled based on current UK regulations."}
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -1016,6 +1248,37 @@ function StepFringes({ control, errors, watch, setValue }) {
             )}
           />
         ))}
+
+        {/* US: State tax selector */}
+        {isUS && (
+          <Controller
+            name="stateTaxState"
+            control={control}
+            render={({ field }) => (
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Label>State</Label>
+                  <Tooltip>
+                    <TooltipTrigger className="text-muted-foreground hover:text-foreground transition-colors">
+                      <Info className="size-3.5" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top">State for tax withholding purposes</TooltipContent>
+                  </Tooltip>
+                </div>
+                <Select value={field.value || ""} onValueChange={field.onChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select state..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["CA", "NY", "GA", "LA", "NM", "IL", "TX", "FL", "NC", "OR", "WA", "PA", "MA", "NJ", "CT", "Other"].map((st) => (
+                      <SelectItem key={st} value={st}>{st}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          />
+        )}
       </div>
 
       {/* Quick total */}
@@ -1023,13 +1286,7 @@ function StepFringes({ control, errors, watch, setValue }) {
         <p className="text-sm font-medium">
           Total Fringe Rate:{" "}
           <span className="text-primary font-semibold">
-            {(
-              (watch("holidayPayPct") || 0) +
-              (watch("employerNiPct") || 0) +
-              (watch("pensionPct") || 0) +
-              (watch("apprenticeLevyPct") || 0)
-            ).toFixed(2)}
-            %
+            {totalFringe.toFixed(2)}%
           </span>
         </p>
       </div>
@@ -1038,7 +1295,7 @@ function StepFringes({ control, errors, watch, setValue }) {
 }
 
 // ---- Step 5: Overtime & Penalties ----
-function StepOvertime({ control, errors, watch, setValue }) {
+function StepOvertime({ control, errors, watch, setValue, country, cSymbol }) {
   const mealPenaltyEnabled = watch("mealPenaltyEnabled");
 
   return (
@@ -1213,7 +1470,7 @@ function StepOvertime({ control, errors, watch, setValue }) {
                   <Label>Penalty Amount</Label>
                   <div className="relative">
                     <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                      £
+                      {cSymbol}
                     </span>
                     <Input
                       type="number"
@@ -1253,7 +1510,7 @@ function StepOvertime({ control, errors, watch, setValue }) {
 }
 
 // ---- Step 6: Allowances ----
-function StepAllowances({ control, errors, watch, setValue }) {
+function StepAllowances({ control, errors, watch, setValue, country, cSymbol }) {
   const allowanceFields = [
     { name: "kitAllowance", label: "Kit Allowance" },
     { name: "travelAllowance", label: "Travel Allowance" },
@@ -1275,7 +1532,7 @@ function StepAllowances({ control, errors, watch, setValue }) {
         <h2 className="text-lg font-semibold">Allowances</h2>
       </div>
       <p className="text-sm text-muted-foreground">
-        Weekly allowance amounts in GBP. Leave at 0 if not applicable.
+        Weekly allowance amounts in {country === "US" ? "USD" : "GBP"}. Leave at 0 if not applicable.
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -1289,7 +1546,7 @@ function StepAllowances({ control, errors, watch, setValue }) {
                 <Label>{label}</Label>
                 <div className="relative">
                   <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                    £
+                    {cSymbol}
                   </span>
                   <Input
                     type="number"
@@ -1312,7 +1569,7 @@ function StepAllowances({ control, errors, watch, setValue }) {
       <div className="rounded-lg border bg-muted/40 p-3">
         <p className="text-sm font-medium">
           Total Weekly Allowances:{" "}
-          <span className="text-primary font-semibold">{formatCurrency(totalAllowances)}</span>
+          <span className="text-primary font-semibold">{formatCurrency(totalAllowances, country)}</span>
         </p>
       </div>
     </div>
@@ -1320,14 +1577,14 @@ function StepAllowances({ control, errors, watch, setValue }) {
 }
 
 // ---- Step 7: Review ----
-function StepReview({ values, productions, personOptions, classificationLabels }) {
+function StepReview({ values, productions, personOptions, classificationLabels, country }) {
   const production = productions?.find((p) => p._id === values.productionId);
   const person = personOptions?.find((p) => p._id === values.personId);
-  const totalFringe =
-    (values.holidayPayPct || 0) +
-    (values.employerNiPct || 0) +
-    (values.pensionPct || 0) +
-    (values.apprenticeLevyPct || 0);
+  const isUS = country === "US";
+  const fmt = (v) => formatCurrency(v, country);
+  const totalFringe = isUS
+    ? (values.phPct || 0) + (values.vacationPct || 0) + (values.ficaPct || 0)
+    : (values.holidayPayPct || 0) + (values.employerNiPct || 0) + (values.pensionPct || 0) + (values.apprenticeLevyPct || 0);
   const totalAllowances =
     (values.kitAllowance || 0) +
     (values.travelAllowance || 0) +
@@ -1383,19 +1640,36 @@ function StepReview({ values, productions, personOptions, classificationLabels }
         <Separator />
 
         <Section icon={Banknote} title="Rates">
-          <Field label="Weekly Rate" value={formatCurrency(values.weeklyRate)} />
-          <Field label="Daily Rate" value={values.dailyRate ? formatCurrency(values.dailyRate) : "--"} />
-          <Field label="Hourly Rate" value={values.hourlyRate ? formatCurrency(values.hourlyRate) : "--"} />
+          <Field label="Weekly Rate" value={fmt(values.weeklyRate)} />
+          <Field label="Daily Rate" value={values.dailyRate ? fmt(values.dailyRate) : "--"} />
+          <Field label="Hourly Rate" value={values.hourlyRate ? fmt(values.hourlyRate) : "--"} />
           <Field label="Guaranteed Hours" value={`${values.guaranteedHours || 0} hrs/wk`} />
+          {isUS && values.programFee > 0 && <Field label="Program Fee" value={fmt(values.programFee)} />}
+          {isUS && values.overageRate > 0 && <Field label="Overage Rate" value={fmt(values.overageRate)} />}
+          {isUS && values.episodeLength > 0 && <Field label="Episode Length" value={`${values.episodeLength} min`} />}
+          {isUS && values.prepDays > 0 && <Field label="Prep Days" value={values.prepDays} />}
+          {isUS && values.shootDays > 0 && <Field label="Shoot Days" value={values.shootDays} />}
+          {isUS && values.studioOrLocation && <Field label="Studio/Location" value={values.studioOrLocation} />}
         </Section>
 
         <Separator />
 
         <Section icon={Percent} title="Fringes">
-          <Field label="Holiday Pay" value={`${values.holidayPayPct}%`} />
-          <Field label="Employer NI" value={`${values.employerNiPct}%`} />
-          <Field label="Pension" value={`${values.pensionPct}%`} />
-          <Field label="Apprenticeship Levy" value={`${values.apprenticeLevyPct}%`} />
+          {isUS ? (
+            <>
+              <Field label="P&H" value={`${values.phPct}%`} />
+              <Field label="Vacation" value={`${values.vacationPct}%`} />
+              <Field label="FICA" value={`${values.ficaPct}%`} />
+              {values.stateTaxState && <Field label="State" value={values.stateTaxState} />}
+            </>
+          ) : (
+            <>
+              <Field label="Holiday Pay" value={`${values.holidayPayPct}%`} />
+              <Field label="Employer NI" value={`${values.employerNiPct}%`} />
+              <Field label="Pension" value={`${values.pensionPct}%`} />
+              <Field label="Apprenticeship Levy" value={`${values.apprenticeLevyPct}%`} />
+            </>
+          )}
           <Field label="Total Fringe" value={`${totalFringe.toFixed(2)}%`} />
         </Section>
 
@@ -1408,19 +1682,19 @@ function StepReview({ values, productions, personOptions, classificationLabels }
           <Field label="7th Day" value={`${values.seventhDayMultiplier}x`} />
           <Field label="Night Premium" value={`${values.nightPremiumPct}%`} />
           <Field label="Turnaround Min" value={`${values.turnaroundMinHrs} hrs`} />
-          <Field label="Meal Penalty" value={values.mealPenaltyEnabled ? `${formatCurrency(values.mealPenaltyAmount)} after ${values.mealPenaltyAfterHrs} hrs` : "Disabled"} />
+          <Field label="Meal Penalty" value={values.mealPenaltyEnabled ? `${fmt(values.mealPenaltyAmount)} after ${values.mealPenaltyAfterHrs} hrs` : "Disabled"} />
         </Section>
 
         <Separator />
 
         <Section icon={Briefcase} title="Allowances">
-          <Field label="Kit" value={formatCurrency(values.kitAllowance)} />
-          <Field label="Travel" value={formatCurrency(values.travelAllowance)} />
-          <Field label="Per Diem" value={formatCurrency(values.perDiem)} />
-          <Field label="Phone" value={formatCurrency(values.phoneAllowance)} />
-          <Field label="Computer" value={formatCurrency(values.computerAllowance)} />
-          <Field label="Car" value={formatCurrency(values.carAllowance)} />
-          <Field label="Total Allowances" value={formatCurrency(totalAllowances)} />
+          <Field label="Kit" value={fmt(values.kitAllowance)} />
+          <Field label="Travel" value={fmt(values.travelAllowance)} />
+          <Field label="Per Diem" value={fmt(values.perDiem)} />
+          <Field label="Phone" value={fmt(values.phoneAllowance)} />
+          <Field label="Computer" value={fmt(values.computerAllowance)} />
+          <Field label="Car" value={fmt(values.carAllowance)} />
+          <Field label="Total Allowances" value={fmt(totalAllowances)} />
         </Section>
       </div>
     </div>
