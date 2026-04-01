@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
@@ -30,9 +30,16 @@ import RateFieldWithInfo from "@/components/deal-memo/RateFieldWithInfo";
 
 import {
   useProductions,
-  useRateCardLookup,
   useCreateDealMemo,
 } from "@/hooks/useDealMemos";
+
+import {
+  useUnions,
+  useDepartments,
+  useDesignations,
+  useBudgetTiers,
+  useRateLookup,
+} from "@/hooks/useRateCards";
 
 import { cn, formatCurrency } from "@/lib/utils";
 import {
@@ -45,6 +52,7 @@ import {
   FileCheck,
   Info,
   ChevronLeft,
+  CalendarDays,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -53,22 +61,25 @@ import {
 const dealMemoSchema = z.object({
   // Step 1
   productionId: z.string().min(1, "Select a production"),
+  personId: z.string().min(1, "Select a person"),
+  startDate: z.string().min(1, "Start date is required"),
+  endDate: z.string().optional(),
   // Step 2
-  union: z.string().min(1, "Select a union"),
-  department: z.string().min(1, "Select a department"),
-  designation: z.string().min(1, "Select a designation"),
-  budgetTier: z.string().min(1, "Select a budget tier"),
-  // Step 3 – rates
+  unionId: z.string().min(1, "Select a union"),
+  departmentId: z.string().min(1, "Select a department"),
+  designationId: z.string().min(1, "Select a designation"),
+  budgetTierId: z.string().min(1, "Select a budget tier"),
+  // Step 3 - rates
   hourlyRate: z.number().nullable().optional(),
   dailyRate: z.number().nullable().optional(),
   weeklyRate: z.number().min(0.01, "Weekly rate is required"),
   guaranteedHours: z.number().min(0).optional(),
-  // Step 4 – fringes
+  // Step 4 - fringes
   holidayPayPct: z.number().min(0).max(100),
   employerNiPct: z.number().min(0).max(100),
   pensionPct: z.number().min(0).max(100),
   apprenticeLevyPct: z.number().min(0).max(100),
-  // Step 5 – overtime & penalties
+  // Step 5 - overtime & penalties
   standardWorkDayHrs: z.number().min(1).max(24),
   lunchBreakHrs: z.number().min(0).max(4),
   sixthDayMultiplier: z.number().min(1),
@@ -78,7 +89,7 @@ const dealMemoSchema = z.object({
   mealPenaltyAmount: z.number().min(0).optional(),
   mealPenaltyAfterHrs: z.number().min(0).optional(),
   turnaroundMinHrs: z.number().min(0).max(24),
-  // Step 6 – allowances
+  // Step 6 - allowances
   kitAllowance: z.number().min(0),
   travelAllowance: z.number().min(0),
   perDiem: z.number().min(0),
@@ -89,10 +100,13 @@ const dealMemoSchema = z.object({
 
 const DEFAULT_VALUES = {
   productionId: "",
-  union: "",
-  department: "",
-  designation: "",
-  budgetTier: "",
+  personId: "",
+  startDate: "",
+  endDate: "",
+  unionId: "",
+  departmentId: "",
+  designationId: "",
+  budgetTierId: "",
   hourlyRate: null,
   dailyRate: null,
   weeklyRate: 0,
@@ -120,8 +134,8 @@ const DEFAULT_VALUES = {
 
 // Which schema fields belong to which step (for partial validation)
 const STEP_FIELDS = [
-  ["productionId"],
-  ["union", "department", "designation", "budgetTier"],
+  ["productionId", "personId", "startDate"],
+  ["unionId", "departmentId", "designationId", "budgetTierId"],
   ["weeklyRate"],
   ["holidayPayPct", "employerNiPct", "pensionPct", "apprenticeLevyPct"],
   [
@@ -140,121 +154,47 @@ const STEP_FIELDS = [
     "computerAllowance",
     "carAllowance",
   ],
-  [], // review step — no extra validation
+  [], // review step - no extra validation
 ];
 
-// Union / department / designation options (would come from API in production)
-const UNION_OPTIONS = [
-  { value: "bectu", label: "BECTU" },
-  { value: "equity", label: "Equity" },
-  { value: "musicians_union", label: "Musicians' Union" },
-  { value: "non_union", label: "Non-Union" },
-];
-
-const DEPARTMENT_OPTIONS = {
-  bectu: [
-    { value: "camera", label: "Camera" },
-    { value: "sound", label: "Sound" },
-    { value: "lighting", label: "Lighting" },
-    { value: "art", label: "Art Department" },
-    { value: "costume", label: "Costume" },
-    { value: "makeup", label: "Make-Up & Hair" },
-    { value: "editing", label: "Editing" },
-    { value: "production", label: "Production" },
-  ],
-  equity: [
-    { value: "cast", label: "Cast" },
-    { value: "stunts", label: "Stunts" },
-    { value: "stand_ins", label: "Stand-Ins" },
-  ],
-  musicians_union: [{ value: "music", label: "Music" }],
-  non_union: [
-    { value: "general", label: "General" },
-    { value: "office", label: "Office" },
-    { value: "transport", label: "Transport" },
-  ],
-};
-
-const DESIGNATION_OPTIONS = {
-  camera: [
-    { value: "dop", label: "Director of Photography" },
-    { value: "camera_operator", label: "Camera Operator" },
-    { value: "first_ac", label: "1st AC / Focus Puller" },
-    { value: "second_ac", label: "2nd AC / Clapper Loader" },
-    { value: "dit", label: "DIT" },
-  ],
-  sound: [
-    { value: "sound_mixer", label: "Sound Mixer" },
-    { value: "boom_operator", label: "Boom Operator" },
-    { value: "sound_assistant", label: "Sound Assistant" },
-  ],
-  lighting: [
-    { value: "gaffer", label: "Gaffer" },
-    { value: "best_boy", label: "Best Boy" },
-    { value: "electrician", label: "Electrician" },
-  ],
-  art: [
-    { value: "production_designer", label: "Production Designer" },
-    { value: "art_director", label: "Art Director" },
-    { value: "set_decorator", label: "Set Decorator" },
-    { value: "props_master", label: "Props Master" },
-  ],
-  costume: [
-    { value: "costume_designer", label: "Costume Designer" },
-    { value: "costume_supervisor", label: "Costume Supervisor" },
-    { value: "wardrobe_assistant", label: "Wardrobe Assistant" },
-  ],
-  makeup: [
-    { value: "makeup_designer", label: "Make-Up Designer" },
-    { value: "hair_designer", label: "Hair Designer" },
-    { value: "makeup_artist", label: "Make-Up Artist" },
-  ],
-  editing: [
-    { value: "editor", label: "Editor" },
-    { value: "assistant_editor", label: "Assistant Editor" },
-    { value: "vfx_editor", label: "VFX Editor" },
-  ],
-  production: [
-    { value: "line_producer", label: "Line Producer" },
-    { value: "production_manager", label: "Production Manager" },
-    { value: "production_coordinator", label: "Production Coordinator" },
-    { value: "production_assistant", label: "Production Assistant" },
-  ],
-  cast: [
-    { value: "lead_actor", label: "Lead Actor" },
-    { value: "supporting_actor", label: "Supporting Actor" },
-    { value: "day_player", label: "Day Player" },
-    { value: "featured_extra", label: "Featured Extra" },
-  ],
-  stunts: [
-    { value: "stunt_coordinator", label: "Stunt Coordinator" },
-    { value: "stunt_performer", label: "Stunt Performer" },
-  ],
-  stand_ins: [{ value: "stand_in", label: "Stand-In" }],
-  music: [
-    { value: "composer", label: "Composer" },
-    { value: "musician", label: "Session Musician" },
-  ],
-  general: [
-    { value: "runner", label: "Runner" },
-    { value: "intern", label: "Intern" },
-  ],
-  office: [
-    { value: "accountant", label: "Production Accountant" },
-    { value: "accounts_assistant", label: "Accounts Assistant" },
-  ],
-  transport: [
-    { value: "transport_captain", label: "Transport Captain" },
-    { value: "driver", label: "Driver" },
-  ],
-};
-
-const BUDGET_TIER_OPTIONS = [
-  { value: "low", label: "Low Budget (< £5M)" },
-  { value: "mid", label: "Mid Budget (£5M - £15M)" },
-  { value: "high", label: "High Budget (£15M - £50M)" },
-  { value: "studio", label: "Studio (> £50M)" },
-];
+// ---------------------------------------------------------------------------
+// FilterSelect (same pattern as RateCards.jsx)
+// ---------------------------------------------------------------------------
+function FilterSelect({
+  label,
+  placeholder,
+  value,
+  onValueChange,
+  options,
+  disabled,
+  loading,
+  error,
+  className,
+}) {
+  const selectedLabel = (options ?? []).find((o) => o._id === value)?.name;
+  return (
+    <div className={cn("space-y-1.5", className)}>
+      <Label>{label}</Label>
+      <Select value={value ?? ""} onValueChange={onValueChange} disabled={disabled}>
+        <SelectTrigger className={cn("w-full", error && "border-destructive")}>
+          {selectedLabel ? (
+            <span className="truncate">{selectedLabel}</span>
+          ) : (
+            <SelectValue placeholder={loading ? "Loading..." : placeholder} />
+          )}
+        </SelectTrigger>
+        <SelectContent>
+          {(options ?? []).map((opt) => (
+            <SelectItem key={opt._id} value={opt._id}>
+              {opt.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {error && <p className="text-xs text-destructive">{error}</p>}
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Page component
@@ -265,8 +205,16 @@ export default function DealMemoNew() {
   const [direction, setDirection] = useState(1);
   const [rateSource, setRateSource] = useState(null);
 
+  // Store display labels for the review step
+  const [classificationLabels, setClassificationLabels] = useState({
+    union: "",
+    department: "",
+    designation: "",
+    budgetTier: "",
+  });
+
   const { data: productions, isLoading: prodsLoading } = useProductions();
-  const rateCardLookup = useRateCardLookup();
+  const rateLookup = useRateLookup();
   const createDealMemo = useCreateDealMemo();
 
   const {
@@ -283,10 +231,39 @@ export default function DealMemoNew() {
     mode: "onTouched",
   });
 
-  const watchedUnion = watch("union");
-  const watchedDepartment = watch("department");
-  const watchedDesignation = watch("designation");
-  const watchedBudgetTier = watch("budgetTier");
+  const watchedUnionId = watch("unionId");
+  const watchedDepartmentId = watch("departmentId");
+  const watchedDesignationId = watch("designationId");
+  const watchedBudgetTierId = watch("budgetTierId");
+  const watchedProductionId = watch("productionId");
+
+  // API-driven cascading selects
+  const { data: unions, isLoading: unionsLoading } = useUnions();
+  const { data: departments, isLoading: deptsLoading } = useDepartments(watchedUnionId);
+  const { data: designations, isLoading: desigsLoading } = useDesignations(watchedDepartmentId);
+  const { data: budgetTiers, isLoading: tiersLoading } = useBudgetTiers(watchedUnionId);
+
+  // Build person list from the selected production's members
+  const selectedProduction = useMemo(
+    () => productions?.find((p) => p._id === watchedProductionId),
+    [productions, watchedProductionId]
+  );
+
+  const personOptions = useMemo(() => {
+    if (!selectedProduction?.members) return [];
+    return selectedProduction.members
+      .filter((m) => m.userId)
+      .map((m) => {
+        const u = m.userId;
+        return {
+          _id: typeof u === "string" ? u : u._id,
+          name:
+            typeof u === "string"
+              ? u
+              : `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email,
+        };
+      });
+  }, [selectedProduction]);
 
   // ---- Step navigation ----
   const goNext = useCallback(async () => {
@@ -299,20 +276,34 @@ export default function DealMemoNew() {
     // After step 2 (classification), auto-lookup rates
     if (currentStep === 1) {
       const vals = getValues();
-      rateCardLookup.mutate(
+
+      // Store display labels for review
+      const unionName = (unions ?? []).find((u) => u._id === vals.unionId)?.name ?? "";
+      const deptName = (departments ?? []).find((d) => d._id === vals.departmentId)?.name ?? "";
+      const desigName = (designations ?? []).find((d) => d._id === vals.designationId)?.name ?? "";
+      const tierName = (budgetTiers ?? []).find((t) => t._id === vals.budgetTierId)?.name ?? "";
+      setClassificationLabels({
+        union: unionName,
+        department: deptName,
+        designation: desigName,
+        budgetTier: tierName,
+      });
+
+      rateLookup.mutate(
         {
-          union: vals.union,
-          department: vals.department,
-          designation: vals.designation,
-          budgetTier: vals.budgetTier,
+          unionId: vals.unionId,
+          departmentId: vals.departmentId,
+          designationId: vals.designationId,
+          budgetTierId: vals.budgetTierId,
         },
         {
-          onSuccess: (data) => {
+          onSuccess: (result) => {
+            const data = result?.primary || result;
             if (data?.hourlyRate != null) setValue("hourlyRate", data.hourlyRate);
             if (data?.dailyRate != null) setValue("dailyRate", data.dailyRate);
             if (data?.weeklyRate != null) setValue("weeklyRate", data.weeklyRate);
             if (data?.guaranteedHours != null) setValue("guaranteedHours", data.guaranteedHours);
-            setRateSource(data?.source || null);
+            setRateSource(data?.source || data?.sourceUrl ? { url: data.sourceUrl, label: data.sourceDocument } : null);
 
             // Auto-populate overtime rules if returned
             if (data?.overtimeRules) {
@@ -331,7 +322,7 @@ export default function DealMemoNew() {
 
     setDirection(1);
     setCurrentStep((s) => Math.min(s + 1, 6));
-  }, [currentStep, trigger, getValues, rateCardLookup, setValue]);
+  }, [currentStep, trigger, getValues, rateLookup, setValue, unions, departments, designations, budgetTiers]);
 
   const goBack = useCallback(() => {
     setDirection(-1);
@@ -340,7 +331,42 @@ export default function DealMemoNew() {
 
   // ---- Submit ----
   const onSubmit = handleSubmit((data) => {
-    createDealMemo.mutate(data, {
+    // Map form data to what POST /api/deal-memos expects
+    const payload = {
+      productionId: data.productionId,
+      personId: data.personId,
+      startDate: data.startDate,
+      endDate: data.endDate || undefined,
+      unionId: data.unionId,
+      departmentId: data.departmentId,
+      designationId: data.designationId,
+      budgetTierId: data.budgetTierId,
+      weeklyRate: data.weeklyRate,
+      dailyRate: data.dailyRate,
+      hourlyRate: data.hourlyRate,
+      guaranteedHours: data.guaranteedHours,
+      holidayPayPct: data.holidayPayPct,
+      employerNiPct: data.employerNiPct,
+      pensionPct: data.pensionPct,
+      apprenticeLevyPct: data.apprenticeLevyPct,
+      standardWorkDayHrs: data.standardWorkDayHrs,
+      lunchBreakHrs: data.lunchBreakHrs,
+      sixthDayMultiplier: data.sixthDayMultiplier,
+      seventhDayMultiplier: data.seventhDayMultiplier,
+      nightPremiumPct: data.nightPremiumPct,
+      mealPenaltyEnabled: data.mealPenaltyEnabled,
+      mealPenaltyAmount: data.mealPenaltyAmount,
+      mealPenaltyAfterHrs: data.mealPenaltyAfterHrs,
+      turnaroundMinHrs: data.turnaroundMinHrs,
+      kitAllowance: data.kitAllowance,
+      travelAllowance: data.travelAllowance,
+      perDiem: data.perDiem,
+      phoneAllowance: data.phoneAllowance,
+      computerAllowance: data.computerAllowance,
+      carAllowance: data.carAllowance,
+    };
+
+    createDealMemo.mutate(payload, {
       onSuccess: (result) => {
         toast.success("Deal memo created successfully");
         navigate(`/deal-memos/${result._id || result.id}`);
@@ -351,29 +377,38 @@ export default function DealMemoNew() {
     });
   });
 
-  // ---- Helpers ----
-  const departments = DEPARTMENT_OPTIONS[watchedUnion] || [];
-  const designations = DESIGNATION_OPTIONS[watchedDepartment] || [];
-  const selectedProduction = productions?.find((p) => p._id === watch("productionId"));
-
-  const labelForValue = (options, val) => options.find((o) => o.value === val)?.label || val || "--";
-
   // ---- Render steps ----
   const renderStep = () => {
     switch (currentStep) {
       case 0:
-        return <StepProduction control={control} productions={productions} prodsLoading={prodsLoading} errors={errors} />;
+        return (
+          <StepProduction
+            control={control}
+            productions={productions}
+            prodsLoading={prodsLoading}
+            personOptions={personOptions}
+            errors={errors}
+            setValue={setValue}
+            watchedProductionId={watchedProductionId}
+          />
+        );
       case 1:
         return (
           <StepClassification
             control={control}
             errors={errors}
-            watchedUnion={watchedUnion}
-            watchedDepartment={watchedDepartment}
+            unions={unions}
+            unionsLoading={unionsLoading}
             departments={departments}
+            deptsLoading={deptsLoading}
             designations={designations}
+            desigsLoading={desigsLoading}
+            budgetTiers={budgetTiers}
+            tiersLoading={tiersLoading}
+            watchedUnionId={watchedUnionId}
+            watchedDepartmentId={watchedDepartmentId}
             setValue={setValue}
-            isLookingUp={rateCardLookup.isPending}
+            isLookingUp={rateLookup.isPending}
           />
         );
       case 2:
@@ -397,7 +432,8 @@ export default function DealMemoNew() {
           <StepReview
             values={getValues()}
             productions={productions}
-            labelForValue={labelForValue}
+            personOptions={personOptions}
+            classificationLabels={classificationLabels}
           />
         );
       default:
@@ -448,16 +484,16 @@ export default function DealMemoNew() {
 // Step components
 // ===========================================================================
 
-// ---- Step 1: Production ----
-function StepProduction({ control, productions, prodsLoading, errors }) {
+// ---- Step 1: Production, Person, Dates ----
+function StepProduction({ control, productions, prodsLoading, personOptions, errors, setValue, watchedProductionId }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 text-primary">
         <Film className="size-5" />
-        <h2 className="text-lg font-semibold">Select Production</h2>
+        <h2 className="text-lg font-semibold">Production & Person</h2>
       </div>
       <p className="text-sm text-muted-foreground">
-        Choose the production this deal memo belongs to.
+        Choose the production, the crew member this deal is for, and the deal dates.
       </p>
 
       {prodsLoading ? (
@@ -465,43 +501,151 @@ function StepProduction({ control, productions, prodsLoading, errors }) {
           <Skeleton className="h-8 w-full" />
         </div>
       ) : (
-        <Controller
-          name="productionId"
-          control={control}
-          render={({ field }) => (
-            <div className="space-y-1.5 max-w-md">
-              <Label>Production</Label>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger className={cn("w-full", errors.productionId && "border-destructive")}>
-                  <SelectValue placeholder="Select a production..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {(productions || []).map((p) => (
-                    <SelectItem key={p._id} value={p._id}>
-                      {p.title || p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.productionId && (
-                <p className="text-xs text-destructive">{errors.productionId.message}</p>
+        <div className="space-y-5">
+          {/* Production */}
+          <Controller
+            name="productionId"
+            control={control}
+            render={({ field }) => (
+              <div className="space-y-1.5 max-w-md">
+                <Label>Production</Label>
+                <Select
+                  value={field.value}
+                  onValueChange={(val) => {
+                    field.onChange(val);
+                    // Reset person when production changes
+                    setValue("personId", "");
+                  }}
+                >
+                  <SelectTrigger className={cn("w-full", errors.productionId && "border-destructive")}>
+                    <SelectValue placeholder="Select a production..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(productions || []).map((p) => (
+                      <SelectItem key={p._id} value={p._id}>
+                        {p.title || p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.productionId && (
+                  <p className="text-xs text-destructive">{errors.productionId.message}</p>
+                )}
+              </div>
+            )}
+          />
+
+          {/* Person */}
+          <Controller
+            name="personId"
+            control={control}
+            render={({ field }) => (
+              <div className="space-y-1.5 max-w-md">
+                <Label>Person (Crew Member)</Label>
+                {personOptions.length > 0 ? (
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={!watchedProductionId}
+                  >
+                    <SelectTrigger className={cn("w-full", errors.personId && "border-destructive")}>
+                      <SelectValue
+                        placeholder={watchedProductionId ? "Select a crew member..." : "Select a production first"}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {personOptions.map((p) => (
+                        <SelectItem key={p._id} value={p._id}>
+                          {p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div>
+                    <Input
+                      placeholder={
+                        watchedProductionId
+                          ? "No members found -- enter person ID manually"
+                          : "Select a production first"
+                      }
+                      value={field.value}
+                      onChange={(e) => field.onChange(e.target.value)}
+                      disabled={!watchedProductionId}
+                      className={cn(errors.personId && "border-destructive")}
+                    />
+                    {watchedProductionId && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        This production has no members. Enter the user's MongoDB ID.
+                      </p>
+                    )}
+                  </div>
+                )}
+                {errors.personId && (
+                  <p className="text-xs text-destructive">{errors.personId.message}</p>
+                )}
+              </div>
+            )}
+          />
+
+          {/* Dates */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
+            <Controller
+              name="startDate"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-1.5">
+                  <Label>Start Date</Label>
+                  <Input
+                    type="date"
+                    value={field.value}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    className={cn(errors.startDate && "border-destructive")}
+                  />
+                  {errors.startDate && (
+                    <p className="text-xs text-destructive">{errors.startDate.message}</p>
+                  )}
+                </div>
               )}
-            </div>
-          )}
-        />
+            />
+
+            <Controller
+              name="endDate"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-1.5">
+                  <Label>
+                    End Date <span className="text-muted-foreground font-normal">(optional)</span>
+                  </Label>
+                  <Input
+                    type="date"
+                    value={field.value}
+                    onChange={(e) => field.onChange(e.target.value)}
+                  />
+                </div>
+              )}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
 }
 
-// ---- Step 2: Classification ----
+// ---- Step 2: Classification (API-driven cascading selects) ----
 function StepClassification({
   control,
   errors,
-  watchedUnion,
-  watchedDepartment,
+  unions,
+  unionsLoading,
   departments,
+  deptsLoading,
   designations,
+  desigsLoading,
+  budgetTiers,
+  tiersLoading,
+  watchedUnionId,
+  watchedDepartmentId,
   setValue,
   isLookingUp,
 }) {
@@ -518,107 +662,81 @@ function StepClassification({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Union */}
         <Controller
-          name="union"
+          name="unionId"
           control={control}
           render={({ field }) => (
-            <div className="space-y-1.5">
-              <Label>Union / Agreement</Label>
-              <Select
-                value={field.value}
-                onValueChange={(val) => {
-                  field.onChange(val);
-                  setValue("department", "");
-                  setValue("designation", "");
-                }}
-              >
-                <SelectTrigger className={cn("w-full", errors.union && "border-destructive")}>
-                  <SelectValue placeholder="Select union..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {UNION_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.union && <p className="text-xs text-destructive">{errors.union.message}</p>}
-            </div>
+            <FilterSelect
+              label="Union / Agreement"
+              placeholder="Select union..."
+              value={field.value}
+              onValueChange={(val) => {
+                field.onChange(val);
+                setValue("departmentId", "");
+                setValue("designationId", "");
+                setValue("budgetTierId", "");
+              }}
+              options={unions}
+              loading={unionsLoading}
+              disabled={unionsLoading}
+              error={errors.unionId?.message}
+            />
           )}
         />
 
         {/* Department */}
         <Controller
-          name="department"
+          name="departmentId"
           control={control}
           render={({ field }) => (
-            <div className="space-y-1.5">
-              <Label>Department</Label>
-              <Select
-                value={field.value}
-                onValueChange={(val) => {
-                  field.onChange(val);
-                  setValue("designation", "");
-                }}
-                disabled={!watchedUnion}
-              >
-                <SelectTrigger className={cn("w-full", errors.department && "border-destructive")}>
-                  <SelectValue placeholder={watchedUnion ? "Select department..." : "Select union first"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.department && <p className="text-xs text-destructive">{errors.department.message}</p>}
-            </div>
+            <FilterSelect
+              label="Department"
+              placeholder={watchedUnionId ? "Select department..." : "Select union first"}
+              value={field.value}
+              onValueChange={(val) => {
+                field.onChange(val);
+                setValue("designationId", "");
+              }}
+              options={departments}
+              loading={deptsLoading}
+              disabled={!watchedUnionId || deptsLoading}
+              error={errors.departmentId?.message}
+            />
           )}
         />
 
         {/* Designation */}
         <Controller
-          name="designation"
+          name="designationId"
           control={control}
           render={({ field }) => (
-            <div className="space-y-1.5">
-              <Label>Designation / Role</Label>
-              <Select
-                value={field.value}
-                onValueChange={field.onChange}
-                disabled={!watchedDepartment}
-              >
-                <SelectTrigger className={cn("w-full", errors.designation && "border-destructive")}>
-                  <SelectValue placeholder={watchedDepartment ? "Select designation..." : "Select department first"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {designations.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.designation && <p className="text-xs text-destructive">{errors.designation.message}</p>}
-            </div>
+            <FilterSelect
+              label="Designation / Role"
+              placeholder={watchedDepartmentId ? "Select designation..." : "Select department first"}
+              value={field.value}
+              onValueChange={field.onChange}
+              options={designations}
+              loading={desigsLoading}
+              disabled={!watchedDepartmentId || desigsLoading}
+              error={errors.designationId?.message}
+            />
           )}
         />
 
         {/* Budget Tier */}
         <Controller
-          name="budgetTier"
+          name="budgetTierId"
           control={control}
           render={({ field }) => (
-            <div className="space-y-1.5">
-              <Label>Budget Tier</Label>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger className={cn("w-full", errors.budgetTier && "border-destructive")}>
-                  <SelectValue placeholder="Select budget tier..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {BUDGET_TIER_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.budgetTier && <p className="text-xs text-destructive">{errors.budgetTier.message}</p>}
-            </div>
+            <FilterSelect
+              label="Budget Tier"
+              placeholder={watchedUnionId ? "Select budget tier..." : "Select union first"}
+              value={field.value}
+              onValueChange={field.onChange}
+              options={budgetTiers}
+              loading={tiersLoading}
+              disabled={!watchedUnionId || tiersLoading}
+              error={errors.budgetTierId?.message}
+            />
           )}
         />
       </div>
@@ -632,10 +750,10 @@ function StepClassification({
 
 // ---- Step 3: Rates ----
 function StepRates({ control, errors, watch, setValue, rateSource }) {
-  const union = watch("union");
-  const department = watch("department");
-  const designation = watch("designation");
-  const budgetTier = watch("budgetTier");
+  const unionId = watch("unionId");
+  const departmentId = watch("departmentId");
+  const designationId = watch("designationId");
+  const budgetTierId = watch("budgetTierId");
 
   return (
     <div className="space-y-6">
@@ -658,10 +776,10 @@ function StepRates({ control, errors, watch, setValue, rateSource }) {
               value={field.value}
               onChange={field.onChange}
               rateType="weeklyRate"
-              union={union}
-              department={department}
-              designation={designation}
-              budgetTier={budgetTier}
+              union={unionId}
+              department={departmentId}
+              designation={designationId}
+              budgetTier={budgetTierId}
               sourceUrl={rateSource?.url}
               sourceLabel={rateSource?.label}
               error={errors.weeklyRate?.message}
@@ -678,10 +796,10 @@ function StepRates({ control, errors, watch, setValue, rateSource }) {
               value={field.value}
               onChange={field.onChange}
               rateType="dailyRate"
-              union={union}
-              department={department}
-              designation={designation}
-              budgetTier={budgetTier}
+              union={unionId}
+              department={departmentId}
+              designation={designationId}
+              budgetTier={budgetTierId}
               sourceUrl={rateSource?.url}
               sourceLabel={rateSource?.label}
             />
@@ -697,10 +815,10 @@ function StepRates({ control, errors, watch, setValue, rateSource }) {
               value={field.value}
               onChange={field.onChange}
               rateType="hourlyRate"
-              union={union}
-              department={department}
-              designation={designation}
-              budgetTier={budgetTier}
+              union={unionId}
+              department={departmentId}
+              designation={designationId}
+              budgetTier={budgetTierId}
               sourceUrl={rateSource?.url}
               sourceLabel={rateSource?.label}
             />
@@ -733,7 +851,7 @@ function StepFringes({ control, errors, watch, setValue }) {
     { name: "holidayPayPct", label: "Holiday Pay %", info: "Statutory holiday pay accrual percentage" },
     { name: "employerNiPct", label: "Employer NI %", info: "Employer National Insurance contribution rate" },
     { name: "pensionPct", label: "Pension %", info: "Auto-enrolment pension employer contribution" },
-    { name: "apprenticeLevyPct", label: "Apprenticeship Levy %", info: "Applicable for pay bills over £3M" },
+    { name: "apprenticeLevyPct", label: "Apprenticeship Levy %", info: "Applicable for pay bills over 3M" },
   ];
 
   return (
@@ -1088,8 +1206,9 @@ function StepAllowances({ control, errors, watch, setValue }) {
 }
 
 // ---- Step 7: Review ----
-function StepReview({ values, productions, labelForValue }) {
+function StepReview({ values, productions, personOptions, classificationLabels }) {
   const production = productions?.find((p) => p._id === values.productionId);
+  const person = personOptions?.find((p) => p._id === values.personId);
   const totalFringe =
     (values.holidayPayPct || 0) +
     (values.employerNiPct || 0) +
@@ -1131,17 +1250,20 @@ function StepReview({ values, productions, labelForValue }) {
       </p>
 
       <div className="space-y-6 rounded-lg border p-5">
-        <Section icon={Film} title="Production">
+        <Section icon={Film} title="Production & Person">
           <Field label="Production" value={production?.title || production?.name} />
+          <Field label="Person" value={person?.name || values.personId} />
+          <Field label="Start Date" value={values.startDate} />
+          {values.endDate && <Field label="End Date" value={values.endDate} />}
         </Section>
 
         <Separator />
 
         <Section icon={Users} title="Classification">
-          <Field label="Union" value={labelForValue(UNION_OPTIONS, values.union)} />
-          <Field label="Department" value={labelForValue(DEPARTMENT_OPTIONS[values.union] || [], values.department)} />
-          <Field label="Designation" value={labelForValue(DESIGNATION_OPTIONS[values.department] || [], values.designation)} />
-          <Field label="Budget Tier" value={labelForValue(BUDGET_TIER_OPTIONS, values.budgetTier)} />
+          <Field label="Union" value={classificationLabels.union} />
+          <Field label="Department" value={classificationLabels.department} />
+          <Field label="Designation" value={classificationLabels.designation} />
+          <Field label="Budget Tier" value={classificationLabels.budgetTier} />
         </Section>
 
         <Separator />
