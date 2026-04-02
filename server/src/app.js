@@ -44,8 +44,9 @@ if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('dev'));
 }
 
-const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 500 });
-app.use('/api', limiter);
+// Rate limiting disabled for development
+// const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 500 });
+// app.use('/api', limiter);
 
 // API Routes
 app.use('/api/auth', authRoutes);
