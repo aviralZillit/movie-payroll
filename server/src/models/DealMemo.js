@@ -100,6 +100,25 @@ const dealMemoSchema = new mongoose.Schema(
     computerAllowance: { type: Number, default: 0 },
     carAllowance: { type: Number, default: 0 },
 
+    // Production fee (one-time or per-production)
+    productionFee: { type: Number, default: 0 },
+    productionFeeBasis: { type: String, enum: ['one_time', 'weekly', 'per_episode', null], default: null },
+
+    // Idle days
+    idleDays: { type: Number, default: 0 },
+    idleDayRate: { type: Number, default: 0 },
+
+    // Housing / Accommodation
+    housingAllowance: { type: Number, default: 0 },
+    housingAllowancePeriod: { type: String, enum: ['daily', 'weekly', 'monthly', null], default: 'weekly' },
+
+    // Dynamic custom allowances
+    customAllowances: [{
+      name: { type: String, required: true },
+      amount: { type: Number, required: true },
+      period: { type: String, enum: ['daily', 'weekly', 'monthly', 'one_time'], default: 'weekly' },
+    }],
+
     // Signature
     signedAt: Date,
     signatureData: mongoose.Schema.Types.Mixed,

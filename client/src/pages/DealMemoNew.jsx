@@ -4,7 +4,7 @@ import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -57,6 +57,9 @@ import {
   CalendarDays,
   Sparkles,
   AlertCircle,
+  Plus,
+  X,
+  Home,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -112,6 +115,17 @@ const dealMemoSchema = z.object({
   phoneAllowance: z.number().min(0),
   computerAllowance: z.number().min(0),
   carAllowance: z.number().min(0),
+  // New allowance fields
+  productionFee: z.number().min(0),
+  productionFeeBasis: z.string().optional(),
+  idleDays: z.number().min(0),
+  idleDayRate: z.number().min(0),
+  housingAllowance: z.number().min(0),
+  customAllowances: z.array(z.object({
+    name: z.string().min(1),
+    amount: z.number().min(0),
+    period: z.string(),
+  })).optional(),
 });
 
 const DEFAULT_VALUES = {
@@ -160,6 +174,13 @@ const DEFAULT_VALUES = {
   phoneAllowance: 0,
   computerAllowance: 0,
   carAllowance: 0,
+  // New allowance fields
+  productionFee: 0,
+  productionFeeBasis: "",
+  idleDays: 0,
+  idleDayRate: 0,
+  housingAllowance: 0,
+  customAllowances: [],
 };
 
 const UK_FRINGE_DEFAULTS = {
@@ -196,6 +217,10 @@ const STEP_FIELDS = [
     "phoneAllowance",
     "computerAllowance",
     "carAllowance",
+    "productionFee",
+    "idleDays",
+    "idleDayRate",
+    "housingAllowance",
   ],
   [], // review step - no extra validation
 ];
@@ -460,6 +485,13 @@ export default function DealMemoNew() {
       phoneAllowance: data.phoneAllowance,
       computerAllowance: data.computerAllowance,
       carAllowance: data.carAllowance,
+      // New allowance fields
+      productionFee: data.productionFee,
+      productionFeeBasis: data.productionFeeBasis || undefined,
+      idleDays: data.idleDays,
+      idleDayRate: data.idleDayRate,
+      housingAllowance: data.housingAllowance,
+      customAllowances: data.customAllowances?.length ? data.customAllowances : undefined,
     };
 
     createDealMemo.mutate(payload, {
@@ -512,6 +544,12 @@ export default function DealMemoNew() {
         phoneAllowance: num(formData.phoneAllowance) ?? 0,
         computerAllowance: num(formData.computerAllowance) ?? 0,
         carAllowance: num(formData.carAllowance) ?? 0,
+        productionFee: num(formData.productionFee) ?? 0,
+        productionFeeBasis: formData.productionFeeBasis || "",
+        idleDays: num(formData.idleDays) ?? 0,
+        idleDayRate: num(formData.idleDayRate) ?? 0,
+        housingAllowance: num(formData.housingAllowance) ?? 0,
+        customAllowances: formData.customAllowances || [],
       };
 
       for (const [key, value] of Object.entries(fieldMap)) {
@@ -1525,12 +1563,36 @@ function StepAllowances({ control, errors, watch, setValue, country, cSymbol }) 
     { name: "phoneAllowance", label: "Phone Allowance" },
     { name: "computerAllowance", label: "Computer Allowance" },
     { name: "carAllowance", label: "Car Allowance" },
+    { name: "housingAllowance", label: "Housing Allowance" },
   ];
 
-  const totalAllowances = allowanceFields.reduce(
+  const customAllowances = watch("customAllowances") || [];
+
+  const totalFixedAllowances = allowanceFields.reduce(
     (sum, f) => sum + (watch(f.name) || 0),
     0
   );
+  const totalCustomAllowances = customAllowances.reduce(
+    (sum, c) => sum + (c.amount || 0),
+    0
+  );
+  const totalAllowances = totalFixedAllowances + totalCustomAllowances;
+
+  const addCustomAllowance = () => {
+    const current = watch("customAllowances") || [];
+    setValue("customAllowances", [...current, { name: "", amount: 0, period: "weekly" }], { shouldDirty: true });
+  };
+
+  const removeCustomAllowance = (index) => {
+    const current = watch("customAllowances") || [];
+    setValue("customAllowances", current.filter((_, i) => i !== index), { shouldDirty: true });
+  };
+
+  const updateCustomAllowance = (index, field, value) => {
+    const current = [...(watch("customAllowances") || [])];
+    current[index] = { ...current[index], [field]: value };
+    setValue("customAllowances", current, { shouldDirty: true });
+  };
 
   return (
     <div className="space-y-6">
@@ -1539,18 +1601,19 @@ function StepAllowances({ control, errors, watch, setValue, country, cSymbol }) 
         <h2 className="text-lg font-semibold">Allowances</h2>
       </div>
       <p className="text-sm text-muted-foreground">
-        Weekly allowance amounts in {country === "US" ? "USD" : "GBP"}. Leave at 0 if not applicable.
+        Allowance amounts in {country === "US" ? "USD" : "GBP"}. Leave at 0 if not applicable.
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {allowanceFields.map(({ name, label }) => (
+      {/* Production Fee */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Production Fee</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-lg">
           <Controller
-            key={name}
-            name={name}
+            name="productionFee"
             control={control}
             render={({ field }) => (
               <div className="space-y-1.5">
-                <Label>{label}</Label>
+                <Label>Amount</Label>
                 <div className="relative">
                   <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
                     {cSymbol}
@@ -1564,13 +1627,204 @@ function StepAllowances({ control, errors, watch, setValue, country, cSymbol }) 
                     className="pl-7 tabular-nums"
                   />
                 </div>
-                {errors[name] && (
-                  <p className="text-xs text-destructive">{errors[name].message}</p>
+                {errors.productionFee && (
+                  <p className="text-xs text-destructive">{errors.productionFee.message}</p>
                 )}
               </div>
             )}
           />
-        ))}
+          <Controller
+            name="productionFeeBasis"
+            control={control}
+            render={({ field }) => (
+              <div className="space-y-1.5">
+                <Label>Basis</Label>
+                <Select value={field.value || ""} onValueChange={field.onChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select basis..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="one_time">One-time</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="per_episode">Per Episode</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          />
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Idle Days */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Idle Days</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-lg">
+          <Controller
+            name="idleDays"
+            control={control}
+            render={({ field }) => (
+              <div className="space-y-1.5">
+                <Label>Number of Idle Days</Label>
+                <Input
+                  type="number"
+                  step="1"
+                  min={0}
+                  value={field.value ?? ""}
+                  onChange={(e) => field.onChange(e.target.value === "" ? 0 : Number(e.target.value))}
+                  className="tabular-nums"
+                />
+                {errors.idleDays && (
+                  <p className="text-xs text-destructive">{errors.idleDays.message}</p>
+                )}
+              </div>
+            )}
+          />
+          <Controller
+            name="idleDayRate"
+            control={control}
+            render={({ field }) => (
+              <div className="space-y-1.5">
+                <Label>Idle Day Rate</Label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                    {cSymbol}
+                  </span>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    value={field.value ?? ""}
+                    onChange={(e) => field.onChange(e.target.value === "" ? 0 : Number(e.target.value))}
+                    className="pl-7 tabular-nums"
+                  />
+                </div>
+                {errors.idleDayRate && (
+                  <p className="text-xs text-destructive">{errors.idleDayRate.message}</p>
+                )}
+              </div>
+            )}
+          />
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Fixed Allowances (including Housing) */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Standard Allowances</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {allowanceFields.map(({ name, label }) => (
+            <Controller
+              key={name}
+              name={name}
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-1.5">
+                  <Label>{label}</Label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      {cSymbol}
+                    </span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      value={field.value ?? ""}
+                      onChange={(e) => field.onChange(e.target.value === "" ? 0 : Number(e.target.value))}
+                      className="pl-7 tabular-nums"
+                    />
+                  </div>
+                  {errors[name] && (
+                    <p className="text-xs text-destructive">{errors[name].message}</p>
+                  )}
+                </div>
+              )}
+            />
+          ))}
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Custom Allowances */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Custom Allowances</h3>
+          <Button type="button" variant="outline" size="sm" onClick={addCustomAllowance} className="gap-1.5">
+            <Plus className="size-3.5" />
+            Add Custom Allowance
+          </Button>
+        </div>
+
+        <AnimatePresence mode="popLayout">
+          {customAllowances.map((ca, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="grid grid-cols-[1fr_auto_auto_auto] sm:grid-cols-[1fr_120px_130px_36px] gap-3 items-end rounded-lg border bg-muted/30 p-3 mb-2">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Name</Label>
+                  <Input
+                    type="text"
+                    placeholder="e.g. Relocation"
+                    value={ca.name || ""}
+                    onChange={(e) => updateCustomAllowance(index, "name", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Amount</Label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                      {cSymbol}
+                    </span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      value={ca.amount ?? ""}
+                      onChange={(e) => updateCustomAllowance(index, "amount", e.target.value === "" ? 0 : Number(e.target.value))}
+                      className="pl-6 tabular-nums"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Period</Label>
+                  <Select value={ca.period || "weekly"} onValueChange={(v) => updateCustomAllowance(index, "period", v)}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="one_time">One-time</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 self-end"
+                  onClick={() => removeCustomAllowance(index)}
+                >
+                  <X className="size-4" />
+                </Button>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+
+        {customAllowances.length === 0 && (
+          <p className="text-xs text-muted-foreground italic">No custom allowances added.</p>
+        )}
       </div>
 
       <div className="rounded-lg border bg-muted/40 p-3">
@@ -1598,7 +1852,9 @@ function StepReview({ values, productions, personOptions, classificationLabels, 
     (values.perDiem || 0) +
     (values.phoneAllowance || 0) +
     (values.computerAllowance || 0) +
-    (values.carAllowance || 0);
+    (values.carAllowance || 0) +
+    (values.housingAllowance || 0) +
+    ((values.customAllowances || []).reduce((s, c) => s + (c.amount || 0), 0));
 
   const Section = ({ icon: Icon, title, children }) => (
     <div className="space-y-3">
@@ -1695,12 +1951,25 @@ function StepReview({ values, productions, personOptions, classificationLabels, 
         <Separator />
 
         <Section icon={Briefcase} title="Allowances">
+          {values.productionFee > 0 && (
+            <Field
+              label="Production Fee"
+              value={`${fmt(values.productionFee)}${values.productionFeeBasis ? ` (${values.productionFeeBasis.replace("_", " ")})` : ""}`}
+            />
+          )}
+          {values.idleDays > 0 && (
+            <Field label="Idle Days" value={`${values.idleDays} days @ ${fmt(values.idleDayRate)}/day`} />
+          )}
           <Field label="Kit" value={fmt(values.kitAllowance)} />
           <Field label="Travel" value={fmt(values.travelAllowance)} />
           <Field label="Per Diem" value={fmt(values.perDiem)} />
           <Field label="Phone" value={fmt(values.phoneAllowance)} />
           <Field label="Computer" value={fmt(values.computerAllowance)} />
           <Field label="Car" value={fmt(values.carAllowance)} />
+          <Field label="Housing" value={fmt(values.housingAllowance)} />
+          {(values.customAllowances || []).map((ca, i) => (
+            <Field key={i} label={ca.name || `Custom #${i + 1}`} value={`${fmt(ca.amount)} (${ca.period?.replace("_", " ") || "weekly"})`} />
+          ))}
           <Field label="Total Allowances" value={fmt(totalAllowances)} />
         </Section>
       </div>

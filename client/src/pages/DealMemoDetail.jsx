@@ -622,12 +622,32 @@ export default function DealMemoDetail() {
 
           {/* Allowances */}
           <Section icon={Briefcase} title="Allowances">
+            {memo.productionFee > 0 && (
+              <DetailField
+                label="Production Fee"
+                value={`${formatCurrency(memo.productionFee)}${memo.productionFeeBasis ? ` (${memo.productionFeeBasis.replace("_", " ")})` : ""}`}
+              />
+            )}
+            {memo.idleDays > 0 && (
+              <DetailField
+                label="Idle Days"
+                value={`${memo.idleDays} days @ ${formatCurrency(memo.idleDayRate)}/day`}
+              />
+            )}
             <DetailField label="Kit" value={formatCurrency(memo.kitAllowance)} />
             <DetailField label="Travel" value={formatCurrency(memo.travelAllowance)} />
             <DetailField label="Per Diem" value={formatCurrency(memo.perDiem)} />
             <DetailField label="Phone" value={formatCurrency(memo.phoneAllowance)} />
             <DetailField label="Computer" value={formatCurrency(memo.computerAllowance)} />
             <DetailField label="Car" value={formatCurrency(memo.carAllowance)} />
+            <DetailField label="Housing" value={formatCurrency(memo.housingAllowance)} />
+            {memo.customAllowances?.length > 0 && memo.customAllowances.map((ca, i) => (
+              <DetailField
+                key={i}
+                label={ca.name || `Custom #${i + 1}`}
+                value={`${formatCurrency(ca.amount)} (${(ca.period || "weekly").replace("_", " ")})`}
+              />
+            ))}
             <DetailField
               label="Total Weekly Allowances"
               value={formatCurrency(
@@ -636,7 +656,9 @@ export default function DealMemoDetail() {
                 (memo.perDiem || 0) +
                 (memo.phoneAllowance || 0) +
                 (memo.computerAllowance || 0) +
-                (memo.carAllowance || 0)
+                (memo.carAllowance || 0) +
+                (memo.housingAllowance || 0) +
+                ((memo.customAllowances || []).reduce((s, c) => s + (c.amount || 0), 0))
               )}
             />
           </Section>
