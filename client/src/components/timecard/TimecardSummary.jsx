@@ -25,7 +25,9 @@ function SummaryRow({ label, value, icon: Icon, highlight, className }) {
   );
 }
 
-export default function TimecardSummary({ entries = [] }) {
+export default function TimecardSummary({ entries = [], standardDayHrs = 11 }) {
+  const toMin = (t) => { if (!t) return 0; const [h, m] = t.split(':').map(Number); return h * 60 + (m || 0); };
+
   const totals = useMemo(() => {
     const result = {
       totalHours: 0,
@@ -42,11 +44,35 @@ export default function TimecardSummary({ entries = [] }) {
 
     entries.forEach((entry) => {
       if (!entry) return;
-      result.totalHours += entry.totalWorkedHrs || entry.totalHours || 0;
-      result.straightHours += entry.straightHrs || entry.straightHours || 0;
-      result.ot15Hours += entry.ot1x5Hrs || entry.ot15Hours || 0;
-      result.ot20Hours += entry.ot2xHrs || entry.ot20Hours || 0;
-      if (entry.callTime && !entry.isRestDay && !entry.isHoliday) {
+
+      // Use server values if available, otherwise calculate client-side
+      let total = entry.totalWorkedHrs || entry.totalHours || 0;
+      let straight = entry.straightHrs || entry.straightHours || 0;
+      let ot15 = entry.ot1x5Hrs || entry.ot15Hours || 0;
+      let ot20 = entry.ot2xHrs || entry.ot20Hours || 0;
+
+      if (total === 0 && entry.callTime && entry.wrapTime) {
+        let callMin = toMin(entry.callTime);
+        let wrapMin = toMin(entry.wrapTime);
+        if (wrapMin <= callMin) wrapMin += 24 * 60;
+        let lunchDur = 0;
+        if (entry.lunchStart && entry.lunchEnd) {
+          let ls = toMin(entry.lunchStart);
+          let le = toMin(entry.lunchEnd);
+          if (le < ls) le += 24 * 60;
+          lunchDur = (le - ls) / 60;
+        }
+        total = Math.round(((wrapMin - callMin) / 60 - lunchDur) * 100) / 100;
+        straight = Math.min(total, standardDayHrs);
+        ot15 = Math.max(0, total - standardDayHrs);
+      }
+
+      result.totalHours += total;
+      result.straightHours += straight;
+      result.ot15Hours += ot15;
+      result.ot20Hours += ot20;
+
+      if (entry.callTime && entry.wrapTime && !entry.isRestDay && !entry.isHoliday) {
         result.daysWorked++;
       }
       if (entry.mealPenaltyCount > 0 || entry.mealPenalty) result.mealPenalties++;

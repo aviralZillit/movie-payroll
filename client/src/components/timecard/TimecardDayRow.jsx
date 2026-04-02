@@ -17,6 +17,7 @@ function TimecardDayRow({
   disabled = false,
   isSixthDay = false,
   isSeventhDay = false,
+  standardDayHrs = 11,
 }) {
   const dayLabel = DAY_LABELS[dayIndex] || "";
   const dateStr = date ? format(new Date(date), "dd/MM") : "";
@@ -29,12 +30,44 @@ function TimecardDayRow({
   const isHoliday = entry?.isHoliday || false;
   const isOff = isRestDay || isHoliday;
 
-  const hours = useMemo(() => ({
-    total: entry?.totalWorkedHrs ?? entry?.totalHours ?? 0,
-    straight: entry?.straightHrs ?? entry?.straightHours ?? 0,
-    ot15: entry?.ot1x5Hrs ?? entry?.ot15Hours ?? 0,
-    ot20: entry?.ot2xHrs ?? entry?.ot20Hours ?? 0,
-  }), [entry?.totalWorkedHrs, entry?.totalHours, entry?.straightHrs, entry?.straightHours, entry?.ot1x5Hrs, entry?.ot15Hours, entry?.ot2xHrs, entry?.ot20Hours]);
+  // Client-side hour calculation for real-time display
+  const hours = useMemo(() => {
+    // If server has calculated values, use those
+    if (entry?.totalWorkedHrs > 0) {
+      return {
+        total: entry.totalWorkedHrs,
+        straight: entry.straightHrs || 0,
+        ot15: entry.ot1x5Hrs || 0,
+        ot20: entry.ot2xHrs || 0,
+      };
+    }
+    // Otherwise calculate client-side from time fields
+    const call = entry?.callTime;
+    const wrap = entry?.wrapTime;
+    const lunchS = entry?.lunchStart;
+    const lunchE = entry?.lunchEnd;
+    if (!call || !wrap) return { total: 0, straight: 0, ot15: 0, ot20: 0 };
+
+    const toMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + (m || 0); };
+    let callMin = toMin(call);
+    let wrapMin = toMin(wrap);
+    if (wrapMin <= callMin) wrapMin += 24 * 60; // overnight
+
+    let lunchDuration = 0;
+    if (lunchS && lunchE) {
+      let ls = toMin(lunchS);
+      let le = toMin(lunchE);
+      if (le < ls) le += 24 * 60;
+      lunchDuration = (le - ls) / 60;
+    }
+
+    const total = Math.round(((wrapMin - callMin) / 60 - lunchDuration) * 100) / 100;
+    const stdDay = standardDayHrs || 11;
+    const straight = Math.min(total, stdDay);
+    const otTotal = Math.max(0, total - stdDay);
+
+    return { total, straight, ot15: otTotal, ot20: 0 };
+  }, [entry?.callTime, entry?.wrapTime, entry?.lunchStart, entry?.lunchEnd, entry?.totalWorkedHrs, entry?.straightHrs, entry?.ot1x5Hrs, entry?.ot2xHrs, standardDayHrs]);
 
   const handleFieldChange = (field, value) => {
     onChange?.({ ...entry, [field]: value });
