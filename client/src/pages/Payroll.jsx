@@ -126,7 +126,16 @@ export default function Payroll() {
       toast.error("Please select a production and week");
       return;
     }
-    createRun.mutate(newRun, {
+    // Calculate weekStarting (Monday) from weekEnding (Sunday)
+    const endDate = new Date(newRun.weekEnding);
+    const startDate = new Date(endDate);
+    startDate.setDate(endDate.getDate() - 6);
+    const payload = {
+      productionId: newRun.productionId,
+      weekStarting: startDate.toISOString().split('T')[0],
+      weekEnding: newRun.weekEnding,
+    };
+    createRun.mutate(payload, {
       onSuccess: (data) => {
         toast.success("Payroll run created");
         setCreateDialogOpen(false);
