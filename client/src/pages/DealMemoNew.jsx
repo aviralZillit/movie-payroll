@@ -699,12 +699,15 @@ function StepProduction({ control, productions, prodsLoading, personOptions, err
                   }}
                 >
                   <SelectTrigger className={cn("w-full", errors.productionId && "border-destructive")}>
-                    <SelectValue placeholder="Select a production..." />
+                    {field.value
+                      ? <span className="truncate">{(productions || []).find(p => p._id === field.value)?.name || "Select a production..."}</span>
+                      : <SelectValue placeholder="Select a production..." />
+                    }
                   </SelectTrigger>
                   <SelectContent>
                     {(productions || []).map((p) => (
                       <SelectItem key={p._id} value={p._id}>
-                        {p.title || p.name}
+                        {p.name || p.title}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -730,9 +733,10 @@ function StepProduction({ control, productions, prodsLoading, personOptions, err
                     disabled={!watchedProductionId}
                   >
                     <SelectTrigger className={cn("w-full", errors.personId && "border-destructive")}>
-                      <SelectValue
-                        placeholder={watchedProductionId ? "Select a crew member..." : "Select a production first"}
-                      />
+                      {field.value
+                        ? <span className="truncate">{personOptions.find(p => p._id === field.value)?.name || "Select a crew member..."}</span>
+                        : <SelectValue placeholder={watchedProductionId ? "Select a crew member..." : "Select a production first"} />
+                      }
                     </SelectTrigger>
                     <SelectContent>
                       {personOptions.map((p) => (
