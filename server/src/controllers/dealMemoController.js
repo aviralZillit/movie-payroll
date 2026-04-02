@@ -245,7 +245,8 @@ export const getById = asyncHandler(async (req, res) => {
     .populate('departmentId', 'code name')
     .populate('designationId', 'code name')
     .populate('budgetTierId', 'code name')
-    .populate('rateCardId');
+    .populate('rateCardId')
+    .populate('statusHistory.changedBy', 'firstName lastName email');
 
   if (!deal) {
     throw new AppError('Deal memo not found.', 404);
@@ -368,7 +369,8 @@ export const transitionStatus = asyncHandler(async (req, res) => {
     .populate('unionId', 'code name')
     .populate('departmentId', 'code name')
     .populate('designationId', 'code name')
-    .populate('budgetTierId', 'code name');
+    .populate('budgetTierId', 'code name')
+    .populate('statusHistory.changedBy', 'firstName lastName email');
 
   res.json({ success: true, data: populated });
 });

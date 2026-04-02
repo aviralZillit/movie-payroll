@@ -21,7 +21,11 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 
-import { useDealMemo, useTransitionDealMemo } from "@/hooks/useDealMemos";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+import { useDealMemo, useTransitionDealMemo, useUpdateDealMemo } from "@/hooks/useDealMemos";
 import useAuthStore from "@/store/authStore";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import {
@@ -42,6 +46,8 @@ import {
   Printer,
   FileDown,
   MessageSquare,
+  History,
+  Edit3,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -284,11 +290,84 @@ export default function DealMemoDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
+  const isAdmin = ADMIN_ROLES.includes(user?.role);
   const { data: memo, isLoading, isError } = useDealMemo(id);
   const transitionMutation = useTransitionDealMemo();
+  const updateMutation = useUpdateDealMemo();
   const [signDialogOpen, setSignDialogOpen] = useState(false);
 
+  // Note dialog state for negotiate / re-send
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+  const [noteDialogAction, setNoteDialogAction] = useState(null);
+  const [noteText, setNoteText] = useState("");
+
+  const NOTE_DIALOG_CONFIG = {
+    negotiate: { title: "Negotiate Deal", description: "Add a note explaining why you want to negotiate this deal." },
+    resend: { title: "Re-send Deal", description: "Add a note explaining the changes or reason for re-sending." },
+  };
+
+  const openNoteDialog = (action) => {
+    setNoteDialogAction(action);
+    setNoteText("");
+    setNoteDialogOpen(true);
+  };
+
+  const submitNoteDialog = () => {
+    if (!noteDialogAction) return;
+    transitionMutation.mutate(
+      { id, action: noteDialogAction, note: noteText.trim() || undefined },
+      {
+        onSuccess: () => {
+          toast.success(`Deal memo ${noteDialogAction} successful`);
+          setNoteDialogOpen(false);
+        },
+        onError: (err) => {
+          toast.error(err?.response?.data?.message || `Failed to ${noteDialogAction} deal memo`);
+          setNoteDialogOpen(false);
+        },
+      }
+    );
+  };
+
+  // Edit Rates dialog state
+  const [editRatesOpen, setEditRatesOpen] = useState(false);
+  const [editRates, setEditRates] = useState({ weeklyRate: "", dailyRate: "", hourlyRate: "" });
+
+  const openEditRates = () => {
+    setEditRates({
+      weeklyRate: memo?.weeklyRate ?? "",
+      dailyRate: memo?.dailyRate ?? "",
+      hourlyRate: memo?.hourlyRate ?? "",
+    });
+    setEditRatesOpen(true);
+  };
+
+  const submitEditRates = () => {
+    const payload = {};
+    if (editRates.weeklyRate !== "") payload.weeklyRate = Number(editRates.weeklyRate);
+    if (editRates.dailyRate !== "") payload.dailyRate = Number(editRates.dailyRate);
+    if (editRates.hourlyRate !== "") payload.hourlyRate = Number(editRates.hourlyRate);
+
+    updateMutation.mutate(
+      { id, ...payload },
+      {
+        onSuccess: () => {
+          toast.success("Rates updated successfully");
+          setEditRatesOpen(false);
+        },
+        onError: (err) => {
+          toast.error(err?.response?.data?.message || "Failed to update rates");
+        },
+      }
+    );
+  };
+
   const handleAction = (action) => {
+    // Redirect negotiate / resend through the note dialog
+    if (action === "negotiate" || action === "resend") {
+      openNoteDialog(action);
+      return;
+    }
     transitionMutation.mutate(
       { id, action },
       {
@@ -563,6 +642,185 @@ export default function DealMemoDetail() {
           </Section>
         </CardContent>
       </Card>
+
+      {/* Negotiation History */}
+      {memo.statusHistory && memo.statusHistory.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <History className="size-4 text-primary" />
+                <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                  Negotiation History
+                </CardTitle>
+              </div>
+              {/* Edit Rates button for admins when status allows */}
+              {isAdmin && ["draft", "negotiating"].includes(memo.status) && (
+                <Button variant="outline" size="sm" onClick={openEditRates}>
+                  <Edit3 className="size-3.5 mr-1.5" />
+                  Edit Rates
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="relative space-y-0">
+              {/* Vertical line */}
+              <div className="absolute left-[7px] top-2 bottom-2 w-px bg-border" />
+
+              {memo.statusHistory.map((entry, i) => {
+                const fromCfg = STATUS_CONFIG[entry.fromStatus] || STATUS_CONFIG.draft;
+                const toCfg = STATUS_CONFIG[entry.toStatus] || STATUS_CONFIG.draft;
+                const changedByName =
+                  entry.changedBy?.firstName && entry.changedBy?.lastName
+                    ? `${entry.changedBy.firstName} ${entry.changedBy.lastName}`
+                    : entry.changedBy?.email || "System";
+
+                return (
+                  <div key={i} className="relative pl-7 pb-5 last:pb-0">
+                    {/* Dot */}
+                    <div
+                      className={cn(
+                        "absolute left-0 top-1 size-[15px] rounded-full border-2 border-background",
+                        toCfg.color
+                      )}
+                    />
+
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={cn("text-xs font-medium px-1.5 py-0.5 rounded", fromCfg.textColor)}>
+                          {fromCfg.label}
+                        </span>
+                        <span className="text-xs text-muted-foreground">&rarr;</span>
+                        <span className={cn("text-xs font-medium px-1.5 py-0.5 rounded", toCfg.textColor)}>
+                          {toCfg.label}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          by {changedByName}
+                        </span>
+                        <span className="text-xs text-muted-foreground/60">
+                          &mdash; {formatDate(entry.createdAt)}
+                        </span>
+                      </div>
+                      {entry.note && (
+                        <p className="text-sm text-foreground/80 italic pl-1 border-l-2 border-muted-foreground/20 ml-1">
+                          &ldquo;{entry.note}&rdquo;
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Edit Rates button when no status history exists yet */}
+      {(!memo.statusHistory || memo.statusHistory.length === 0) &&
+        isAdmin && ["draft", "negotiating"].includes(memo.status) && (
+        <Card>
+          <CardContent className="pt-5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <History className="size-4 text-muted-foreground/50" />
+              <p className="text-sm text-muted-foreground">No negotiation history yet.</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={openEditRates}>
+              <Edit3 className="size-3.5 mr-1.5" />
+              Edit Rates
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Note dialog for Negotiate / Re-send */}
+      <Dialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{NOTE_DIALOG_CONFIG[noteDialogAction]?.title}</DialogTitle>
+            <DialogDescription>
+              {NOTE_DIALOG_CONFIG[noteDialogAction]?.description}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <Textarea
+              placeholder="Add a note explaining the reason..."
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNoteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={transitionMutation.isPending}
+              onClick={submitNoteDialog}
+            >
+              {transitionMutation.isPending ? "Submitting..." : "Submit"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Rates dialog */}
+      <Dialog open={editRatesOpen} onOpenChange={setEditRatesOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Rates</DialogTitle>
+            <DialogDescription>
+              Update the compensation rates for this deal memo. Rates must meet union minimums.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-weekly-rate">Weekly Rate</Label>
+              <Input
+                id="edit-weekly-rate"
+                type="number"
+                step="0.01"
+                min="0"
+                value={editRates.weeklyRate}
+                onChange={(e) => setEditRates((prev) => ({ ...prev, weeklyRate: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-daily-rate">Daily Rate</Label>
+              <Input
+                id="edit-daily-rate"
+                type="number"
+                step="0.01"
+                min="0"
+                value={editRates.dailyRate}
+                onChange={(e) => setEditRates((prev) => ({ ...prev, dailyRate: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-hourly-rate">Hourly Rate</Label>
+              <Input
+                id="edit-hourly-rate"
+                type="number"
+                step="0.01"
+                min="0"
+                value={editRates.hourlyRate}
+                onChange={(e) => setEditRates((prev) => ({ ...prev, hourlyRate: e.target.value }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditRatesOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={updateMutation.isPending}
+              onClick={submitEditRates}
+            >
+              {updateMutation.isPending ? "Saving..." : "Save Rates"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }

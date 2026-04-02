@@ -66,7 +66,7 @@ export function useUpdateDealMemo() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...payload }) => {
-      const { data } = await api.patch(`/deal-memos/${id}`, payload);
+      const { data } = await api.put(`/deal-memos/${id}`, payload);
       return data.data;
     },
     onSuccess: (_data, variables) => {

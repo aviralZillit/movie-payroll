@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectTrigger,
@@ -22,6 +23,14 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useDealMemos, useProductions, useTransitionDealMemo } from "@/hooks/useDealMemos";
@@ -74,6 +83,42 @@ export default function DealMemos() {
   const user = useAuthStore((s) => s.user);
   const isAdmin = ADMIN_ROLES.includes(user?.role);
   const transitionMutation = useTransitionDealMemo();
+
+  // Note dialog state for negotiate / re-send
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+  const [noteDialogAction, setNoteDialogAction] = useState(null); // "negotiate" | "resend"
+  const [noteDialogDealId, setNoteDialogDealId] = useState(null);
+  const [noteText, setNoteText] = useState("");
+
+  const NOTE_DIALOG_CONFIG = {
+    negotiate: { title: "Negotiate Deal", description: "Add a note explaining why you want to negotiate this deal." },
+    resend: { title: "Re-send Deal", description: "Add a note explaining the changes or reason for re-sending." },
+  };
+
+  const openNoteDialog = (e, id, action) => {
+    e.stopPropagation();
+    setNoteDialogDealId(id);
+    setNoteDialogAction(action);
+    setNoteText("");
+    setNoteDialogOpen(true);
+  };
+
+  const submitNoteDialog = () => {
+    if (!noteDialogDealId || !noteDialogAction) return;
+    transitionMutation.mutate(
+      { id: noteDialogDealId, action: noteDialogAction, note: noteText.trim() || undefined },
+      {
+        onSuccess: () => {
+          toast.success(`Deal memo ${noteDialogAction} successful`);
+          setNoteDialogOpen(false);
+        },
+        onError: (err) => {
+          toast.error(err?.response?.data?.message || `Failed to ${noteDialogAction} deal memo`);
+          setNoteDialogOpen(false);
+        },
+      }
+    );
+  };
 
   const handleTransition = (e, id, action) => {
     e.stopPropagation();
@@ -334,7 +379,7 @@ export default function DealMemos() {
                               variant="outline"
                               size="sm"
                               disabled={transitionMutation.isPending}
-                              onClick={(e) => handleTransition(e, dm._id || dm.id, "negotiate")}
+                              onClick={(e) => openNoteDialog(e, dm._id || dm.id, "negotiate")}
                             >
                               Negotiate
                             </Button>
@@ -346,7 +391,7 @@ export default function DealMemos() {
                             variant="outline"
                             size="sm"
                             disabled={transitionMutation.isPending}
-                            onClick={(e) => handleTransition(e, dm._id || dm.id, "negotiate")}
+                            onClick={(e) => openNoteDialog(e, dm._id || dm.id, "negotiate")}
                           >
                             Negotiate
                           </Button>
@@ -357,7 +402,7 @@ export default function DealMemos() {
                             variant="outline"
                             size="sm"
                             disabled={transitionMutation.isPending}
-                            onClick={(e) => handleTransition(e, dm._id || dm.id, "resend")}
+                            onClick={(e) => openNoteDialog(e, dm._id || dm.id, "resend")}
                           >
                             <Send className="size-3.5 mr-1" />
                             Re-send
@@ -384,6 +429,37 @@ export default function DealMemos() {
           )}
         </CardContent>
       </Card>
+
+      {/* Note dialog for Negotiate / Re-send */}
+      <Dialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{NOTE_DIALOG_CONFIG[noteDialogAction]?.title}</DialogTitle>
+            <DialogDescription>
+              {NOTE_DIALOG_CONFIG[noteDialogAction]?.description}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <Textarea
+              placeholder="Add a note explaining the reason..."
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNoteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={transitionMutation.isPending}
+              onClick={submitNoteDialog}
+            >
+              {transitionMutation.isPending ? "Submitting..." : "Submit"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }
