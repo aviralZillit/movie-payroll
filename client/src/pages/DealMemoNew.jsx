@@ -983,6 +983,7 @@ function StepRates({ control, errors, watch, setValue, rateSource, country, cSym
               sourceUrl={rateSource?.url}
               sourceLabel={rateSource?.label}
               error={errors.weeklyRate?.message}
+              currencySymbol={cSymbol}
             />
           )}
         />
@@ -1002,6 +1003,7 @@ function StepRates({ control, errors, watch, setValue, rateSource, country, cSym
               budgetTier={budgetTierId}
               sourceUrl={rateSource?.url}
               sourceLabel={rateSource?.label}
+              currencySymbol={cSymbol}
             />
           )}
         />
@@ -1021,6 +1023,7 @@ function StepRates({ control, errors, watch, setValue, rateSource, country, cSym
               budgetTier={budgetTierId}
               sourceUrl={rateSource?.url}
               sourceLabel={rateSource?.label}
+              currencySymbol={cSymbol}
             />
           )}
         />

@@ -42,6 +42,7 @@ export default function RateFieldWithInfo({
   disabled = false,
   className,
   error,
+  currencySymbol = "£",
 }) {
   const validateRate = useValidateRate();
   const [validation, setValidation] = useState(null);
@@ -102,7 +103,7 @@ export default function RateFieldWithInfo({
 
       <div className="relative">
         <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-          £
+          {currencySymbol}
         </span>
         <Input
           type="number"
