@@ -41,7 +41,19 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useTimecards, useProductions } from "@/hooks/useTimecards";
+import { useTimecards, useProductions, useCreateTimecard } from "@/hooks/useTimecards";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import useAuthStore from "@/store/authStore";
+import api from "@/lib/axios";
 import ExportButton from "@/components/common/ExportButton";
 import ImportDialog from "@/components/common/ImportDialog";
 
@@ -88,6 +100,49 @@ export default function Timecards() {
   });
   const [search, setSearch] = useState("");
   const [importOpen, setImportOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newTC, setNewTC] = useState({ dealMemoId: "", weekStarting: "" });
+  const [myDealMemos, setMyDealMemos] = useState([]);
+  const user = useAuthStore((s) => s.user);
+  const createTimecard = useCreateTimecard();
+
+  // Fetch user's active deal memos when dialog opens
+  const fetchMyDeals = async () => {
+    try {
+      const { data: resp } = await api.get("/deal-memos", { params: { status: "active" } });
+      const deals = resp.data || [];
+      // Filter to deals for this user (crew sees own, admin sees all)
+      setMyDealMemos(deals);
+    } catch { setMyDealMemos([]); }
+  };
+
+  const handleCreateTimecard = () => {
+    if (!newTC.dealMemoId || !newTC.weekStarting) {
+      toast.error("Select a deal memo and week start date");
+      return;
+    }
+    const start = new Date(newTC.weekStarting);
+    const end = new Date(start.getTime() + 6 * 86400000);
+    const deal = myDealMemos.find(d => (d._id || d.id) === newTC.dealMemoId);
+
+    createTimecard.mutate(
+      {
+        dealMemoId: newTC.dealMemoId,
+        productionId: deal?.productionId?._id || deal?.productionId,
+        weekStarting: newTC.weekStarting,
+        weekEnding: end.toISOString().split("T")[0],
+      },
+      {
+        onSuccess: (tc) => {
+          toast.success("Timecard created");
+          setCreateOpen(false);
+          setNewTC({ dealMemoId: "", weekStarting: "" });
+          navigate(`/timecards/${tc._id}`);
+        },
+        onError: (err) => toast.error(err.response?.data?.message || "Failed to create timecard"),
+      }
+    );
+  };
 
   const { data: productions } = useProductions();
   const { data, isLoading, isError } = useTimecards(filters);
@@ -134,7 +189,7 @@ export default function Timecards() {
             <Upload className="mr-1.5 h-4 w-4" />
             Import
           </Button>
-          <Button onClick={() => navigate("/timecards/new")}>
+          <Button onClick={() => { setCreateOpen(true); fetchMyDeals(); }}>
             <Plus className="mr-1.5 h-4 w-4" />
             New Timecard
           </Button>
@@ -368,6 +423,68 @@ export default function Timecards() {
           window.location.reload();
         }}
       />
+
+      {/* Create Timecard Dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Timecard</DialogTitle>
+            <DialogDescription>
+              Select your active deal memo and the week to create a timecard.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Deal Memo</Label>
+              <Select
+                value={newTC.dealMemoId}
+                onValueChange={(v) => setNewTC((r) => ({ ...r, dealMemoId: v }))}
+              >
+                <SelectTrigger className="w-full">
+                  {newTC.dealMemoId
+                    ? <span className="truncate">{myDealMemos.find(d => (d._id || d.id) === newTC.dealMemoId)?.dealNumber || "Select deal memo"} — {myDealMemos.find(d => (d._id || d.id) === newTC.dealMemoId)?.designationId?.name || ""}</span>
+                    : <SelectValue placeholder="Select deal memo" />
+                  }
+                </SelectTrigger>
+                <SelectContent>
+                  {myDealMemos.map((dm) => (
+                    <SelectItem key={dm._id || dm.id} value={dm._id || dm.id}>
+                      {dm.dealNumber} — {dm.productionId?.name || "Production"} — {dm.designationId?.name || dm.designation || "Role"}
+                    </SelectItem>
+                  ))}
+                  {myDealMemos.length === 0 && (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                      No active deal memos found. A deal memo must be in "Active" status.
+                    </div>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Week Starting (Monday)</Label>
+              <Input
+                type="date"
+                value={newTC.weekStarting}
+                onChange={(e) => setNewTC((r) => ({ ...r, weekStarting: e.target.value }))}
+              />
+              {newTC.weekStarting && (
+                <p className="text-xs text-muted-foreground">
+                  Week: {newTC.weekStarting} to {new Date(new Date(newTC.weekStarting).getTime() + 6 * 86400000).toISOString().split("T")[0]}
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
+            <Button
+              onClick={handleCreateTimecard}
+              disabled={createTimecard.isPending || !newTC.dealMemoId || !newTC.weekStarting}
+            >
+              {createTimecard.isPending ? "Creating..." : "Create Timecard"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }
