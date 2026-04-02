@@ -73,7 +73,7 @@ export default function Payroll() {
     page: 1,
   });
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [newRun, setNewRun] = useState({ productionId: "", weekEnding: "" });
+  const [newRun, setNewRun] = useState({ productionId: "", weekStarting: "", weekEnding: "" });
 
   const { data: statsData } = usePayrollStats();
   const { data, isLoading } = usePayrollRuns(filters);
@@ -122,24 +122,15 @@ export default function Payroll() {
   };
 
   const handleCreateRun = () => {
-    if (!newRun.productionId || !newRun.weekEnding) {
-      toast.error("Please select a production and week");
+    if (!newRun.productionId || !newRun.weekStarting || !newRun.weekEnding) {
+      toast.error("Please select a production and both week dates");
       return;
     }
-    // Calculate weekStarting (Monday) from weekEnding (Sunday)
-    const endDate = new Date(newRun.weekEnding);
-    const startDate = new Date(endDate);
-    startDate.setDate(endDate.getDate() - 6);
-    const payload = {
-      productionId: newRun.productionId,
-      weekStarting: startDate.toISOString().split('T')[0],
-      weekEnding: newRun.weekEnding,
-    };
-    createRun.mutate(payload, {
+    createRun.mutate(newRun, {
       onSuccess: (data) => {
         toast.success("Payroll run created");
         setCreateDialogOpen(false);
-        setNewRun({ productionId: "", weekEnding: "" });
+        setNewRun({ productionId: "", weekStarting: "", weekEnding: "" });
         navigate(`/payroll/${data._id}`);
       },
       onError: () => toast.error("Failed to create payroll run"),
@@ -419,15 +410,33 @@ export default function Payroll() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Week Ending</label>
-              <Input
-                type="date"
-                value={newRun.weekEnding}
-                onChange={(e) =>
-                  setNewRun((r) => ({ ...r, weekEnding: e.target.value }))
-                }
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Week Starting</label>
+                <Input
+                  type="date"
+                  value={newRun.weekStarting}
+                  onChange={(e) => {
+                    const start = e.target.value;
+                    setNewRun((r) => ({
+                      ...r,
+                      weekStarting: start,
+                      // Auto-set weekEnding to 6 days after start (Sunday)
+                      weekEnding: start ? new Date(new Date(start).getTime() + 6 * 86400000).toISOString().split('T')[0] : r.weekEnding,
+                    }));
+                  }}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Week Ending</label>
+                <Input
+                  type="date"
+                  value={newRun.weekEnding}
+                  onChange={(e) =>
+                    setNewRun((r) => ({ ...r, weekEnding: e.target.value }))
+                  }
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
