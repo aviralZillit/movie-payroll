@@ -86,9 +86,9 @@ const ADMIN_ROLES = ['super_admin', 'payroll_admin', 'production_accountant'];
  */
 function getStatusActions(status, user, memo) {
   const isAdmin = ADMIN_ROLES.includes(user?.role);
-  const isPersonOnDeal =
-    memo?.personId?._id === user?._id ||
-    memo?.personId === user?._id;
+  const personIdStr = (memo?.personId?._id || memo?.personId || '').toString();
+  const userIdStr = (user?._id || user?.id || '').toString();
+  const isPersonOnDeal = personIdStr && userIdStr && personIdStr === userIdStr;
   const actions = [];
 
   if (status === 'draft' && isAdmin) {
