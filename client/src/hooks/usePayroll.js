@@ -39,8 +39,8 @@ export function useCreatePayrollRun() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ productionId, weekEnding }) => {
-      const { data } = await api.post("/payroll", { productionId, weekEnding });
+    mutationFn: async ({ productionId, weekStarting, weekEnding }) => {
+      const { data } = await api.post("/payroll", { productionId, weekStarting, weekEnding });
       return data.data;
     },
     onSuccess: () => {
