@@ -91,12 +91,14 @@ export default function TimecardDetail() {
     }
   }, [timecard?.entries]);
 
-  // Auto-save with debounce
+  // Auto-save with debounce — only send complete entries (have both callTime and wrapTime)
   const debouncedSave = useCallback(
     (entries) => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
-        updateEntries.mutate(entries, {
+        const completeEntries = entries.filter(e => e.callTime && e.wrapTime);
+        if (completeEntries.length === 0) return; // don't save if no complete entries
+        updateEntries.mutate(completeEntries, {
           onSuccess: () => {
             setHasChanges(false);
           },
@@ -159,7 +161,8 @@ export default function TimecardDetail() {
 
   const handleManualSave = () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    updateEntries.mutate(localEntries, {
+    const completeEntries = localEntries.filter(e => e.callTime && e.wrapTime);
+    updateEntries.mutate(completeEntries, {
       onSuccess: () => {
         setHasChanges(false);
         toast.success("Timecard saved");
