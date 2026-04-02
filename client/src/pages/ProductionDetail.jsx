@@ -113,8 +113,9 @@ function AddMemberDialog({ productionId, existingMemberIds }) {
   const addMember = useAddMember();
 
   const availableUsers = useMemo(() => {
-    if (!allUsers) return [];
-    return allUsers.filter((u) => {
+    const users = Array.isArray(allUsers) ? allUsers : allUsers?.data || [];
+    if (!users.length) return [];
+    return users.filter((u) => {
       if (existingMemberIds.includes(u._id)) return false;
       if (!userSearch.trim()) return true;
       const q = userSearch.toLowerCase();
@@ -154,10 +155,10 @@ function AddMemberDialog({ productionId, existingMemberIds }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm">
-          <UserPlus className="h-4 w-4 mr-1.5" />
+        <div role="button" tabIndex={0} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 cursor-pointer">
+          <UserPlus className="h-4 w-4" />
           Add Member
-        </Button>
+        </div>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
