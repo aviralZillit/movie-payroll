@@ -71,7 +71,8 @@ export function useAllUsers() {
     queryKey: ["users"],
     queryFn: async () => {
       const { data } = await api.get("/auth/users");
-      return data.data;
+      // API returns { success, data: { users: [...] } }
+      return data.data?.users || data.data || [];
     },
   });
 }
