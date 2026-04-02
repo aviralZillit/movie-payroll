@@ -396,7 +396,10 @@ export default function Payroll() {
                 }
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select production" />
+                  {newRun.productionId
+                    ? <span className="truncate">{(productions || []).find(p => p._id === newRun.productionId)?.name || "Select production"}</span>
+                    : <SelectValue placeholder="Select production" />
+                  }
                 </SelectTrigger>
                 <SelectContent>
                   {(productions || []).map((p) => (
