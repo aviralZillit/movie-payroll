@@ -12,6 +12,7 @@ import MainLayout from "@/layouts/MainLayout";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Productions from "@/pages/Productions";
+import ProductionDetail from "@/pages/ProductionDetail";
 import DealMemos from "@/pages/DealMemos";
 import DealMemoNew from "@/pages/DealMemoNew";
 import DealMemoDetail from "@/pages/DealMemoDetail";
@@ -60,6 +61,7 @@ export default function App() {
               <Route element={<MainLayout />}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/productions" element={<Productions />} />
+                <Route path="/productions/:id" element={<ProductionDetail />} />
                 <Route path="/deal-memos" element={<DealMemos />} />
                 <Route path="/deal-memos/new" element={<DealMemoNew />} />
                 <Route path="/deal-memos/:id" element={<DealMemoDetail />} />

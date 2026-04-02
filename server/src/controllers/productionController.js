@@ -1,4 +1,4 @@
-import { Production } from '../models/index.js';
+import { Production, User } from '../models/index.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import AppError from '../utils/AppError.js';
 
@@ -102,4 +102,70 @@ export const remove = asyncHandler(async (req, res) => {
   await production.save();
 
   res.json({ success: true, message: 'Production cancelled.' });
+});
+
+/**
+ * POST /api/productions/:id/members
+ * Add a member to a production
+ */
+export const addMember = asyncHandler(async (req, res) => {
+  const { userId, role } = req.body;
+
+  if (!userId || !role) {
+    throw new AppError('userId and role are required.', 400);
+  }
+
+  const production = await Production.findById(req.params.id);
+  if (!production) {
+    throw new AppError('Production not found.', 404);
+  }
+
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new AppError('User not found.', 404);
+  }
+
+  const alreadyMember = production.members.some(
+    (m) => m.userId.toString() === userId
+  );
+  if (alreadyMember) {
+    throw new AppError('User is already a member of this production.', 409);
+  }
+
+  production.members.push({ userId, role });
+  await production.save();
+
+  const populated = await Production.findById(production._id)
+    .populate('createdBy', 'firstName lastName email')
+    .populate('members.userId', 'firstName lastName email role');
+
+  res.status(201).json({ success: true, data: populated });
+});
+
+/**
+ * DELETE /api/productions/:id/members/:userId
+ * Remove a member from a production
+ */
+export const removeMember = asyncHandler(async (req, res) => {
+  const production = await Production.findById(req.params.id);
+  if (!production) {
+    throw new AppError('Production not found.', 404);
+  }
+
+  const memberIndex = production.members.findIndex(
+    (m) => m.userId.toString() === req.params.userId
+  );
+
+  if (memberIndex === -1) {
+    throw new AppError('User is not a member of this production.', 404);
+  }
+
+  production.members.splice(memberIndex, 1);
+  await production.save();
+
+  const populated = await Production.findById(production._id)
+    .populate('createdBy', 'firstName lastName email')
+    .populate('members.userId', 'firstName lastName email role');
+
+  res.json({ success: true, data: populated });
 });
