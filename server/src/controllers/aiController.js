@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
-import { Production, User, Union, Department, Designation, BudgetTier, RateCard, OvertimeRule } from '../models/index.js';
+import { Production, User, Union, Department, Designation, BudgetTier, RateCard, OvertimeRule, DealMemo } from '../models/index.js';
 import * as rateEngine from '../services/rateEngine.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import AppError from '../utils/AppError.js';
@@ -461,6 +461,153 @@ export const aiDealMemo = asyncHandler(async (req, res) => {
     data: {
       message: text.replace(/<deal_memo_data>[\s\S]*?<\/deal_memo_data>/, '').trim(),
       formData,
+      provider,
+    },
+  });
+});
+
+// ─── Timecard AI Fill ────────────────────────────────────────────────────────
+
+const TIMECARD_SYSTEM_PROMPT = `You are a UK film production timecard assistant. Your job is to parse a natural-language description of a work week into a structured JSON array of 7 daily timecard entries.
+
+CONTEXT FROM DEAL MEMO:
+- Standard work day: {{standardWorkDayHrs}} hours
+- Lunch break: {{lunchBreakHrs}} hour(s)
+
+RULES:
+- A week always has 7 entries: dayOfWeek 1 (Monday) through 7 (Sunday).
+- Each WORK day needs: callTime (HH:MM), lunchStart (HH:MM), lunchEnd (HH:MM), wrapTime (HH:MM).
+- Days off (rest days, holidays) should have isRestDay: true or isHoliday: true with NO time fields.
+- Travel days should have isTravelDay: true (they may or may not have times).
+
+WHEN USER PROVIDES EXACT TIMES:
+- If the user says "started at 6am" or "call at 6:00" → use that as callTime ("06:00").
+- If the user says "lunch 12-1" or "lunch from 12:00 to 13:00" → lunchStart "12:00", lunchEnd "13:00".
+- If the user says "wrapped at 9pm" or "finished at 21:00" → wrapTime "21:00".
+- Always use the exact times the user provides. Do NOT override with defaults.
+- Convert 12-hour format (6am, 9pm) to 24-hour HH:MM format.
+
+WHEN USER DOES NOT PROVIDE EXACT TIMES:
+- Default call time is 07:00 for standard days.
+- Lunch starts after 6 hours of work. Lunch duration is {{lunchBreakHrs}} hour(s).
+- Wrap time = callTime + total work hours + lunch break duration.
+  Example: 12hr work day with 1hr lunch, call 07:00 -> lunch 13:00-14:00, wrap 20:00 (07:00 + 12hrs work + 1hr lunch = 20:00).
+  Example: 14hr work day with 1hr lunch, call 06:00 -> lunch 12:00-13:00, wrap 21:00 (06:00 + 14hrs work + 1hr lunch = 21:00).
+- For longer days (>12hrs), use 06:00 call time.
+- If user says "standard day" use {{standardWorkDayHrs}} hours as work duration.
+- Include a "notes" field for each entry briefly describing why (e.g. "Standard 12hr day", "14hr day", "Holiday", "Rest day").
+
+You MUST respond with ONLY valid JSON (no markdown, no explanation) in this exact format:
+{
+  "entries": [
+    {"dayOfWeek": 1, "callTime": "07:00", "lunchStart": "13:00", "lunchEnd": "14:00", "wrapTime": "20:00", "notes": "Standard day"},
+    {"dayOfWeek": 2, "callTime": "07:00", "lunchStart": "13:00", "lunchEnd": "14:00", "wrapTime": "20:00", "notes": "Standard day"},
+    {"dayOfWeek": 3, "isRestDay": true, "notes": "Rest day"},
+    {"dayOfWeek": 4, "isHoliday": true, "notes": "Holiday"},
+    ...all 7 days...
+  ],
+  "summary": "Brief human-readable summary of what was filled."
+}`;
+
+function buildTimecardPrompt(standardWorkDayHrs, lunchBreakHrs) {
+  return TIMECARD_SYSTEM_PROMPT
+    .replace(/\{\{standardWorkDayHrs\}\}/g, String(standardWorkDayHrs))
+    .replace(/\{\{lunchBreakHrs\}\}/g, String(lunchBreakHrs));
+}
+
+async function handleTimecardOpenAI(message, systemPrompt) {
+  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const response = await client.chat.completions.create({
+    model: process.env.OPENAI_MODEL || 'gpt-4o',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: message },
+    ],
+    max_tokens: 2048,
+    temperature: 0.1,
+  });
+  return response.choices[0].message.content || '';
+}
+
+async function handleTimecardAnthropic(message, systemPrompt) {
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const response = await client.messages.create({
+    model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514',
+    max_tokens: 2048,
+    system: systemPrompt,
+    messages: [{ role: 'user', content: message }],
+  });
+  const textBlock = response.content.find((b) => b.type === 'text');
+  return textBlock?.text || '';
+}
+
+export const aiTimecard = asyncHandler(async (req, res) => {
+  const { message, dealMemoId } = req.body;
+  if (!message) throw new AppError('Message is required', 400);
+
+  const provider = AI_PROVIDER;
+  if (provider === 'openai' && !process.env.OPENAI_API_KEY) {
+    throw new AppError('AI not configured. Set OPENAI_API_KEY in environment.', 500);
+  }
+  if (provider === 'anthropic' && !process.env.ANTHROPIC_API_KEY) {
+    throw new AppError('AI not configured. Set ANTHROPIC_API_KEY in environment.', 500);
+  }
+
+  // Look up deal memo for context (defaults if not found)
+  let standardWorkDayHrs = 12;
+  let lunchBreakHrs = 1;
+
+  if (dealMemoId) {
+    try {
+      const dealMemo = await DealMemo.findById(dealMemoId).lean();
+      if (dealMemo) {
+        standardWorkDayHrs = dealMemo.standardWorkDayHrs || 12;
+        lunchBreakHrs = dealMemo.lunchBreakHrs || 1;
+      }
+    } catch (_e) {
+      // Use defaults if lookup fails
+    }
+  }
+
+  const systemPrompt = buildTimecardPrompt(standardWorkDayHrs, lunchBreakHrs);
+
+  let text;
+  if (provider === 'anthropic') {
+    text = await handleTimecardAnthropic(message, systemPrompt);
+  } else {
+    text = await handleTimecardOpenAI(message, systemPrompt);
+  }
+
+  // Parse JSON from response (strip markdown fences if present)
+  let cleaned = text.trim();
+  cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+
+  let parsed;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch (_e) {
+    // Try to extract JSON object from response
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        parsed = JSON.parse(jsonMatch[0]);
+      } catch (_e2) {
+        throw new AppError('AI returned invalid JSON. Please try rephrasing your request.', 422);
+      }
+    } else {
+      throw new AppError('AI returned invalid JSON. Please try rephrasing your request.', 422);
+    }
+  }
+
+  if (!parsed.entries || !Array.isArray(parsed.entries)) {
+    throw new AppError('AI response missing entries array. Please try again.', 422);
+  }
+
+  res.json({
+    success: true,
+    data: {
+      entries: parsed.entries,
+      summary: parsed.summary || '',
       provider,
     },
   });

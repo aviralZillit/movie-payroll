@@ -16,6 +16,7 @@ import {
   Film,
   Calendar,
   Link as LinkIcon,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import api from "@/lib/axios";
 import useAuthStore from "@/store/authStore";
 import {
   useTimecard,
@@ -81,6 +83,9 @@ export default function TimecardDetail() {
   const [hasChanges, setHasChanges] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
   const debounceRef = useRef(null);
 
   // Sync server data into local state
@@ -169,6 +174,63 @@ export default function TimecardDetail() {
       },
       onError: () => toast.error("Failed to save"),
     });
+  };
+
+  const handleAiFill = async () => {
+    if (!aiPrompt.trim()) return;
+    setAiLoading(true);
+    try {
+      const dealMemoId =
+        typeof timecard.dealMemoId === "object"
+          ? timecard.dealMemoId._id
+          : timecard.dealMemoId;
+      const { data } = await api.post("/ai/timecard", {
+        message: aiPrompt.trim(),
+        dealMemoId,
+      });
+      const aiEntries = data.data.entries;
+
+      setLocalEntries((prev) => {
+        const next = [...prev];
+        for (const aiEntry of aiEntries) {
+          const idx = (aiEntry.dayOfWeek || 1) - 1; // dayOfWeek 1-7 -> index 0-6
+          if (idx < 0 || idx > 6) continue;
+          const existing = next[idx] || {};
+          next[idx] = {
+            ...existing,
+            callTime: aiEntry.callTime || existing.callTime || "",
+            lunchStart: aiEntry.lunchStart || existing.lunchStart || "",
+            lunchEnd: aiEntry.lunchEnd || existing.lunchEnd || "",
+            wrapTime: aiEntry.wrapTime || existing.wrapTime || "",
+            isRestDay: aiEntry.isRestDay || false,
+            isHoliday: aiEntry.isHoliday || false,
+            isTravelDay: aiEntry.isTravelDay || false,
+            notes: aiEntry.notes || existing.notes || "",
+          };
+          // Clear time fields for rest/holiday days
+          if (aiEntry.isRestDay || aiEntry.isHoliday) {
+            next[idx].callTime = "";
+            next[idx].lunchStart = "";
+            next[idx].lunchEnd = "";
+            next[idx].wrapTime = "";
+          }
+        }
+        setHasChanges(true);
+        debouncedSave(next);
+        return next;
+      });
+
+      const summary = data.data.summary;
+      toast.success(summary || "Timecard filled by AI");
+      setAiDialogOpen(false);
+      setAiPrompt("");
+    } catch (err) {
+      toast.error(
+        err?.response?.data?.message || "AI fill failed. Please try again."
+      );
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const isEditable =
@@ -325,6 +387,13 @@ export default function TimecardDetail() {
                   )}
                   Calculate
                 </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setAiDialogOpen(true)}
+                >
+                  <Sparkles className="mr-1.5 h-4 w-4" />
+                  AI Fill
+                </Button>
               </>
             )}
           </div>
@@ -407,6 +476,51 @@ export default function TimecardDetail() {
                 <XCircle className="mr-1.5 h-4 w-4" />
               )}
               Reject
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Fill Dialog */}
+      <Dialog open={aiDialogOpen} onOpenChange={setAiDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>AI Fill Timecard</DialogTitle>
+            <DialogDescription>
+              Describe your work week in plain English. The AI will fill all 7
+              days of your timecard automatically.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            placeholder="Describe your work week... e.g. 'Standard 12hr days Mon-Fri. Tuesday I worked 14 hours. Saturday and Sunday were holidays.'"
+            value={aiPrompt}
+            onChange={(e) => setAiPrompt(e.target.value)}
+            rows={4}
+            disabled={aiLoading}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                handleAiFill();
+              }
+            }}
+          />
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setAiDialogOpen(false)}
+              disabled={aiLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAiFill}
+              disabled={!aiPrompt.trim() || aiLoading}
+            >
+              {aiLoading ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="mr-1.5 h-4 w-4" />
+              )}
+              {aiLoading ? "Filling..." : "Fill Timecard"}
             </Button>
           </DialogFooter>
         </DialogContent>
