@@ -207,7 +207,7 @@ export default function Payroll() {
                 <SelectItem value="">All Productions</SelectItem>
                 {(productions || []).map((p) => (
                   <SelectItem key={p._id} value={p._id}>
-                    {p.title}
+                    {p.name || p.title}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -401,7 +401,7 @@ export default function Payroll() {
                 <SelectContent>
                   {(productions || []).map((p) => (
                     <SelectItem key={p._id} value={p._id}>
-                      {p.title}
+                      {p.name || p.title}
                     </SelectItem>
                   ))}
                 </SelectContent>

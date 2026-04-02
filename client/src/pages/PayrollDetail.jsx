@@ -319,7 +319,7 @@ export default function PayrollDetail() {
               </span>
             </div>
             <p className="text-sm text-muted-foreground">
-              {run.production?.title}
+              {run.productionId?.name || run.production?.title || run.production?.name}
               {run.weekEnding && ` - Week ending ${format(parseISO(run.weekEnding), "dd MMM yyyy")}`}
             </p>
           </div>

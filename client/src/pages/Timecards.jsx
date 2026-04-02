@@ -100,8 +100,8 @@ export default function Timecards() {
     const q = search.toLowerCase();
     return timecards.filter(
       (tc) =>
-        tc.person?.name?.toLowerCase().includes(q) ||
-        tc.production?.title?.toLowerCase().includes(q) ||
+        tc.ownerId?.fullName?.toLowerCase().includes(q) ||
+        (tc.productionId?.name || tc.production?.name || '').toLowerCase().includes(q) ||
         tc.timecardNumber?.toLowerCase().includes(q)
     );
   }, [timecards, search]);
@@ -168,7 +168,7 @@ export default function Timecards() {
                 <SelectItem value="">All Productions</SelectItem>
                 {(productions || []).map((p) => (
                   <SelectItem key={p._id} value={p._id}>
-                    {p.title}
+                    {p.name || p.title}
                   </SelectItem>
                 ))}
               </SelectContent>
