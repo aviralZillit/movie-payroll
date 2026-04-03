@@ -54,6 +54,7 @@ import {
   useRateLookup,
 } from "@/hooks/useRateCards";
 
+import { useContractingEntities } from "@/hooks/useContractingEntities";
 import useAuthStore from "@/store/authStore";
 import { cn, formatCurrency, currencySymbol } from "@/lib/utils";
 import {
@@ -358,6 +359,7 @@ export default function DealMemoNew() {
   const { data: departments, isLoading: deptsLoading } = useDepartments(watchedUnionId);
   const { data: designations, isLoading: desigsLoading } = useDesignations(watchedDepartmentId);
   const { data: budgetTiers, isLoading: tiersLoading } = useBudgetTiers(watchedUnionId, productionCountry);
+  const { data: entities, isLoading: entitiesLoading } = useContractingEntities(watchedProductionId);
 
   const personOptions = useMemo(() => {
     if (!selectedProduction?.members) return [];
@@ -636,19 +638,19 @@ export default function DealMemoNew() {
           <Step0EntityTerritory
             {...commonProps}
             productions={productions}
-            prodsLoading={prodsLoading}
+            productionsLoading={prodsLoading}
             personOptions={personOptions}
+            entities={entities}
+            entitiesLoading={entitiesLoading}
             unions={unions}
             unionsLoading={unionsLoading}
             departments={departments}
-            deptsLoading={deptsLoading}
+            departmentsLoading={deptsLoading}
             designations={designations}
-            desigsLoading={desigsLoading}
+            designationsLoading={desigsLoading}
             budgetTiers={budgetTiers}
-            tiersLoading={tiersLoading}
-            watchedProductionId={watchedProductionId}
-            watchedUnionId={watchedUnionId}
-            watchedDepartmentId={watchedDepartmentId}
+            budgetTiersLoading={tiersLoading}
+            territory={productionCountry}
           />
         );
       case 1:
