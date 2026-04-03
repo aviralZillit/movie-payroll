@@ -22,6 +22,7 @@ import adminRateCardRoutes from './routes/adminRateCardRoutes.js';
 import exportRoutes from './routes/exportRoutes.js';
 import importRoutes from './routes/importRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
+import territoryRoutes from './routes/territoryRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -61,6 +62,7 @@ app.use('/api/admin/rate-cards', adminRateCardRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/import', importRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/territories', territoryRoutes);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date() }));
 
