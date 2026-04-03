@@ -28,8 +28,9 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Connect to MongoDB
-connectDB();
+// Connect to MongoDB and run migrations
+import { runMigrations } from './migrations/migrationRunner.js';
+connectDB().then(() => runMigrations().catch(console.error));
 
 // Middleware
 app.use(helmet());

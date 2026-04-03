@@ -72,6 +72,8 @@ const payrollRunSchema = new mongoose.Schema(
     notes: String,
     exportedAt: Date,
     paidAt: Date,
+
+    schemaVersion: { type: Number, default: 1 },
   },
   { timestamps: true }
 );

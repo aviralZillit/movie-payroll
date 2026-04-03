@@ -126,6 +126,9 @@ const dealMemoSchema = new mongoose.Schema(
 
     notes: String,
     statusHistory: [statusHistorySchema],
+
+    // Schema version for calculation engine routing (v1=existing, v2=territory-aware)
+    schemaVersion: { type: Number, default: 1 },
   },
   { timestamps: true }
 );

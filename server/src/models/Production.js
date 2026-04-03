@@ -29,6 +29,7 @@ const productionSchema = new mongoose.Schema(
     companyAddress: String,
     members: [productionMemberSchema],
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    schemaVersion: { type: Number, default: 1 },
   },
   { timestamps: true }
 );

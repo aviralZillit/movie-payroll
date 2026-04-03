@@ -66,6 +66,8 @@ const timecardSchema = new mongoose.Schema(
     payrollApprovedAt: Date,
     rejectionReason: String,
     notes: String,
+
+    schemaVersion: { type: Number, default: 1 },
   },
   { timestamps: true }
 );
