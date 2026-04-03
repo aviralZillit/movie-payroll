@@ -661,8 +661,12 @@ export default function DealMemoNew() {
         return (
           <Step3Rates
             {...commonProps}
+            currencySymbol={cSymbol}
+            territory={productionCountry}
+            unionKey={(unions ?? []).find(u => u._id === watchedUnionId)?.code}
+            designationName={classificationLabels?.designation}
+            budgetTierName={classificationLabels?.budgetTier}
             rateSource={rateSource}
-            classificationLabels={classificationLabels}
           />
         );
       case 4:

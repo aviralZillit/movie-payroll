@@ -374,3 +374,53 @@ export const transitionStatus = asyncHandler(async (req, res) => {
 
   res.json({ success: true, data: populated });
 });
+
+/**
+ * PATCH /api/deal-memos/:id/crew-complete
+ * Crew member updates their own fields (NI, bank, DOB, etc.)
+ * Only the assigned person can update. Only CREW_FIELDS allowed.
+ */
+const CREW_FIELDS = [
+  'dateOfBirth', 'address', 'emergencyContact',
+  'niNumber', 'taxCode', 'starterDeclaration', 'p45Received',
+  'bankSortCode', 'bankAccountNumber',
+  'ssn', 'w4FilingStatus', 'stateWithholding', 'achRoutingNumber', 'achAccountNumber',
+  'tfn', 'superFund', 'superMemberNumber', 'bsb',
+  'sin', 'province',
+  'taxId', 'iban', 'swift',
+  'ltdCompanyName', 'ltdCompanyReg',
+  'corpName', 'corpEin',
+];
+
+export const crewComplete = asyncHandler(async (req, res) => {
+  const deal = await DealMemo.findById(req.params.id);
+  if (!deal) throw new AppError('Deal memo not found.', 404);
+
+  // Only the assigned crew member can update their fields
+  if (deal.personId.toString() !== req.user._id.toString()) {
+    throw new AppError('Only the assigned crew member can complete these fields.', 403);
+  }
+
+  // Filter to only allowed crew fields
+  const updates = {};
+  for (const [key, value] of Object.entries(req.body)) {
+    if (CREW_FIELDS.includes(key)) {
+      updates[key] = value;
+    }
+  }
+
+  if (Object.keys(updates).length === 0) {
+    throw new AppError('No valid crew fields provided.', 400);
+  }
+
+  Object.assign(deal, updates);
+  await deal.save();
+
+  const populated = await DealMemo.findById(deal._id)
+    .populate('productionId', 'name code country currency')
+    .populate('unionId', 'code name')
+    .populate('departmentId', 'code name')
+    .populate('designationId', 'code name');
+
+  res.json({ success: true, data: populated });
+});

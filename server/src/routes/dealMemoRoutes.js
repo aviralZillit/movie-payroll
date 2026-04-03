@@ -7,6 +7,7 @@ import {
   getByProduction,
   getMyDeals,
   transitionStatus,
+  crewComplete,
 } from '../controllers/dealMemoController.js';
 import auth from '../middleware/auth.js';
 import { authorize } from '../middleware/rbac.js';
