@@ -84,15 +84,10 @@ export const updateEntries = asyncHandler(async (req, res) => {
 });
 
 /**
- * POST /api/timecards/:id/calculate
- * Triggers server-side OT / penalty calculation on entries
+ * Reusable calculation logic — computes OT, meal penalties, turnaround on a timecard.
+ * Mutates the timecard in-place (entries + weekly totals) but does NOT save.
  */
-export const calculate = asyncHandler(async (req, res) => {
-  const timecard = await Timecard.findById(req.params.id);
-  if (!timecard) {
-    throw new AppError('Timecard not found.', 404);
-  }
-
+async function runCalculation(timecard) {
   const dealMemo = await DealMemo.findById(timecard.dealMemoId);
   if (!dealMemo) {
     throw new AppError('Associated deal memo not found.', 404);
@@ -118,10 +113,19 @@ export const calculate = asyncHandler(async (req, res) => {
   for (let i = 0; i < sortedEntries.length; i++) {
     const entry = sortedEntries[i];
 
+    // Skip rest days and holidays — zero out their computed fields
+    if (entry.isRestDay || entry.isHoliday) {
+      entry.totalWorkedHrs = 0;
+      entry.straightHrs = 0;
+      entry.ot1x5Hrs = 0;
+      entry.ot2xHrs = 0;
+      entry.nightHrs = 0;
+      continue;
+    }
+
     if (!entry.callTime || !entry.wrapTime) continue;
     daysWorked++;
 
-    // OT hours
     const hours = calculateDayHours(entry, dealMemo, overtimeRules);
     entry.totalWorkedHrs = hours.totalWorkedHrs;
     entry.straightHrs = hours.straightHrs;
@@ -134,13 +138,11 @@ export const calculate = asyncHandler(async (req, res) => {
     totalOt2x += hours.ot2xHrs;
     totalNight += hours.nightHrs;
 
-    // Meal penalties
     const meal = calculateMealPenalty(entry, dealMemo);
     entry.mealPenaltyCount = meal.count;
     entry.mealPenaltyMinutes = meal.minutes;
     totalMealPen += meal.count;
 
-    // Turnaround
     if (i > 0) {
       const prev = sortedEntries[i - 1];
       if (prev.wrapTime) {
@@ -158,7 +160,6 @@ export const calculate = asyncHandler(async (req, res) => {
     }
   }
 
-  // Write back sorted entries
   timecard.entries = sortedEntries;
   timecard.totalStraightHrs = Math.round(totalStraight * 100) / 100;
   timecard.totalOt1x5Hrs = Math.round(totalOt1x5 * 100) / 100;
@@ -167,7 +168,19 @@ export const calculate = asyncHandler(async (req, res) => {
   timecard.totalMealPenalties = totalMealPen;
   timecard.totalTurnaroundPenalties = totalTurnaround;
   timecard.daysWorked = daysWorked;
+}
 
+/**
+ * POST /api/timecards/:id/calculate
+ * Triggers server-side OT / penalty calculation on entries
+ */
+export const calculate = asyncHandler(async (req, res) => {
+  const timecard = await Timecard.findById(req.params.id);
+  if (!timecard) {
+    throw new AppError('Timecard not found.', 404);
+  }
+
+  await runCalculation(timecard);
   await timecard.save();
 
   const populated = await Timecard.findById(timecard._id)
@@ -193,11 +206,19 @@ export const submit = asyncHandler(async (req, res) => {
     throw new AppError('Cannot submit a timecard with no entries.', 400);
   }
 
+  // Auto-calculate before submitting so totals are always up to date
+  await runCalculation(timecard);
+
   timecard.status = 'submitted';
   timecard.submittedAt = new Date();
   await timecard.save();
 
-  res.json({ success: true, data: timecard });
+  const populated = await Timecard.findById(timecard._id)
+    .populate('productionId', 'name code')
+    .populate('dealMemoId', 'dealNumber')
+    .populate('ownerId', 'firstName lastName email');
+
+  res.json({ success: true, data: populated });
 });
 
 /**

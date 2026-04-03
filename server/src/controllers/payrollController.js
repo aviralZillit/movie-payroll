@@ -45,7 +45,7 @@ export const createRun = asyncHandler(async (req, res) => {
   });
 
   const populated = await PayrollRun.findById(run._id)
-    .populate('productionId', 'name code')
+    .populate('productionId', 'name code country currency')
     .populate('processedById', 'firstName lastName email');
 
   res.status(201).json({ success: true, data: populated });
@@ -148,7 +148,7 @@ export const calculateRun = asyncHandler(async (req, res) => {
   await run.save();
 
   const populated = await PayrollRun.findById(run._id)
-    .populate('productionId', 'name code')
+    .populate('productionId', 'name code country currency')
     .populate('processedById', 'firstName lastName email');
 
   res.json({ success: true, data: populated });
@@ -176,7 +176,7 @@ export const approveRun = asyncHandler(async (req, res) => {
  */
 export const exportRun = asyncHandler(async (req, res) => {
   const run = await PayrollRun.findById(req.params.id)
-    .populate('productionId', 'name code')
+    .populate('productionId', 'name code country currency')
     .populate('processedById', 'firstName lastName email');
 
   if (!run) throw new AppError('Payroll run not found.', 404);
@@ -224,7 +224,7 @@ export const getAll = asyncHandler(async (req, res) => {
 
   const [runs, total] = await Promise.all([
     PayrollRun.find(filter)
-      .populate('productionId', 'name code')
+      .populate('productionId', 'name code country currency')
       .populate('processedById', 'firstName lastName email')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -244,7 +244,7 @@ export const getAll = asyncHandler(async (req, res) => {
  */
 export const getById = asyncHandler(async (req, res) => {
   const run = await PayrollRun.findById(req.params.id)
-    .populate('productionId', 'name code')
+    .populate('productionId', 'name code country currency')
     .populate('processedById', 'firstName lastName email')
     .populate('items.timecardId', 'timecardNumber weekStarting')
     .populate('items.dealMemoId', 'dealNumber');
@@ -260,7 +260,7 @@ export const getById = asyncHandler(async (req, res) => {
  */
 export const getPayslip = asyncHandler(async (req, res) => {
   const run = await PayrollRun.findById(req.params.id)
-    .populate('productionId', 'name code')
+    .populate('productionId', 'name code country currency')
     .populate('items.timecardId', 'timecardNumber weekStarting entries')
     .populate('items.dealMemoId', 'dealNumber personId weeklyRate dailyRate hourlyRate');
 

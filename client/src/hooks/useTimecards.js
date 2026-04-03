@@ -77,7 +77,7 @@ export function useSubmitTimecard() {
 
   return useMutation({
     mutationFn: async (id) => {
-      const { data } = await api.post(`/timecards/${id}/submit`);
+      const { data } = await api.patch(`/timecards/${id}/submit`);
       return data.data;
     },
     onSuccess: (_, id) => {
@@ -93,7 +93,23 @@ export function useApproveTimecard() {
 
   return useMutation({
     mutationFn: async (id) => {
-      const { data } = await api.post(`/timecards/${id}/approve`);
+      const { data } = await api.patch(`/timecards/${id}/dept-approve`);
+      return data.data;
+    },
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ["timecards", id] });
+      queryClient.invalidateQueries({ queryKey: ["timecards"] });
+    },
+  });
+}
+
+// ── Payroll Approve timecard ──────────────────────────────────────────
+export function usePayrollApproveTimecard() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id) => {
+      const { data } = await api.patch(`/timecards/${id}/payroll-approve`);
       return data.data;
     },
     onSuccess: (_, id) => {
@@ -109,7 +125,7 @@ export function useRejectTimecard() {
 
   return useMutation({
     mutationFn: async ({ id, reason }) => {
-      const { data } = await api.post(`/timecards/${id}/reject`, { reason });
+      const { data } = await api.patch(`/timecards/${id}/reject`, { reason });
       return data.data;
     },
     onSuccess: (_, { id }) => {

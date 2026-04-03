@@ -82,13 +82,15 @@ export default function Payroll() {
 
   const runs = data?.data || [];
   const pagination = data?.pagination || { page: 1, totalPages: 1, total: 0 };
+  // Derive country from first run's production (for summary currency display)
+  const summaryCountry = runs[0]?.productionId?.country || "UK";
   // Compute stats from runs if stats endpoint unavailable
   const stats = statsData || (() => {
     const totals = { totalGross: 0, totalFringes: 0, totalNet: 0, headcount: 0 };
     (runs || []).forEach(r => {
-      totals.totalGross += r.totalGross || 0;
+      totals.totalGross += r.totalGross || r.totalGrossPay || 0;
       totals.totalFringes += r.totalFringes || 0;
-      totals.totalNet += r.totalNet || 0;
+      totals.totalNet += r.totalNet || r.totalNetPay || 0;
       totals.headcount += r.headcount || 0;
     });
     return totals;
@@ -161,7 +163,7 @@ export default function Payroll() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <PayrollSummaryCard
           label="Total Gross"
-          value={formatCurrency(stats.totalGross || 0)}
+          value={formatCurrency(stats.totalGross || 0, summaryCountry)}
           icon={Banknote}
           variant="primary"
           trend={stats.grossTrend}
@@ -170,14 +172,14 @@ export default function Payroll() {
         />
         <PayrollSummaryCard
           label="Total Fringes"
-          value={formatCurrency(stats.totalFringes || 0)}
+          value={formatCurrency(stats.totalFringes || 0, summaryCountry)}
           icon={Receipt}
           variant="warning"
           delay={0.05}
         />
         <PayrollSummaryCard
           label="Total Net"
-          value={formatCurrency(stats.totalNet || 0)}
+          value={formatCurrency(stats.totalNet || 0, summaryCountry)}
           icon={Landmark}
           variant="success"
           delay={0.1}
@@ -295,13 +297,13 @@ export default function Payroll() {
                           {run.headcount ?? "-"}
                         </TableCell>
                         <TableCell className="text-right tabular-nums font-medium">
-                          {formatCurrency(run.totalGross || 0)}
+                          {formatCurrency(run.totalGross || 0, run.productionId?.country)}
                         </TableCell>
                         <TableCell className="text-right tabular-nums">
-                          {formatCurrency(run.totalFringes || 0)}
+                          {formatCurrency(run.totalFringes || 0, run.productionId?.country)}
                         </TableCell>
                         <TableCell className="text-right tabular-nums font-semibold">
-                          {formatCurrency(run.totalNet || 0)}
+                          {formatCurrency(run.totalNet || 0, run.productionId?.country)}
                         </TableCell>
                         <TableCell>
                           <Badge

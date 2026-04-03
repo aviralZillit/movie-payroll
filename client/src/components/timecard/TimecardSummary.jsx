@@ -45,6 +45,14 @@ export default function TimecardSummary({ entries = [], standardDayHrs = 11 }) {
     entries.forEach((entry) => {
       if (!entry) return;
 
+      // Skip rest days and holidays for hour totals
+      if (entry.isRestDay || entry.isHoliday) {
+        if (entry.isRestDay) result.restDays++;
+        if (entry.isHoliday) result.holidays++;
+        if (entry.isTravelDay) result.travelDays++;
+        return;
+      }
+
       // Use server values if available, otherwise calculate client-side
       let total = entry.totalWorkedHrs || entry.totalHours || 0;
       let straight = entry.straightHrs || entry.straightHours || 0;
@@ -72,14 +80,12 @@ export default function TimecardSummary({ entries = [], standardDayHrs = 11 }) {
       result.ot15Hours += ot15;
       result.ot20Hours += ot20;
 
-      if (entry.callTime && entry.wrapTime && !entry.isRestDay && !entry.isHoliday) {
+      if (entry.callTime && entry.wrapTime) {
         result.daysWorked++;
       }
       if (entry.mealPenaltyCount > 0 || entry.mealPenalty) result.mealPenalties++;
       if (entry.turnaroundViolation || entry.turnaroundWarning) result.turnaroundWarnings++;
       if (entry.isTravelDay) result.travelDays++;
-      if (entry.isRestDay) result.restDays++;
-      if (entry.isHoliday) result.holidays++;
     });
 
     return result;

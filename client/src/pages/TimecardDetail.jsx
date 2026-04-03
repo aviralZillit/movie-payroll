@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, addDays } from "date-fns";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -40,6 +40,7 @@ import {
   useCalculateTimecard,
   useSubmitTimecard,
   useApproveTimecard,
+  usePayrollApproveTimecard,
   useRejectTimecard,
 } from "@/hooks/useTimecards";
 import TimecardGrid from "@/components/timecard/TimecardGrid";
@@ -48,8 +49,11 @@ import TimecardSummary from "@/components/timecard/TimecardSummary";
 const STATUS_CONFIG = {
   draft: { label: "Draft", color: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300" },
   submitted: { label: "Submitted", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400" },
+  dept_approved: { label: "Dept Approved", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400" },
+  payroll_approved: { label: "Payroll Approved", color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" },
   approved: { label: "Approved", color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" },
   rejected: { label: "Rejected", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400" },
+  revision_requested: { label: "Revision Requested", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400" },
   paid: { label: "Paid", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400" },
 };
 
@@ -77,6 +81,7 @@ export default function TimecardDetail() {
   const calculate = useCalculateTimecard(id);
   const submitTC = useSubmitTimecard();
   const approveTC = useApproveTimecard();
+  const payrollApproveTC = usePayrollApproveTimecard();
   const rejectTC = useRejectTimecard();
 
   const [localEntries, setLocalEntries] = useState([]);
@@ -101,7 +106,7 @@ export default function TimecardDetail() {
     (entries) => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
-        const completeEntries = entries.filter(e => e.callTime && e.wrapTime);
+        const completeEntries = entries.filter(e => e.date && (e.callTime && e.wrapTime || e.isRestDay || e.isHoliday));
         if (completeEntries.length === 0) return; // don't save if no complete entries
         updateEntries.mutate(completeEntries, {
           onSuccess: () => {
@@ -118,15 +123,28 @@ export default function TimecardDetail() {
 
   const handleEntryChange = useCallback(
     (dayIndex, updatedEntry) => {
+      const weekStart = timecard?.weekStarting
+        ? parseISO(timecard.weekStarting)
+        : new Date();
       setLocalEntries((prev) => {
-        const next = [...prev];
-        next[dayIndex] = updatedEntry;
+        const next = prev.length === 7
+          ? [...prev]
+          : Array.from({ length: 7 }, (_, i) => ({
+              date: addDays(weekStart, i).toISOString(),
+              dayOfWeek: i + 1,
+            }));
+        next[dayIndex] = {
+          ...next[dayIndex],
+          ...updatedEntry,
+          date: updatedEntry.date || next[dayIndex]?.date || addDays(weekStart, dayIndex).toISOString(),
+          dayOfWeek: dayIndex + 1,
+        };
         debouncedSave(next);
         setHasChanges(true);
         return next;
       });
     },
-    [debouncedSave]
+    [debouncedSave, timecard?.weekStarting]
   );
 
   const handleCalculate = () => {
@@ -145,8 +163,15 @@ export default function TimecardDetail() {
 
   const handleApprove = () => {
     approveTC.mutate(id, {
-      onSuccess: () => toast.success("Timecard approved"),
+      onSuccess: () => toast.success("Timecard department approved"),
       onError: () => toast.error("Failed to approve timecard"),
+    });
+  };
+
+  const handlePayrollApprove = () => {
+    payrollApproveTC.mutate(id, {
+      onSuccess: () => toast.success("Timecard payroll approved — ready for payroll run"),
+      onError: () => toast.error("Failed to payroll approve timecard"),
     });
   };
 
@@ -166,7 +191,7 @@ export default function TimecardDetail() {
 
   const handleManualSave = () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    const completeEntries = localEntries.filter(e => e.callTime && e.wrapTime);
+    const completeEntries = localEntries.filter(e => e.date && (e.callTime && e.wrapTime || e.isRestDay || e.isHoliday));
     updateEntries.mutate(completeEntries, {
       onSuccess: () => {
         setHasChanges(false);
@@ -187,17 +212,32 @@ export default function TimecardDetail() {
       const { data } = await api.post("/ai/timecard", {
         message: aiPrompt.trim(),
         dealMemoId,
+        timecardId: id,
       });
       const aiEntries = data.data.entries;
 
+      // Compute dates from weekStarting
+      const weekStart = timecard.weekStarting
+        ? parseISO(timecard.weekStarting)
+        : new Date();
+
       setLocalEntries((prev) => {
-        const next = [...prev];
+        // Initialize 7-day array with dates if prev is empty
+        const next = prev.length === 7
+          ? [...prev]
+          : Array.from({ length: 7 }, (_, i) => ({
+              date: addDays(weekStart, i).toISOString(),
+              dayOfWeek: i + 1,
+            }));
+
         for (const aiEntry of aiEntries) {
           const idx = (aiEntry.dayOfWeek || 1) - 1; // dayOfWeek 1-7 -> index 0-6
           if (idx < 0 || idx > 6) continue;
           const existing = next[idx] || {};
           next[idx] = {
             ...existing,
+            date: existing.date || addDays(weekStart, idx).toISOString(),
+            dayOfWeek: idx + 1,
             callTime: aiEntry.callTime || existing.callTime || "",
             lunchStart: aiEntry.lunchStart || existing.lunchStart || "",
             lunchEnd: aiEntry.lunchEnd || existing.lunchEnd || "",
@@ -235,10 +275,15 @@ export default function TimecardDetail() {
 
   const isEditable =
     timecard?.status === "draft" || timecard?.status === "rejected";
-  const canApprove =
-    user?.role === "admin" ||
+  const canDeptApprove =
+    user?.role === "super_admin" ||
     user?.role === "payroll_admin" ||
-    user?.role === "production_manager";
+    user?.role === "production_accountant" ||
+    user?.role === "department_head";
+  const canPayrollApprove =
+    user?.role === "super_admin" ||
+    user?.role === "payroll_admin" ||
+    user?.role === "production_accountant";
   const statusConfig = STATUS_CONFIG[timecard?.status] || STATUS_CONFIG.draft;
 
   if (isLoading) {
@@ -343,12 +388,13 @@ export default function TimecardDetail() {
             weekStartDate={timecard.weekStartDate}
             onEntryChange={handleEntryChange}
             disabled={!isEditable}
+            standardDayHrs={timecard.dealMemoId?.standardWorkDayHrs}
           />
         </div>
 
         {/* Right Sidebar */}
         <div className="space-y-4">
-          <TimecardSummary entries={localEntries} />
+          <TimecardSummary entries={localEntries} standardDayHrs={timecard.dealMemoId?.standardWorkDayHrs} />
         </div>
       </div>
 
@@ -413,7 +459,35 @@ export default function TimecardDetail() {
               </Button>
             )}
 
-            {timecard.status === "submitted" && canApprove && (
+            {/* Dept Approve — when submitted */}
+            {timecard.status === "submitted" && canDeptApprove && (
+              <>
+                <Button
+                  variant="outline"
+                  className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/30"
+                  onClick={() => setRejectDialogOpen(true)}
+                  disabled={rejectTC.isPending}
+                >
+                  <XCircle className="mr-1.5 h-4 w-4" />
+                  Reject
+                </Button>
+                <Button
+                  className="bg-amber-600 hover:bg-amber-700"
+                  onClick={handleApprove}
+                  disabled={approveTC.isPending}
+                >
+                  {approveTC.isPending ? (
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="mr-1.5 h-4 w-4" />
+                  )}
+                  Dept Approve
+                </Button>
+              </>
+            )}
+
+            {/* Payroll Approve — when dept_approved */}
+            {timecard.status === "dept_approved" && canPayrollApprove && (
               <>
                 <Button
                   variant="outline"
@@ -426,15 +500,15 @@ export default function TimecardDetail() {
                 </Button>
                 <Button
                   className="bg-emerald-600 hover:bg-emerald-700"
-                  onClick={handleApprove}
-                  disabled={approveTC.isPending}
+                  onClick={handlePayrollApprove}
+                  disabled={payrollApproveTC.isPending}
                 >
-                  {approveTC.isPending ? (
+                  {payrollApproveTC.isPending ? (
                     <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                   ) : (
                     <CheckCircle2 className="mr-1.5 h-4 w-4" />
                   )}
-                  Approve
+                  Payroll Approve
                 </Button>
               </>
             )}

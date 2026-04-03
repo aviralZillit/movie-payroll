@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
-import { Production, User, Union, Department, Designation, BudgetTier, RateCard, OvertimeRule, DealMemo } from '../models/index.js';
+import { Production, User, Union, Department, Designation, BudgetTier, RateCard, OvertimeRule, DealMemo, Timecard } from '../models/index.js';
 import * as rateEngine from '../services/rateEngine.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import AppError from '../utils/AppError.js';
@@ -541,8 +541,61 @@ async function handleTimecardAnthropic(message, systemPrompt) {
   return textBlock?.text || '';
 }
 
+/**
+ * Look up a referenced timecard from the user's message.
+ * Supports: "TC-2026-00001", "last week", "previous timecard", "copy from last week"
+ */
+async function findReferencedTimecard(message, currentTimecardId) {
+  // 1. Check for explicit timecard number (e.g. TC-2026-00001)
+  const tcNumberMatch = message.match(/TC-\d{4}-\d{5}/i);
+  if (tcNumberMatch) {
+    const tc = await Timecard.findOne({ timecardNumber: tcNumberMatch[0].toUpperCase() }).lean();
+    if (tc && tc.entries?.length > 0) return tc;
+  }
+
+  // 2. Check for "last week" / "previous" / "copy" references
+  const lastWeekPattern = /last\s*week|previous\s*(timecard|week)|copy\s*(from\s*)?(last|previous|prior)/i;
+  if (lastWeekPattern.test(message) && currentTimecardId) {
+    try {
+      const currentTC = await Timecard.findById(currentTimecardId).lean();
+      if (currentTC) {
+        // Find the most recent timecard for the same owner + production before the current week
+        const prevTC = await Timecard.findOne({
+          ownerId: currentTC.ownerId,
+          productionId: currentTC.productionId,
+          weekStarting: { $lt: currentTC.weekStarting },
+        })
+          .sort({ weekStarting: -1 })
+          .lean();
+        if (prevTC && prevTC.entries?.length > 0) return prevTC;
+      }
+    } catch (_e) {
+      // Ignore lookup errors
+    }
+  }
+
+  return null;
+}
+
+function formatTimecardAsContext(tc) {
+  const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const lines = [`Referenced timecard: ${tc.timecardNumber} (week of ${tc.weekStarting?.toISOString?.()?.slice(0, 10) || 'unknown'})`];
+  for (const entry of tc.entries) {
+    const dayIdx = (entry.dayOfWeek || 1) - 1;
+    const dayName = dayNames[dayIdx] || `Day ${entry.dayOfWeek}`;
+    if (entry.isRestDay) {
+      lines.push(`  ${dayName}: REST DAY`);
+    } else if (entry.isHoliday) {
+      lines.push(`  ${dayName}: HOLIDAY`);
+    } else if (entry.callTime && entry.wrapTime) {
+      lines.push(`  ${dayName}: Call ${entry.callTime}, Lunch ${entry.lunchStart || '?'}-${entry.lunchEnd || '?'}, Wrap ${entry.wrapTime}`);
+    }
+  }
+  return lines.join('\n');
+}
+
 export const aiTimecard = asyncHandler(async (req, res) => {
-  const { message, dealMemoId } = req.body;
+  const { message, dealMemoId, timecardId } = req.body;
   if (!message) throw new AppError('Message is required', 400);
 
   const provider = AI_PROVIDER;
@@ -569,7 +622,18 @@ export const aiTimecard = asyncHandler(async (req, res) => {
     }
   }
 
-  const systemPrompt = buildTimecardPrompt(standardWorkDayHrs, lunchBreakHrs);
+  // Look up referenced timecard (by number or "last week")
+  let refContext = '';
+  try {
+    const refTC = await findReferencedTimecard(message, timecardId);
+    if (refTC) {
+      refContext = '\n\nREFERENCED TIMECARD DATA (use this as a base, then apply any modifications the user describes):\n' + formatTimecardAsContext(refTC);
+    }
+  } catch (_e) {
+    // Ignore — proceed without reference
+  }
+
+  const systemPrompt = buildTimecardPrompt(standardWorkDayHrs, lunchBreakHrs) + refContext;
 
   let text;
   if (provider === 'anthropic') {

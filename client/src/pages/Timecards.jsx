@@ -60,8 +60,11 @@ import ImportDialog from "@/components/common/ImportDialog";
 const STATUS_CONFIG = {
   draft: { label: "Draft", variant: "secondary" },
   submitted: { label: "Submitted", variant: "default" },
+  dept_approved: { label: "Dept Approved", variant: "default" },
+  payroll_approved: { label: "Payroll Approved", variant: "default" },
   approved: { label: "Approved", variant: "default" },
   rejected: { label: "Rejected", variant: "destructive" },
+  revision_requested: { label: "Revision Requested", variant: "destructive" },
   paid: { label: "Paid", variant: "outline" },
 };
 

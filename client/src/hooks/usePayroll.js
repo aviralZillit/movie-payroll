@@ -73,7 +73,7 @@ export function useApprovePayroll(id) {
 
   return useMutation({
     mutationFn: async () => {
-      const { data } = await api.post(`/payroll/${id}/approve`);
+      const { data } = await api.patch(`/payroll/${id}/approve`);
       return data.data;
     },
     onSuccess: () => {
@@ -89,7 +89,7 @@ export function useMarkPayrollPaid(id) {
 
   return useMutation({
     mutationFn: async () => {
-      const { data } = await api.post(`/payroll/${id}/mark-paid`);
+      const { data } = await api.patch(`/payroll/${id}/mark-paid`);
       return data.data;
     },
     onSuccess: () => {

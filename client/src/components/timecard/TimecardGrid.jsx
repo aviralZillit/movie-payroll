@@ -48,6 +48,7 @@ export default function TimecardGrid({
   weekStartDate,
   onEntryChange,
   disabled = false,
+  standardDayHrs,
 }) {
   // Build 7-day array starting from weekStartDate (Monday)
   const days = useMemo(() => {
@@ -105,6 +106,7 @@ export default function TimecardGrid({
                 disabled={disabled}
                 isSixthDay={index === sixthDay}
                 isSeventhDay={index === seventhDay}
+                standardDayHrs={standardDayHrs}
               />
             ))}
           </tbody>
