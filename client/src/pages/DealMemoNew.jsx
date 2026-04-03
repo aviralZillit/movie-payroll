@@ -425,6 +425,39 @@ export default function DealMemoNew() {
           },
         }
       );
+
+      // Also fetch territory rule defaults for fringes/OT
+      const unionCode = (unions ?? []).find((u) => u._id === vals.unionId)?.code;
+      if (unionCode) {
+        api.get(`/territories/${productionCountry}/rules/${unionCode}`).then(({ data: ruleResp }) => {
+          const rule = ruleResp?.data;
+          if (!rule) return;
+          // Populate OT defaults from territory rule
+          if (rule.turnaroundMinHrs) setValue("turnaroundMinHrs", rule.turnaroundMinHrs, { shouldDirty: true });
+          if (rule.mealPenaltyAmounts?.[0]) setValue("mealPenaltyAmount", rule.mealPenaltyAmounts[0], { shouldDirty: true });
+          if (rule.mealIntervalHrs) setValue("mealPenaltyAfterHrs", rule.mealIntervalHrs, { shouldDirty: true });
+          if (rule.sixthDayMultiplier) setValue("sixthDayMultiplier", rule.sixthDayMultiplier, { shouldDirty: true });
+          if (rule.seventhDayMultiplier) setValue("seventhDayMultiplier", rule.seventhDayMultiplier, { shouldDirty: true });
+          // Populate fringe defaults
+          if (rule.rfPensionPct != null) {
+            if (productionCountry === 'US') {
+              setValue("phPct", (rule.rfPensionPct * 100) || 20, { shouldDirty: true });
+            } else {
+              setValue("pensionPct", (rule.rfPensionPct * 100) || 3, { shouldDirty: true });
+            }
+          }
+          if (rule.rfHolidayPayPct != null && productionCountry !== 'US') {
+            setValue("holidayPayPct", (rule.rfHolidayPayPct * 100) || 12.07, { shouldDirty: true });
+          }
+          if (rule.rfNicPct != null) {
+            if (productionCountry === 'US') {
+              setValue("ficaPct", (rule.rfNicPct * 100) || 7.65, { shouldDirty: true });
+            } else {
+              setValue("employerNiPct", (rule.rfNicPct * 100) || 13.8, { shouldDirty: true });
+            }
+          }
+        }).catch(() => {}); // Silently ignore if territory rule not found
+      }
     }
 
     setDirection(1);
