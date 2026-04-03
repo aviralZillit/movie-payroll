@@ -129,7 +129,7 @@ export default function RatesBible() {
   const selectedTerritoryData = territories.find(t => t.code.toLowerCase() === selectedTerritory);
 
   return (
-    <div className="flex h-[calc(100vh-4rem)]">
+    <div className="flex" style={{ height: 'calc(100vh - 56px)' }}>
       {/* ── Sidebar: Territory List ──────────────────────── */}
       <div className="w-64 border-r border-border bg-card flex flex-col">
         <div className="p-3 border-b border-border">
