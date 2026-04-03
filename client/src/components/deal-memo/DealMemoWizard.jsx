@@ -16,35 +16,45 @@ const STEP_LABELS = [
   "Preview & Issue",
 ];
 
+// Short labels for the stepper (avoids truncation)
+const STEP_SHORT = [
+  "Entity",
+  "Crew",
+  "Deal",
+  "Rates",
+  "Allow.",
+  "Codes",
+  "Comply",
+  "Docs",
+  "Payroll",
+  "Issue",
+];
+
 // ---------------------------------------------------------------------------
-// Stepper header
+// Stepper header — compact for 10 steps
 // ---------------------------------------------------------------------------
 function StepIndicator({ stepIndex, currentStep, label }) {
   const isCompleted = stepIndex < currentStep;
   const isActive = stepIndex === currentStep;
 
   return (
-    <div className="flex flex-col items-center gap-1.5 min-w-0">
+    <div className="flex flex-col items-center gap-1 min-w-0">
       <div
         className={cn(
-          "relative flex size-9 shrink-0 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all duration-300",
-          isCompleted &&
-            "border-emerald-500 bg-emerald-500 text-white",
-          isActive &&
-            "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/25",
-          !isCompleted &&
-            !isActive &&
-            "border-muted-foreground/30 text-muted-foreground/50"
+          "relative flex size-7 shrink-0 items-center justify-center rounded-full border-2 text-xs font-semibold transition-all duration-300",
+          isCompleted && "border-emerald-500 bg-emerald-500 text-white",
+          isActive && "border-primary bg-primary text-primary-foreground shadow-md shadow-primary/25",
+          !isCompleted && !isActive && "border-muted-foreground/30 text-muted-foreground/50"
         )}
       >
-        {isCompleted ? <Check className="size-4" /> : stepIndex + 1}
+        {isCompleted ? <Check className="size-3.5" /> : stepIndex + 1}
       </div>
       <span
         className={cn(
-          "text-xs font-medium text-center leading-tight max-w-20 truncate",
+          "text-[10px] font-medium text-center leading-tight",
           isActive && "text-foreground",
           isCompleted && "text-emerald-600 dark:text-emerald-400",
-          !isActive && !isCompleted && "text-muted-foreground/60"
+          !isActive && !isCompleted && "text-muted-foreground/50"
         )}
       >
         {label}
@@ -55,7 +65,7 @@ function StepIndicator({ stepIndex, currentStep, label }) {
 
 function StepConnector({ isCompleted }) {
   return (
-    <div className="relative flex-1 self-start mt-[18px] mx-1 h-0.5">
+    <div className="relative flex-1 self-start mt-[14px] mx-0.5 h-0.5">
       <div className="absolute inset-0 rounded-full bg-muted-foreground/15" />
       <motion.div
         className="absolute inset-y-0 left-0 rounded-full bg-emerald-500"
@@ -72,7 +82,7 @@ function StepConnector({ isCompleted }) {
 // ---------------------------------------------------------------------------
 const pageVariants = {
   enter: (direction) => ({
-    x: direction > 0 ? 80 : -80,
+    x: direction > 0 ? 60 : -60,
     opacity: 0,
   }),
   center: {
@@ -80,7 +90,7 @@ const pageVariants = {
     opacity: 1,
   },
   exit: (direction) => ({
-    x: direction > 0 ? -80 : 80,
+    x: direction > 0 ? -60 : 60,
     opacity: 0,
   }),
 };
@@ -88,7 +98,7 @@ const pageVariants = {
 const pageTransition = {
   type: "tween",
   ease: "easeInOut",
-  duration: 0.3,
+  duration: 0.25,
 };
 
 // ---------------------------------------------------------------------------
@@ -107,13 +117,14 @@ export default function DealMemoWizard({
   const totalSteps = stepLabels.length;
   const isFirst = currentStep === 0;
   const isLast = currentStep === totalSteps - 1;
+  const shortLabels = stepLabels === STEP_LABELS ? STEP_SHORT : stepLabels;
 
   return (
-    <div className="flex flex-col gap-8">
-      {/* ---- Stepper ---- */}
-      <div className="flex items-start justify-center px-2">
-        {stepLabels.map((label, i) => (
-          <div key={label} className="flex items-start flex-1 last:flex-none">
+    <div className="flex flex-col gap-6">
+      {/* ---- Compact stepper ---- */}
+      <div className="flex items-start justify-between px-1">
+        {shortLabels.map((label, i) => (
+          <div key={label} className="flex items-start flex-1 last:flex-none min-w-0">
             <StepIndicator
               stepIndex={i}
               currentStep={currentStep}
@@ -142,9 +153,10 @@ export default function DealMemoWizard({
       </div>
 
       {/* ---- Navigation ---- */}
-      <div className="flex items-center justify-between border-t pt-5">
+      <div className="flex items-center justify-between border-t pt-4">
         <Button
           variant="outline"
+          size="sm"
           onClick={onBack}
           disabled={isFirst}
           className={cn(isFirst && "invisible")}
@@ -157,11 +169,11 @@ export default function DealMemoWizard({
         </span>
 
         {isLast ? (
-          <Button onClick={onSubmit} disabled={isSubmitting}>
+          <Button size="sm" onClick={onSubmit} disabled={isSubmitting}>
             {isSubmitting ? "Submitting..." : "Create Deal Memo"}
           </Button>
         ) : (
-          <Button onClick={onNext}>Continue</Button>
+          <Button size="sm" onClick={onNext}>Continue</Button>
         )}
       </div>
     </div>
