@@ -6,15 +6,190 @@ import { calculateFringes } from './fringeCalculator.js';
 import { calculateUSFringes } from './usFringeCalculator.js';
 import { calculateUSTax } from './usTaxCalculator.js';
 import { getOvertimeRules } from './rateEngine.js';
+import { calculateTerritoryFringes } from './territoryFringeCalculator.js';
+import { calculateTerritoryTax } from './territoryTaxCalculator.js';
+import { calculateAllowanceProRating } from './allowanceCalculator.js';
 
 /**
  * Calculate a full payroll item for a timecard + deal memo.
+ * Routes to V1 (country-based) or V2 (territory-based) based on schemaVersion.
  *
  * @param {Object} timecard - Timecard document (with entries populated)
  * @param {Object} dealMemo - DealMemo document
  * @returns {Object} payroll item breakdown
  */
 export const calculatePayrollItem = async (timecard, dealMemo) => {
+  // V2 routing: use territory-aware calculators for schemaVersion >= 2
+  if ((dealMemo.schemaVersion || 1) >= 2 && dealMemo.territory) {
+    return calculatePayrollItemV2(timecard, dealMemo);
+  }
+  // V1: existing country-based calculation (unchanged)
+  return calculatePayrollItemV1(timecard, dealMemo);
+};
+
+/**
+ * V2: Territory-aware payroll calculation.
+ * Uses multi-tier OT, golden time, H&W per hour, HP modes, cap-aware allowances.
+ */
+const calculatePayrollItemV2 = async (timecard, dealMemo) => {
+  const hourlyRate = new Decimal(dealMemo.hourlyRate || 0);
+  const dailyRate = new Decimal(dealMemo.dailyRate || 0);
+  const weeklyRate = new Decimal(dealMemo.weeklyRate || 0);
+
+  // --- Base pay ---
+  let basePay;
+  const payBasis = dealMemo.payBasis || 'weekly';
+  if (payBasis === 'weekly') {
+    basePay = weeklyRate;
+  } else {
+    basePay = dailyRate.times(timecard.daysWorked || 0);
+  }
+
+  // HP inclusive adjustment: basic = quoted / (1 + hpPct)
+  if (dealMemo.hpMode === 'incl') {
+    const hpPct = dealMemo.holidayPayPct || 0.1207;
+    basePay = basePay.div(1 + hpPct);
+  }
+
+  // --- OT calculation ---
+  let totalOt1x5 = new Decimal(0);
+  let totalOt2x = new Decimal(0);
+  let totalGoldenTime = new Decimal(0);
+
+  const otRate1x5 = new Decimal(dealMemo.otRate1x5 || hourlyRate.times(1.5).toNumber());
+  const otRate2x = new Decimal(dealMemo.otRate2x || hourlyRate.times(2).toNumber());
+
+  // Apply OT rate cap if set (e.g. UK Camera £81.82)
+  const otCap = dealMemo.otRateCap ? new Decimal(dealMemo.otRateCap) : null;
+  const effectiveOt1x5 = otCap ? Decimal.min(otRate1x5, otCap) : otRate1x5;
+  const effectiveOt2x = otCap ? Decimal.min(otRate2x, otCap) : otRate2x;
+
+  totalOt1x5 = new Decimal(timecard.totalOt1x5Hrs || 0).times(effectiveOt1x5);
+  totalOt2x = new Decimal(timecard.totalOt2xHrs || 0).times(effectiveOt2x);
+
+  // Golden time (IATSE: 2x from hour 14)
+  if (dealMemo.goldenTimeEnabled && dealMemo.goldenTimeMultiplier) {
+    const gtHrs = new Decimal(timecard.totalGoldenTimeHrs || 0);
+    totalGoldenTime = gtHrs.times(hourlyRate).times(dealMemo.goldenTimeMultiplier);
+  }
+
+  // --- Meal penalties ---
+  let mealPenaltyPay = new Decimal(0);
+  for (const entry of timecard.entries || []) {
+    if (entry.mealPenaltyCount > 0) {
+      const amounts = dealMemo.mealPenaltyAmounts || [dealMemo.mealPenaltyRate || 0];
+      for (let i = 0; i < entry.mealPenaltyCount; i++) {
+        const amount = amounts[Math.min(i, amounts.length - 1)] || 0;
+        mealPenaltyPay = mealPenaltyPay.plus(amount);
+      }
+    }
+  }
+
+  // --- Day premiums ---
+  let sixthDayPay = new Decimal(0);
+  let seventhDayPay = new Decimal(0);
+  for (const entry of timecard.entries || []) {
+    if (entry.isSixthDay && entry.callTime && entry.wrapTime && !entry.isRestDay) {
+      sixthDayPay = sixthDayPay.plus(dailyRate.times((dealMemo.sixthDayMultiplier || 1.5) - 1));
+    }
+    if (entry.isSeventhDay && entry.callTime && entry.wrapTime && !entry.isRestDay) {
+      seventhDayPay = seventhDayPay.plus(dailyRate.times((dealMemo.seventhDayMultiplier || 2.0) - 1));
+    }
+  }
+
+  // --- Night premium ---
+  const nightHrs = new Decimal(timecard.totalNightHrs || 0);
+  const nightPremiumPay = nightHrs.times(hourlyRate).times(dealMemo.nightPremiumPct || 0);
+
+  // --- Turnaround penalties ---
+  let turnaroundPenaltyPay = new Decimal(0);
+  for (const entry of timecard.entries || []) {
+    if (entry.turnaroundViolation) {
+      turnaroundPenaltyPay = turnaroundPenaltyPay.plus(
+        new Decimal(entry.turnaroundShortfallHrs || 0).times(hourlyRate).times(dealMemo.turnaroundPenaltyMultiplier || 1.5)
+      );
+    }
+  }
+
+  // --- Allowances (v2 cap-aware) ---
+  let totalAllowances = new Decimal(0);
+  if (dealMemo.allowances && dealMemo.allowances.length > 0) {
+    const breakdown = calculateAllowanceProRating(dealMemo.allowances, timecard.entries, timecard.daysWorked);
+    for (const a of breakdown) {
+      totalAllowances = totalAllowances.plus(a.weeklyTotal || 0);
+    }
+  } else {
+    // Fallback to v1 flat allowances
+    totalAllowances = new Decimal(dealMemo.kitAllowance || 0)
+      .plus(dealMemo.phoneAllowance || 0)
+      .plus(dealMemo.computerAllowance || 0)
+      .plus(dealMemo.carAllowance || 0)
+      .plus(new Decimal(dealMemo.travelAllowance || 0).times(timecard.daysWorked || 0))
+      .plus(new Decimal(dealMemo.perDiemRate || 0).times(timecard.daysWorked || 0));
+  }
+
+  // --- Gross pay ---
+  const grossPay = basePay
+    .plus(totalOt1x5).plus(totalOt2x).plus(totalGoldenTime)
+    .plus(mealPenaltyPay).plus(turnaroundPenaltyPay)
+    .plus(sixthDayPay).plus(seventhDayPay).plus(nightPremiumPay)
+    .plus(totalAllowances);
+
+  // --- Territory-aware fringes ---
+  const totalWorkedHrs = (timecard.totalStraightHrs || 0) + (timecard.totalOt1x5Hrs || 0) + (timecard.totalOt2xHrs || 0);
+  const fringes = calculateTerritoryFringes(grossPay.toNumber(), totalWorkedHrs, dealMemo);
+
+  // --- Territory-aware employee deductions ---
+  const taxes = calculateTerritoryTax(grossPay.toNumber(), dealMemo);
+
+  const netPay = grossPay.minus(taxes.totalDeductions);
+  const totalCost = grossPay.plus(fringes.totalFringes);
+
+  return {
+    basePay: basePay.toDecimalPlaces(2).toNumber(),
+    overtime1x5Pay: totalOt1x5.toDecimalPlaces(2).toNumber(),
+    overtime2xPay: totalOt2x.toDecimalPlaces(2).toNumber(),
+    goldenTimePay: totalGoldenTime.toDecimalPlaces(2).toNumber(),
+    mealPenaltyPay: mealPenaltyPay.toDecimalPlaces(2).toNumber(),
+    turnaroundPenaltyPay: turnaroundPenaltyPay.toDecimalPlaces(2).toNumber(),
+    sixthDayPremium: sixthDayPay.toDecimalPlaces(2).toNumber(),
+    seventhDayPremium: seventhDayPay.toDecimalPlaces(2).toNumber(),
+    nightPremium: nightPremiumPay.toDecimalPlaces(2).toNumber(),
+    kitAllowance: dealMemo.kitAllowance || 0,
+    travelAllowance: dealMemo.travelAllowance || 0,
+    perDiem: dealMemo.perDiemRate || 0,
+    phoneAllowance: dealMemo.phoneAllowance || 0,
+    computerAllowance: dealMemo.computerAllowance || 0,
+    carAllowance: dealMemo.carAllowance || 0,
+    otherEarnings: totalAllowances.toDecimalPlaces(2).toNumber(),
+    grossPay: grossPay.toDecimalPlaces(2).toNumber(),
+    holidayPay: fringes.holidayPay || 0,
+    employerNi: fringes.employerNi || 0,
+    employerPension: fringes.employerPension || 0,
+    apprenticeshipLevy: fringes.apprenticeshipLevy || 0,
+    hwContribution: fringes.hwContribution || 0,
+    totalFringes: fringes.totalFringes || 0,
+    employeeNi: taxes.employeeNi || 0,
+    incomeTax: taxes.incomeTax || 0,
+    employeePension: taxes.employeePension || 0,
+    studentLoan: 0,
+    otherDeductions: 0,
+    totalDeductions: taxes.totalDeductions || 0,
+    netPay: netPay.toDecimalPlaces(2).toNumber(),
+    totalCost: totalCost.toDecimalPlaces(2).toNumber(),
+    // Meta
+    daysWorked: timecard.daysWorked,
+    totalHours: totalWorkedHrs,
+    otHours: (timecard.totalOt1x5Hrs || 0) + (timecard.totalOt2xHrs || 0),
+    territory: dealMemo.territory,
+    schemaVersion: 2,
+  };
+};
+
+/**
+ * V1: Original country-based payroll calculation (unchanged for backward compat).
+ */
+const calculatePayrollItemV1 = async (timecard, dealMemo) => {
   const hourlyRate = new Decimal(dealMemo.hourlyRate || 0);
   const dailyRate = new Decimal(dealMemo.dailyRate || 0);
   const weeklyRate = new Decimal(dealMemo.weeklyRate || 0);

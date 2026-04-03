@@ -4,13 +4,16 @@ import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const STEP_LABELS = [
-  "Production",
-  "Classification",
+  "Entity & Territory",
+  "Crew Details",
+  "Deal Structure",
   "Rates",
-  "Fringes",
-  "Overtime & Penalties",
   "Allowances",
-  "Review",
+  "Nominal Coding",
+  "Compliance",
+  "Documents",
+  "Payroll Start",
+  "Preview & Issue",
 ];
 
 // ---------------------------------------------------------------------------
