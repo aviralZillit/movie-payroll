@@ -10,7 +10,6 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@vendia/serverless-express": "^4.12.6",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "decimal.js": "^10.4.3",
