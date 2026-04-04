@@ -49,6 +49,8 @@ export const create = asyncHandler(async (req, res) => {
     weekStarting,
     weekEnding,
     entries: entries || [],
+    // Snapshot territory from deal memo for calculation routing
+    schemaVersion: dealMemo.schemaVersion || 1,
   });
 
   const populated = await Timecard.findById(timecard._id)

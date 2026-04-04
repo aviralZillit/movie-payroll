@@ -1,0 +1,36 @@
+{
+  "name": "zillit-global-rates-bible",
+  "version": "1.0.0",
+  "description": "Zillit Global Production Rates Bible — React/TypeScript/Tailwind implementation",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "extract-data": "node src/components/rates-bible/data-extract.js public/zillit-global-rates-bible-v10.html --out src/data"
+  },
+  "dependencies": {
+    "next": "14.2.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "zustand": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.0",
+    "tailwindcss": "^3.4.0",
+    "autoprefixer": "^10",
+    "postcss": "^8",
+    "typescript": "^5"
+  },
+  "notes": {
+    "fonts": "Add Syne, DM Sans, DM Mono via next/font/google in app/layout.tsx",
+    "data": "Run npm run extract-data to generate src/data/ratesData.ts from the HTML prototype",
+    "ai": "The Anthropic API key is handled by the claude.ai environment. For standalone deployment, add ANTHROPIC_API_KEY to .env.local and create an API route at app/api/chat/route.ts",
+    "tailwind": "The tailwind.config.ts in this kit maps all CSS custom properties from the HTML prototype to Tailwind tokens"
+  }
+}

@@ -27,6 +27,8 @@ import {
   ChevronLeft,
   ShieldCheck,
   Users,
+  BookOpen,
+  UserCircle,
 } from "lucide-react";
 
 // Role hierarchy: who can see what
@@ -42,7 +44,9 @@ const navItems = [
   { to: "/timecards", label: "Timecards", icon: Clock, roles: null },
   { to: "/payroll", label: "Payroll", icon: Banknote, roles: ["super_admin", "payroll_admin", "production_accountant"] },
   { to: "/rate-cards", label: "Rate Cards", icon: CreditCard, roles: null },
+  { to: "/rates-bible", label: "Rates Bible", icon: BookOpen, roles: null },
   { to: "/admin/rate-cards", label: "Admin Rates", icon: ShieldCheck, roles: ["super_admin", "payroll_admin"] },
+  { to: "/crew-portal", label: "Crew Portal", icon: UserCircle, roles: ["crew_member"] },
   { to: "/settings", label: "Settings", icon: Settings, roles: null },
   { to: "/users", label: "Users", icon: Users, roles: ["super_admin", "payroll_admin"] },
 ];

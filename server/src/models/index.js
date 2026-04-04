@@ -10,3 +10,8 @@ export { default as DealMemo } from './DealMemo.js';
 export { default as Timecard } from './Timecard.js';
 export { default as PayrollRun } from './PayrollRun.js';
 export { default as AuditLog } from './AuditLog.js';
+export { default as Territory } from './Territory.js';
+export { default as TerritoryRule } from './TerritoryRule.js';
+export { default as RateBibleEntry } from './RateBibleEntry.js';
+export { default as ContractingEntity } from './ContractingEntity.js';
+export { default as ProductionSettings } from './ProductionSettings.js';

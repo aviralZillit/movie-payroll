@@ -1,10 +1,22 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+
+// v2 step components
+import Step0EntityTerritory from "@/components/deal-memo/steps/Step0EntityTerritory";
+import Step1CrewDetails from "@/components/deal-memo/steps/Step1CrewDetails";
+import Step2DealStructure from "@/components/deal-memo/steps/Step2DealStructure";
+import Step3Rates from "@/components/deal-memo/steps/Step3Rates";
+import Step4Allowances from "@/components/deal-memo/steps/Step4Allowances";
+import Step5NominalCoding from "@/components/deal-memo/steps/Step5NominalCoding";
+import Step6Compliance from "@/components/deal-memo/steps/Step6Compliance";
+import Step7Documents from "@/components/deal-memo/steps/Step7Documents";
+import Step8PayrollStart from "@/components/deal-memo/steps/Step8PayrollStart";
+import Step9PreviewIssue from "@/components/deal-memo/steps/Step9PreviewIssue";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -42,6 +54,8 @@ import {
   useRateLookup,
 } from "@/hooks/useRateCards";
 
+import { useContractingEntities } from "@/hooks/useContractingEntities";
+import api from "@/lib/axios";
 import useAuthStore from "@/store/authStore";
 import { cn, formatCurrency, currencySymbol } from "@/lib/utils";
 import {
@@ -197,6 +211,20 @@ const US_FRINGE_DEFAULTS = {
 };
 
 // Which schema fields belong to which step (for partial validation)
+const STEP_FIELDS_V2 = [
+  ["productionId", "personId", "unionId", "departmentId", "designationId", "budgetTierId"], // Step 0: Entity & Territory
+  [],                                                                                         // Step 1: Crew Details (optional at creation)
+  ["startDate"],                                                                               // Step 2: Deal Structure
+  ["weeklyRate"],                                                                              // Step 3: Rates
+  [],                                                                                         // Step 4: Allowances (optional)
+  [],                                                                                         // Step 5: Nominal Coding (auto-generated)
+  [],                                                                                         // Step 6: Compliance (display only)
+  [],                                                                                         // Step 7: Documents (optional)
+  [],                                                                                         // Step 8: Payroll Start (optional)
+  [],                                                                                         // Step 9: Preview & Issue
+];
+
+// Legacy v1 step fields (kept for backward compat if needed)
 const STEP_FIELDS = [
   ["productionId", "personId", "startDate"],
   ["unionId", "departmentId", "designationId", "budgetTierId"],
@@ -293,6 +321,9 @@ export default function DealMemoNew() {
     budgetTier: "",
   });
 
+  // Nominal lines (auto-generated from deal structure)
+  const [nominalLines, setNominalLines] = useState([]);
+
   const { data: productions, isLoading: prodsLoading } = useProductions();
   const rateLookup = useRateLookup();
   const createDealMemo = useCreateDealMemo();
@@ -332,6 +363,33 @@ export default function DealMemoNew() {
   const { data: departments, isLoading: deptsLoading } = useDepartments(watchedUnionId);
   const { data: designations, isLoading: desigsLoading } = useDesignations(watchedDepartmentId);
   const { data: budgetTiers, isLoading: tiersLoading } = useBudgetTiers(watchedUnionId, productionCountry);
+  const { data: entities, isLoading: entitiesLoading } = useContractingEntities(watchedProductionId);
+
+  // Generate nominal lines from current form values
+  const generateNominalLines = useCallback(() => {
+    const vals = getValues();
+    const territory = selectedProduction?.country || 'UK';
+    const lines = [];
+    const cs = cSymbol;
+    const nicLabel = territory === 'US' ? 'FICA / Employer Tax' : territory === 'AU' ? 'Superannuation' : 'Employer NIC';
+    lines.push({ code: '2302', label: 'Basic Labour + HP', description: 'Contracted rate', costCentre: 'DEPT', isCore: true, taxCredit: true });
+    lines.push({ code: '2360', label: 'Overtime / Penalties', description: 'OT, meal penalties, turnaround', costCentre: 'DEPT', isCore: true, taxCredit: true });
+    lines.push({ code: '2399', label: nicLabel, description: 'Employer social contributions', costCentre: 'DEPT', isCore: true, taxCredit: true });
+    if (vals.kitAllowance > 0) lines.push({ code: '2350', label: 'Box/Kit Allowance', description: `${cs}${vals.kitAllowance}/${vals.kitAllowancePeriod || 'weekly'}`, costCentre: 'DEPT', taxCredit: false });
+    if (vals.carAllowance > 0) lines.push({ code: '2340', label: 'Car Allowance', description: `${cs}${vals.carAllowance}`, costCentre: 'DEPT', taxCredit: false });
+    if (vals.phoneAllowance > 0) lines.push({ code: '2340', label: 'Phone Allowance', description: `${cs}${vals.phoneAllowance}`, costCentre: 'DEPT', taxCredit: false });
+    if (vals.computerAllowance > 0) lines.push({ code: '2340', label: 'Computer Allowance', description: `${cs}${vals.computerAllowance}`, costCentre: 'DEPT', taxCredit: false });
+    if (vals.travelAllowance > 0) lines.push({ code: '2340', label: 'Travel Allowance', description: `${cs}${vals.travelAllowance}`, costCentre: 'DEPT', taxCredit: false });
+    if (vals.perDiem > 0) lines.push({ code: '2340', label: 'Per Diem', description: `${cs}${vals.perDiem}/day`, costCentre: 'DEPT', taxCredit: false });
+    if (vals.housingAllowance > 0) lines.push({ code: '2340', label: 'Housing Allowance', description: `${cs}${vals.housingAllowance}`, costCentre: 'DEPT', taxCredit: false });
+    (vals.customAllowances || []).forEach((ca) => {
+      if (ca.amount > 0) lines.push({ code: '2340', label: ca.name, description: `${cs}${ca.amount}/${ca.period || 'weekly'}`, costCentre: 'DEPT', taxCredit: false });
+    });
+    if (territory === 'US' || territory === 'CA') {
+      lines.push({ code: '2397', label: 'Pension / Retirement', description: 'Union pension contribution', costCentre: 'DEPT', isCore: false, taxCredit: true });
+    }
+    setNominalLines(lines);
+  }, [getValues, selectedProduction, cSymbol]);
 
   const personOptions = useMemo(() => {
     if (!selectedProduction?.members) return [];
@@ -376,13 +434,22 @@ export default function DealMemoNew() {
 
   // ---- Step navigation ----
   const goNext = useCallback(async () => {
-    const fieldsToValidate = STEP_FIELDS[currentStep];
+    const fieldsToValidate = STEP_FIELDS_V2[currentStep] || [];
     if (fieldsToValidate.length > 0) {
       const valid = await trigger(fieldsToValidate);
       if (!valid) return;
     }
 
-    // After step 2 (classification), auto-lookup rates
+    // Advance step FIRST, then fire background lookups
+    setDirection(1);
+    setCurrentStep((s) => Math.min(s + 1, 9));
+
+    // Auto-generate nominal lines when entering step 5 (Nominal Coding)
+    if (currentStep === 4 && nominalLines.length === 0) {
+      generateNominalLines();
+    }
+
+    // After step 2 (classification), auto-lookup rates in the background
     if (currentStep === 1) {
       const vals = getValues();
 
@@ -408,28 +475,51 @@ export default function DealMemoNew() {
         {
           onSuccess: (result) => {
             const data = result?.primary || result;
-            if (data?.weeklyRate > 0) setValue("weeklyRate", data.weeklyRate, { shouldDirty: true });
+            if (data?.weeklyRate > 0) {
+              setValue("weeklyRate", data.weeklyRate, { shouldDirty: true });
+              setValue("rateBasis", "weekly", { shouldDirty: true });
+              setValue("rateAmount", data.weeklyRate, { shouldDirty: true });
+            }
             if (data?.dailyRate > 0) setValue("dailyRate", data.dailyRate, { shouldDirty: true });
             if (data?.hourlyRate > 0) setValue("hourlyRate", data.hourlyRate, { shouldDirty: true });
             if (data?.guaranteedHoursPerWeek > 0) setValue("guaranteedHours", data.guaranteedHoursPerWeek, { shouldDirty: true });
             setRateSource(data?.sourceUrl ? { url: data.sourceUrl, label: data.sourceDocument } : null);
-
-            // Auto-populate from deal type
             if (data?.guaranteedHoursPerDay > 0) setValue("standardWorkDayHrs", data.guaranteedHoursPerDay, { shouldDirty: true });
           },
           onError: (err) => {
-            // Only show toast if it's a real 404, not a network error
             if (err?.response?.status === 404) {
               toast.info("No exact rate card found. Using closest available rate as starting point.");
             }
           },
         }
       );
-    }
 
-    setDirection(1);
-    setCurrentStep((s) => Math.min(s + 1, 6));
-  }, [currentStep, trigger, getValues, rateLookup, setValue, unions, departments, designations, budgetTiers]);
+      // Also fetch territory rule defaults for fringes/OT
+      const unionCode = (unions ?? []).find((u) => u._id === vals.unionId)?.code;
+      if (unionCode) {
+        api.get(`/territories/${productionCountry}/rules/${unionCode}`).then(({ data: ruleResp }) => {
+          const rule = ruleResp?.data;
+          if (!rule) return;
+          if (rule.turnaroundMinHrs) setValue("turnaroundMinHrs", rule.turnaroundMinHrs, { shouldDirty: true });
+          if (rule.mealPenaltyAmounts?.[0]) setValue("mealPenaltyAmount", rule.mealPenaltyAmounts[0], { shouldDirty: true });
+          if (rule.mealIntervalHrs) setValue("mealPenaltyAfterHrs", rule.mealIntervalHrs, { shouldDirty: true });
+          if (rule.sixthDayMultiplier) setValue("sixthDayMultiplier", rule.sixthDayMultiplier, { shouldDirty: true });
+          if (rule.seventhDayMultiplier) setValue("seventhDayMultiplier", rule.seventhDayMultiplier, { shouldDirty: true });
+          if (rule.rfPensionPct != null) {
+            if (productionCountry === 'US') setValue("phPct", (rule.rfPensionPct * 100) || 20, { shouldDirty: true });
+            else setValue("pensionPct", (rule.rfPensionPct * 100) || 3, { shouldDirty: true });
+          }
+          if (rule.rfHolidayPayPct != null && productionCountry !== 'US') {
+            setValue("holidayPayPct", (rule.rfHolidayPayPct * 100) || 12.07, { shouldDirty: true });
+          }
+          if (rule.rfNicPct != null) {
+            if (productionCountry === 'US') setValue("ficaPct", (rule.rfNicPct * 100) || 7.65, { shouldDirty: true });
+            else setValue("employerNiPct", (rule.rfNicPct * 100) || 13.8, { shouldDirty: true });
+          }
+        }).catch(() => {});
+      }
+    }
+  }, [currentStep, trigger, getValues, setValue, unions, departments, designations, budgetTiers, productionCountry, nominalLines, generateNominalLines]);
 
   const goBack = useCallback(() => {
     setDirection(-1);
@@ -492,6 +582,36 @@ export default function DealMemoNew() {
       idleDayRate: data.idleDayRate,
       housingAllowance: data.housingAllowance,
       customAllowances: data.customAllowances?.length ? data.customAllowances : undefined,
+      // ── V2 fields ──────────────────────────────────────
+      schemaVersion: 2,
+      contractingEntityId: data.contractingEntityId || undefined,
+      territory: productionCountry,
+      unionKey: (unions ?? []).find(u => u._id === data.unionId)?.code || undefined,
+      screenCredit: data.screenCredit || undefined,
+      isCustomDeal: data.isCustomDeal || false,
+      // Crew details
+      employmentStatus: data.employmentStatus || undefined,
+      niNumber: data.niNumber || undefined,
+      taxCode: data.taxCode || undefined,
+      ssn: data.ssn || undefined,
+      // Deal structure
+      dealType: data.dealType || 'weekly',
+      exclusivity: data.exclusivity || undefined,
+      payOrPlay: data.payOrPlay || false,
+      wrapDays: data.wrapDays || 0,
+      travelDays: data.travelDays || 0,
+      // Rates v2
+      rateBasis: data.rateBasis || undefined,
+      rateType: data.rateType || undefined,
+      hpMode: data.hpMode || 'excl',
+      // Nominal lines
+      nominalLines: nominalLines.length > 0 ? nominalLines : undefined,
+      taxCreditScheme: data.taxCreditScheme || undefined,
+      // Payroll start
+      payrollBureau: data.bureauId || undefined,
+      payFrequency: data.payFrequency || 'weekly',
+      // Documents
+      signingDocuments: data.documents?.filter(d => d.filename) || undefined,
     };
 
     createDealMemo.mutate(payload, {
@@ -577,66 +697,63 @@ export default function DealMemoNew() {
     [setValue, setClassificationLabels, setDirection, setCurrentStep]
   );
 
-  // ---- Render steps ----
+  // ---- Render steps (v2: 10 steps) ----
+  const commonProps = { control, errors, setValue, watch, country: productionCountry, cSymbol };
+
   const renderStep = () => {
     switch (currentStep) {
       case 0:
         return (
-          <StepProduction
-            control={control}
+          <Step0EntityTerritory
+            {...commonProps}
             productions={productions}
-            prodsLoading={prodsLoading}
+            productionsLoading={prodsLoading}
             personOptions={personOptions}
-            errors={errors}
-            setValue={setValue}
-            watchedProductionId={watchedProductionId}
-          />
-        );
-      case 1:
-        return (
-          <StepClassification
-            control={control}
-            errors={errors}
+            entities={entities}
+            entitiesLoading={entitiesLoading}
             unions={unions}
             unionsLoading={unionsLoading}
             departments={departments}
-            deptsLoading={deptsLoading}
+            departmentsLoading={deptsLoading}
             designations={designations}
-            desigsLoading={desigsLoading}
+            designationsLoading={desigsLoading}
             budgetTiers={budgetTiers}
-            tiersLoading={tiersLoading}
-            watchedUnionId={watchedUnionId}
-            watchedDepartmentId={watchedDepartmentId}
-            setValue={setValue}
-            isLookingUp={rateLookup.isPending}
+            budgetTiersLoading={tiersLoading}
+            territory={productionCountry}
           />
         );
+      case 1:
+        return <Step1CrewDetails {...commonProps} territory={productionCountry} />;
       case 2:
+        return <Step2DealStructure {...commonProps} />;
+      case 3:
         return (
-          <StepRates
-            control={control}
-            errors={errors}
-            watch={watch}
-            setValue={setValue}
+          <Step3Rates
+            {...commonProps}
+            currencySymbol={cSymbol}
+            territory={productionCountry}
+            unionKey={(unions ?? []).find(u => u._id === watchedUnionId)?.code}
+            designationName={classificationLabels?.designation}
+            budgetTierName={classificationLabels?.budgetTier}
             rateSource={rateSource}
-            country={productionCountry}
-            cSymbol={cSymbol}
           />
         );
-      case 3:
-        return <StepFringes control={control} errors={errors} watch={watch} setValue={setValue} country={productionCountry} />;
       case 4:
-        return <StepOvertime control={control} errors={errors} watch={watch} setValue={setValue} country={productionCountry} cSymbol={cSymbol} />;
+        return <Step4Allowances {...commonProps} />;
       case 5:
-        return <StepAllowances control={control} errors={errors} watch={watch} setValue={setValue} country={productionCountry} cSymbol={cSymbol} />;
+        return <Step5NominalCoding {...commonProps} territory={productionCountry} nominalLines={nominalLines} onRegenerate={generateNominalLines} />;
       case 6:
+        return <Step6Compliance {...commonProps} territory={productionCountry} unionKey={watch("unionKey")} />;
+      case 7:
+        return <Step7Documents {...commonProps} />;
+      case 8:
+        return <Step8PayrollStart {...commonProps} territory={productionCountry} />;
+      case 9:
         return (
-          <StepReview
-            values={watch()}
-            productions={productions}
-            personOptions={personOptions}
-            classificationLabels={classificationLabels}
-            country={productionCountry}
+          <Step9PreviewIssue
+            watch={watch}
+            labels={classificationLabels}
+            currencySymbol={cSymbol}
           />
         );
       default:

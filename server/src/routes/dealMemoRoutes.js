@@ -7,6 +7,7 @@ import {
   getByProduction,
   getMyDeals,
   transitionStatus,
+  crewComplete,
 } from '../controllers/dealMemoController.js';
 import auth from '../middleware/auth.js';
 import { authorize } from '../middleware/rbac.js';
@@ -29,6 +30,9 @@ router.put(
   authorize('super_admin', 'payroll_admin', 'production_accountant'),
   update
 );
+// Crew self-completion of their fields (NI, bank, etc.)
+router.patch('/:id/crew-complete', crewComplete);
+
 // Transition is open to all authenticated roles; fine-grained checks are in the controller
 router.patch(
   '/:id/transition',

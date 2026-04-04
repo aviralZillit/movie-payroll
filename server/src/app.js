@@ -22,14 +22,19 @@ import adminRateCardRoutes from './routes/adminRateCardRoutes.js';
 import exportRoutes from './routes/exportRoutes.js';
 import importRoutes from './routes/importRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
+import territoryRoutes from './routes/territoryRoutes.js';
+import rateBibleRoutes from './routes/rateBibleRoutes.js';
+import contractingEntityRoutes from './routes/contractingEntityRoutes.js';
+import complianceRoutes from './routes/complianceRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Connect to MongoDB
-connectDB();
+// Connect to MongoDB and run migrations
+import { runMigrations } from './migrations/migrationRunner.js';
+connectDB().then(() => runMigrations().catch(console.error));
 
 // Middleware
 app.use(helmet());
@@ -60,6 +65,10 @@ app.use('/api/admin/rate-cards', adminRateCardRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/import', importRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/territories', territoryRoutes);
+app.use('/api/rates-bible', rateBibleRoutes);
+app.use('/api/contracting-entities', contractingEntityRoutes);
+app.use('/api/compliance', complianceRoutes);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date() }));
 
