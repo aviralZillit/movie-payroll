@@ -22,6 +22,74 @@ const PAY_FREQUENCY_OPTIONS = [
   { value: "semi_monthly", label: "Semi-Monthly" },
 ];
 
+// Bureau options by territory (from bureauExportService.js)
+const BUREAU_OPTIONS = {
+  UK: [
+    { _id: "SARGENT_DISC", name: "Sargent-Disc" },
+    { _id: "MEDIA_SERVICES", name: "Media Services" },
+    { _id: "PSS_PAYROLL", name: "PSS Payroll" },
+    { _id: "IN_HOUSE", name: "In-house" },
+  ],
+  US: [
+    { _id: "CAST_AND_CREW", name: "Cast & Crew" },
+    { _id: "ENTERTAINMENT_PARTNERS", name: "Entertainment Partners" },
+    { _id: "IN_HOUSE", name: "In-house" },
+  ],
+  IE: [
+    { _id: "MONEYPENNY", name: "Moneypenny" },
+    { _id: "IN_HOUSE", name: "In-house" },
+  ],
+  CA: [
+    { _id: "CAST_AND_CREW", name: "Cast & Crew" },
+    { _id: "ENTERTAINMENT_PARTNERS", name: "Entertainment Partners" },
+    { _id: "IN_HOUSE", name: "In-house" },
+  ],
+  AU: [
+    { _id: "PSS_PAYROLL", name: "PSS Payroll" },
+    { _id: "IN_HOUSE", name: "In-house" },
+  ],
+  DEFAULT: [
+    { _id: "IN_HOUSE", name: "In-house" },
+    { _id: "OTHER", name: "Other" },
+  ],
+};
+
+// Outstanding fields by territory (from complianceService.js)
+const OUTSTANDING_FIELDS = {
+  UK: [
+    { name: "niNumber", label: "NI Number" },
+    { name: "taxCode", label: "Tax Code" },
+    { name: "bankSortCode", label: "Bank Sort Code" },
+    { name: "bankAccountNumber", label: "Bank Account Number" },
+    { name: "dateOfBirth", label: "Date of Birth" },
+    { name: "address", label: "Address" },
+    { name: "emergencyContact", label: "Emergency Contact" },
+  ],
+  US: [
+    { name: "ssn", label: "Social Security Number" },
+    { name: "w4FilingStatus", label: "W-4 Filing Status" },
+    { name: "stateWithholding", label: "State Withholding" },
+    { name: "achRoutingNumber", label: "ACH Routing Number" },
+    { name: "achAccountNumber", label: "ACH Account Number" },
+    { name: "dateOfBirth", label: "Date of Birth" },
+    { name: "address", label: "Address" },
+  ],
+  CA: [
+    { name: "sin", label: "Social Insurance Number" },
+    { name: "province", label: "Province" },
+    { name: "dateOfBirth", label: "Date of Birth" },
+    { name: "address", label: "Address" },
+  ],
+  AU: [
+    { name: "tfn", label: "Tax File Number" },
+    { name: "superFund", label: "Superannuation Fund" },
+    { name: "superMemberNumber", label: "Super Member Number" },
+    { name: "bsb", label: "BSB" },
+    { name: "dateOfBirth", label: "Date of Birth" },
+    { name: "address", label: "Address" },
+  ],
+};
+
 // ---------------------------------------------------------------------------
 // Outstanding field status
 // ---------------------------------------------------------------------------
@@ -51,10 +119,21 @@ export default function Step8PayrollStart({
   control,
   errors,
   watch,
-  bureaus = [],
-  bureausLoading,
-  outstandingFields = [],
+  territory = "UK",
+  bureaus: propBureaus,
+  outstandingFields: propFields,
 }) {
+  // Use props if provided, otherwise generate from territory
+  const bureaus = propBureaus?.length > 0 ? propBureaus : (BUREAU_OPTIONS[territory] || BUREAU_OPTIONS.DEFAULT);
+  const territoryFields = OUTSTANDING_FIELDS[territory] || OUTSTANDING_FIELDS.UK;
+
+  // Check which fields the crew has already filled (from form state)
+  const formValues = watch();
+  const outstandingFields = (propFields?.length > 0 ? propFields : territoryFields).map((f) => ({
+    ...f,
+    completed: !!formValues[f.name],
+  }));
+
   const completedCount = outstandingFields.filter((f) => f.completed).length;
   const totalCount = outstandingFields.length;
 
