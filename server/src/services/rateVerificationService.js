@@ -4,6 +4,30 @@ import { RateBibleEntry } from '../models/index.js';
  * Verify a proposed rate against the Global Rates Bible.
  * Returns compliance status with source details.
  */
+/**
+ * Fuzzy match a grade name against a rate row grade.
+ * Handles: "1st Assistant Director" matching "1st AD (Studio)"
+ */
+function gradeMatches(rateGrade, searchGrade) {
+  if (!rateGrade || !searchGrade) return false;
+  const a = rateGrade.toLowerCase();
+  const b = searchGrade.toLowerCase();
+  // Direct includes (either direction)
+  if (a.includes(b) || b.includes(a)) return true;
+  // Token-based: split into words and check overlap
+  const aTokens = a.replace(/[()\/,]/g, ' ').split(/\s+/).filter(t => t.length > 1);
+  const bTokens = b.replace(/[()\/,]/g, ' ').split(/\s+/).filter(t => t.length > 1);
+  // If 2+ tokens match, it's a hit (e.g. "1st" + "director" matches "1st" + "AD")
+  const matching = bTokens.filter(bt => aTokens.some(at => at.includes(bt) || bt.includes(at)));
+  if (matching.length >= 2) return true;
+  // Abbreviation match: "AD" = "Assistant Director", "AC" = "Assistant Camera"
+  const ABBREVS = { 'ad': 'assistant director', 'ac': 'assistant camera', 'dop': 'director of photography', 'upm': 'unit production manager', 'hmu': 'hair make-up', 'sfx': 'special effects', 'dit': 'digital imaging technician' };
+  for (const [abbr, full] of Object.entries(ABBREVS)) {
+    if ((a.includes(abbr) && b.includes(full)) || (b.includes(abbr) && a.includes(full))) return true;
+  }
+  return false;
+}
+
 export async function verifyRate({ territoryCode, agreementId, grade, budgetTier, proposedWeeklyRate }) {
   const result = {
     isCompliant: true,
@@ -41,7 +65,7 @@ export async function verifyRate({ territoryCode, agreementId, grade, budgetTier
     // Search across all entries for the grade
     for (const e of entries) {
       const match = e.rates.find(
-        (r) => r.grade && !r.isHeader && r.grade.toLowerCase().includes(grade?.toLowerCase())
+        (r) => r.grade && !r.isHeader && gradeMatches(r.grade, grade)
       );
       if (match) {
         return buildResult(result, match, e, proposedWeeklyRate);
@@ -59,14 +83,14 @@ export async function verifyRate({ territoryCode, agreementId, grade, budgetTier
   // Find matching rate row
   const matchingRows = entry.rates.filter(
     (r) => r.grade && !r.isHeader &&
-    r.grade.toLowerCase().includes(grade?.toLowerCase()) &&
+    gradeMatches(r.grade, grade) &&
     (!budgetTier || !r.budgetTier || r.budgetTier.toLowerCase().includes(budgetTier?.toLowerCase()))
   );
 
   if (matchingRows.length === 0) {
     // Try broader search without budget tier
     const broadMatch = entry.rates.find(
-      (r) => r.grade && !r.isHeader && r.grade.toLowerCase().includes(grade?.toLowerCase())
+      (r) => r.grade && !r.isHeader && gradeMatches(r.grade, grade)
     );
     if (broadMatch) {
       return buildResult(result, broadMatch, entry, proposedWeeklyRate);
