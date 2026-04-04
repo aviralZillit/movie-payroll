@@ -34,7 +34,7 @@ connectDB();
 app.use(helmet());
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
-    ? true
+    ? (process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : true)
     : [process.env.CLIENT_URL || 'http://localhost:5173', 'http://localhost:5180'],
   credentials: true,
 }));
@@ -63,19 +63,24 @@ app.get('/api/health', (_req, res) => res.json({ status: 'ok', timestamp: new Da
 // Error handler (for API routes)
 app.use('/api', errorHandler);
 
-// Serve React frontend in production
-const clientDist = path.join(__dirname, '../../client/dist');
-if (existsSync(clientDist)) {
-  app.use(express.static(clientDist));
-  app.get('*', (_req, res) => {
-    res.sendFile(path.join(clientDist, 'index.html'));
-  });
+// Serve React frontend in production (non-Lambda only — Amplify CDN serves the SPA)
+if (!process.env.AWS_LAMBDA_FUNCTION_NAME) {
+  const clientDist = path.join(__dirname, '../../client/dist');
+  if (existsSync(clientDist)) {
+    app.use(express.static(clientDist));
+    app.get('*', (_req, res) => {
+      res.sendFile(path.join(clientDist, 'index.html'));
+    });
+  }
 }
 
 // Catch-all error handler
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
+// Start server only when not running in Lambda
+if (!process.env.AWS_LAMBDA_FUNCTION_NAME) {
+  const PORT = process.env.PORT || 10000;
+  app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
+}
 
 export default app;
