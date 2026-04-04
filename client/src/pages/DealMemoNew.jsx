@@ -577,6 +577,36 @@ export default function DealMemoNew() {
       idleDayRate: data.idleDayRate,
       housingAllowance: data.housingAllowance,
       customAllowances: data.customAllowances?.length ? data.customAllowances : undefined,
+      // ── V2 fields ──────────────────────────────────────
+      schemaVersion: 2,
+      contractingEntityId: data.contractingEntityId || undefined,
+      territory: productionCountry,
+      unionKey: (unions ?? []).find(u => u._id === data.unionId)?.code || undefined,
+      screenCredit: data.screenCredit || undefined,
+      isCustomDeal: data.isCustomDeal || false,
+      // Crew details
+      employmentStatus: data.employmentStatus || undefined,
+      niNumber: data.niNumber || undefined,
+      taxCode: data.taxCode || undefined,
+      ssn: data.ssn || undefined,
+      // Deal structure
+      dealType: data.dealType || 'weekly',
+      exclusivity: data.exclusivity || undefined,
+      payOrPlay: data.payOrPlay || false,
+      wrapDays: data.wrapDays || 0,
+      travelDays: data.travelDays || 0,
+      // Rates v2
+      rateBasis: data.rateBasis || undefined,
+      rateType: data.rateType || undefined,
+      hpMode: data.hpMode || 'excl',
+      // Nominal lines
+      nominalLines: nominalLines.length > 0 ? nominalLines : undefined,
+      taxCreditScheme: data.taxCreditScheme || undefined,
+      // Payroll start
+      payrollBureau: data.bureauId || undefined,
+      payFrequency: data.payFrequency || 'weekly',
+      // Documents
+      signingDocuments: data.documents?.filter(d => d.filename) || undefined,
     };
 
     createDealMemo.mutate(payload, {

@@ -25,6 +25,7 @@ import Settings from "@/pages/Settings";
 import AdminRateCards from "@/pages/AdminRateCards";
 import UserManagement from "@/pages/UserManagement";
 import RatesBible from "@/pages/RatesBible";
+import CrewPortal from "@/pages/CrewPortal";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -75,6 +76,7 @@ export default function App() {
                 <Route path="/admin/rate-cards" element={<AdminRateCards />} />
                 <Route path="/users" element={<UserManagement />} />
                 <Route path="/rates-bible" element={<RatesBible />} />
+                <Route path="/crew-portal" element={<CrewPortal />} />
               </Route>
 
               {/* Default redirect */}
