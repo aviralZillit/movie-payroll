@@ -130,18 +130,21 @@ export default function Step3Rates({
     const amount = Number(rateAmount);
     if (isNaN(amount) || amount <= 0) return;
 
+    // Use precise rounding to avoid floating point drift (e.g., 34999.98 instead of 35000)
+    const r2 = (n) => Number(n.toFixed(2));
+
     if (rateBasis === "weekly") {
       setValue("weeklyRate", amount, { shouldDirty: true });
-      setValue("dailyRate", Math.round((amount / 5) * 100) / 100, { shouldDirty: true });
-      setValue("hourlyRate", Math.round((amount / 50) * 100) / 100, { shouldDirty: true });
+      setValue("dailyRate", r2(amount / 5), { shouldDirty: true });
+      setValue("hourlyRate", r2(amount / 50), { shouldDirty: true });
     } else if (rateBasis === "daily") {
       setValue("dailyRate", amount, { shouldDirty: true });
-      setValue("weeklyRate", Math.round(amount * 5 * 100) / 100, { shouldDirty: true });
-      setValue("hourlyRate", Math.round((amount / 10) * 100) / 100, { shouldDirty: true });
+      setValue("weeklyRate", r2(amount * 5), { shouldDirty: true });
+      setValue("hourlyRate", r2(amount / 10), { shouldDirty: true });
     } else if (rateBasis === "hourly") {
       setValue("hourlyRate", amount, { shouldDirty: true });
-      setValue("dailyRate", Math.round(amount * 10 * 100) / 100, { shouldDirty: true });
-      setValue("weeklyRate", Math.round(amount * 50 * 100) / 100, { shouldDirty: true });
+      setValue("dailyRate", r2(amount * 10), { shouldDirty: true });
+      setValue("weeklyRate", r2(amount * 50), { shouldDirty: true });
     }
   }, [rateAmount, rateBasis, setValue]);
 
@@ -163,7 +166,11 @@ export default function Step3Rates({
                 <Label>Rate Basis</Label>
                 <Select value={field.value ?? ""} onValueChange={field.onChange}>
                   <SelectTrigger className={cn(errors.rateBasis && "border-destructive")}>
-                    <SelectValue placeholder="Select basis..." />
+                    {field.value ? (
+                      <span>{RATE_BASIS_OPTIONS.find(o => o.value === field.value)?.label || field.value}</span>
+                    ) : (
+                      <SelectValue placeholder="Select basis..." />
+                    )}
                   </SelectTrigger>
                   <SelectContent>
                     {RATE_BASIS_OPTIONS.map((opt) => (
@@ -202,7 +209,11 @@ export default function Step3Rates({
                 <Label>Rate Type</Label>
                 <Select value={field.value ?? ""} onValueChange={field.onChange}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select type..." />
+                    {field.value ? (
+                      <span>{RATE_TYPE_OPTIONS.find(o => o.value === field.value)?.label || field.value}</span>
+                    ) : (
+                      <SelectValue placeholder="Select type..." />
+                    )}
                   </SelectTrigger>
                   <SelectContent>
                     {RATE_TYPE_OPTIONS.map((opt) => (
@@ -236,7 +247,11 @@ export default function Step3Rates({
                   </div>
                   <Select value={field.value ?? ""} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select HP mode..." />
+                      {field.value ? (
+                        <span>{HP_MODE_OPTIONS.find(o => o.value === field.value)?.label || field.value}</span>
+                      ) : (
+                        <SelectValue placeholder="Select HP mode..." />
+                      )}
                     </SelectTrigger>
                     <SelectContent>
                       {HP_MODE_OPTIONS.map((opt) => (

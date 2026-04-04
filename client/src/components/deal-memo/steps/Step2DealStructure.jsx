@@ -55,7 +55,11 @@ export default function Step2DealStructure({ control, errors, watch }) {
                 <Label>Deal Type</Label>
                 <Select value={field.value ?? ""} onValueChange={field.onChange}>
                   <SelectTrigger className={cn(errors.dealType && "border-destructive")}>
-                    <SelectValue placeholder="Select deal type..." />
+                    {field.value ? (
+                      <span>{DEAL_TYPES.find(o => o.value === field.value)?.label || field.value}</span>
+                    ) : (
+                      <SelectValue placeholder="Select deal type..." />
+                    )}
                   </SelectTrigger>
                   <SelectContent>
                     {DEAL_TYPES.map((opt) => (
@@ -80,7 +84,11 @@ export default function Step2DealStructure({ control, errors, watch }) {
                 <Label>Exclusivity</Label>
                 <Select value={field.value ?? ""} onValueChange={field.onChange}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select exclusivity..." />
+                    {field.value ? (
+                      <span>{EXCLUSIVITY_OPTIONS.find(o => o.value === field.value)?.label || field.value}</span>
+                    ) : (
+                      <SelectValue placeholder="Select exclusivity..." />
+                    )}
                   </SelectTrigger>
                   <SelectContent>
                     {EXCLUSIVITY_OPTIONS.map((opt) => (
