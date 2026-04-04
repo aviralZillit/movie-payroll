@@ -320,6 +320,44 @@ export default function DealMemoNew() {
     budgetTier: "",
   });
 
+  // Nominal lines (auto-generated from deal structure)
+  const [nominalLines, setNominalLines] = useState([]);
+
+  const generateNominalLines = useCallback(() => {
+    const vals = getValues();
+    const territory = selectedProduction?.country || 'UK';
+    const lines = [];
+
+    // Core lines (always present)
+    const nicLabel = territory === 'US' ? 'FICA / Employer Tax' : territory === 'AU' ? 'Superannuation' : 'Employer NIC';
+    lines.push({ code: '2302', label: 'Basic Labour + HP', description: 'Contracted rate', costCentre: 'DEPT', isCore: true, taxCredit: true });
+    lines.push({ code: '2360', label: 'Overtime / Penalties', description: 'OT, meal penalties, turnaround', costCentre: 'DEPT', isCore: true, taxCredit: true });
+    lines.push({ code: '2399', label: nicLabel, description: 'Employer social contributions', costCentre: 'DEPT', isCore: true, taxCredit: true });
+
+    // Kit allowance
+    if (vals.kitAllowance > 0) lines.push({ code: '2350', label: 'Box/Kit Allowance', description: `${cSymbol}${vals.kitAllowance}/${vals.kitAllowancePeriod || 'weekly'}`, costCentre: 'DEPT', taxCredit: false });
+
+    // Other allowances
+    if (vals.carAllowance > 0) lines.push({ code: '2340', label: 'Car Allowance', description: `${cSymbol}${vals.carAllowance}`, costCentre: 'DEPT', taxCredit: false });
+    if (vals.phoneAllowance > 0) lines.push({ code: '2340', label: 'Phone Allowance', description: `${cSymbol}${vals.phoneAllowance}`, costCentre: 'DEPT', taxCredit: false });
+    if (vals.computerAllowance > 0) lines.push({ code: '2340', label: 'Computer Allowance', description: `${cSymbol}${vals.computerAllowance}`, costCentre: 'DEPT', taxCredit: false });
+    if (vals.travelAllowance > 0) lines.push({ code: '2340', label: 'Travel Allowance', description: `${cSymbol}${vals.travelAllowance}`, costCentre: 'DEPT', taxCredit: false });
+    if (vals.perDiem > 0) lines.push({ code: '2340', label: 'Per Diem', description: `${cSymbol}${vals.perDiem}/day`, costCentre: 'DEPT', taxCredit: false });
+    if (vals.housingAllowance > 0) lines.push({ code: '2340', label: 'Housing Allowance', description: `${cSymbol}${vals.housingAllowance}`, costCentre: 'DEPT', taxCredit: false });
+
+    // Custom allowances
+    (vals.customAllowances || []).forEach((ca) => {
+      if (ca.amount > 0) lines.push({ code: '2340', label: ca.name, description: `${cSymbol}${ca.amount}/${ca.period || 'weekly'}`, costCentre: 'DEPT', taxCredit: false });
+    });
+
+    // US-specific pension/H&W
+    if (territory === 'US' || territory === 'CA') {
+      lines.push({ code: '2397', label: 'Pension / Retirement', description: 'Union pension contribution', costCentre: 'DEPT', isCore: false, taxCredit: true });
+    }
+
+    setNominalLines(lines);
+  }, [getValues, selectedProduction, cSymbol]);
+
   const { data: productions, isLoading: prodsLoading } = useProductions();
   const rateLookup = useRateLookup();
   const createDealMemo = useCreateDealMemo();
@@ -414,6 +452,11 @@ export default function DealMemoNew() {
     setDirection(1);
     setCurrentStep((s) => Math.min(s + 1, 9));
 
+    // Auto-generate nominal lines when entering step 5 (Nominal Coding)
+    if (currentStep === 4 && nominalLines.length === 0) {
+      generateNominalLines();
+    }
+
     // After step 2 (classification), auto-lookup rates in the background
     if (currentStep === 1) {
       const vals = getValues();
@@ -480,7 +523,7 @@ export default function DealMemoNew() {
         }).catch(() => {});
       }
     }
-  }, [currentStep, trigger, getValues, setValue, unions, departments, designations, budgetTiers, productionCountry]);
+  }, [currentStep, trigger, getValues, setValue, unions, departments, designations, budgetTiers, productionCountry, nominalLines, generateNominalLines]);
 
   const goBack = useCallback(() => {
     setDirection(-1);
@@ -672,7 +715,7 @@ export default function DealMemoNew() {
       case 4:
         return <Step4Allowances {...commonProps} />;
       case 5:
-        return <Step5NominalCoding {...commonProps} territory={productionCountry} />;
+        return <Step5NominalCoding {...commonProps} territory={productionCountry} nominalLines={nominalLines} onRegenerate={generateNominalLines} />;
       case 6:
         return <Step6Compliance {...commonProps} territory={productionCountry} unionKey={watch("unionKey")} />;
       case 7:
