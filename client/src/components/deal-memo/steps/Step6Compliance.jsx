@@ -72,13 +72,87 @@ function ResponsibilityBadge({ owner }) {
 // ---------------------------------------------------------------------------
 // Step 6 - Compliance
 // ---------------------------------------------------------------------------
+// Territory-based compliance data (mirrors server complianceService.js)
+const COMPLIANCE_DATA = {
+  UK: {
+    checks: [
+      { id: 'ir35', label: 'IR35 Status', status: 'pending', description: 'IR35 determination required for Ltd/PSC contractors' },
+      { id: 'rtw', label: 'Right to Work', status: 'required', description: 'RTW check must be completed before first day of work' },
+      { id: 'wtr', label: 'Working Time Regs', status: 'ok', description: 'WTR opt-out signed, 48-hour week limit waived' },
+      { id: 'gdpr', label: 'GDPR & Data', status: 'ok', description: 'Privacy notice issued, data processing agreement in place' },
+    ],
+    onboarding: [
+      { label: 'Right to Work check completed', owner: 'production', required: true },
+      { label: 'P45 from previous employer received', owner: 'crew', required: false },
+      { label: 'NI Number provided', owner: 'crew', required: true },
+      { label: 'Tax code provided or starter declaration', owner: 'crew', required: true },
+      { label: 'Bank details provided (sort code + account)', owner: 'crew', required: true },
+      { label: 'Emergency contact details', owner: 'crew', required: false },
+      { label: 'NDA signed', owner: 'production', required: true },
+      { label: 'Anti-Harassment & Bullying policy signed', owner: 'production', required: true },
+      { label: 'Health & Safety policy signed', owner: 'production', required: true },
+      { label: 'GDPR Data Protection notice issued', owner: 'production', required: false },
+    ],
+  },
+  US: {
+    checks: [
+      { id: 'i9', label: 'Work Authorization (I-9)', status: 'required', description: 'I-9 must be completed within 3 days of hire' },
+      { id: 'union', label: 'Union Membership', status: 'pending', description: 'Union card number verified. Taft-Hartley waiver if non-member.' },
+      { id: 'tax', label: 'Federal & State Tax', status: 'pending', description: 'W-4 federal withholding form and state withholding required' },
+      { id: 'hw', label: 'Health & Welfare', status: 'ok', description: 'H&W qualifying hours tracking enabled' },
+    ],
+    onboarding: [
+      { label: 'I-9 Work Authorization completed', owner: 'production', required: true },
+      { label: 'W-4 Federal Withholding form', owner: 'crew', required: true },
+      { label: 'State withholding form', owner: 'crew', required: true },
+      { label: 'SSN provided', owner: 'crew', required: true },
+      { label: 'Union card number verified', owner: 'production', required: true },
+      { label: 'ACH routing + account number', owner: 'crew', required: true },
+      { label: 'NDA signed', owner: 'production', required: true },
+    ],
+  },
+  CA: {
+    checks: [
+      { id: 'sin', label: 'Work Authorization / SIN', status: 'required', description: 'SIN required for all Canadian workers' },
+      { id: 'union', label: 'Union Membership', status: 'pending', description: 'Union card required for covered positions' },
+      { id: 'tax', label: 'Canadian Tax / TD1', status: 'pending', description: 'TD1 Federal and Provincial forms required' },
+      { id: 'pipeda', label: 'PIPEDA Compliance', status: 'ok', description: 'Privacy policy compliant' },
+    ],
+    onboarding: [
+      { label: 'SIN provided', owner: 'crew', required: true },
+      { label: 'TD1 Federal form', owner: 'crew', required: true },
+      { label: 'TD1 Provincial form', owner: 'crew', required: true },
+      { label: 'Bank transit/institution/account', owner: 'crew', required: true },
+      { label: 'Union card number', owner: 'production', required: true },
+    ],
+  },
+  AU: {
+    checks: [
+      { id: 'tfn', label: 'Tax File Number', status: 'required', description: 'TFN must be provided within 28 days' },
+      { id: 'fairwork', label: 'Fair Work Act', status: 'ok', description: 'Modern Award compliance confirmed' },
+      { id: 'super', label: 'Superannuation', status: 'required', description: 'Super fund choice form required. Quarterly contributions due.' },
+      { id: 'privacy', label: 'Privacy Act', status: 'ok', description: 'Privacy policy compliant' },
+    ],
+    onboarding: [
+      { label: 'Tax File Number provided', owner: 'crew', required: true },
+      { label: 'Super fund choice form completed', owner: 'crew', required: true },
+      { label: 'BSB + Account number', owner: 'crew', required: true },
+    ],
+  },
+};
+
 export default function Step6Compliance({
   control,
   errors,
   watch,
-  complianceChecks = [],
-  onboardingItems = [],
+  territory = 'UK',
+  complianceChecks: propChecks,
+  onboardingItems: propItems,
 }) {
+  // Use props if provided, otherwise generate from territory
+  const data = COMPLIANCE_DATA[territory] || COMPLIANCE_DATA.UK;
+  const complianceChecks = propChecks?.length > 0 ? propChecks : data.checks;
+  const onboardingItems = propItems?.length > 0 ? propItems : data.onboarding;
   return (
     <div className="space-y-6">
       {/* Compliance cards */}
