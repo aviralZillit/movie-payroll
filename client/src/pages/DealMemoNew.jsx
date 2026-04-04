@@ -55,6 +55,7 @@ import {
 } from "@/hooks/useRateCards";
 
 import { useContractingEntities } from "@/hooks/useContractingEntities";
+import api from "@/lib/axios";
 import useAuthStore from "@/store/authStore";
 import { cn, formatCurrency, currencySymbol } from "@/lib/utils";
 import {
@@ -746,11 +747,9 @@ export default function DealMemoNew() {
       case 9:
         return (
           <Step9PreviewIssue
-            values={watch()}
-            productions={productions}
-            personOptions={personOptions}
-            classificationLabels={classificationLabels}
-            country={productionCountry}
+            watch={watch}
+            labels={classificationLabels}
+            currencySymbol={cSymbol}
           />
         );
       default:
