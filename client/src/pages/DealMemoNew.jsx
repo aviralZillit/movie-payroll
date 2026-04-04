@@ -475,7 +475,11 @@ export default function DealMemoNew() {
         {
           onSuccess: (result) => {
             const data = result?.primary || result;
-            if (data?.weeklyRate > 0) setValue("weeklyRate", data.weeklyRate, { shouldDirty: true });
+            if (data?.weeklyRate > 0) {
+              setValue("weeklyRate", data.weeklyRate, { shouldDirty: true });
+              setValue("rateBasis", "weekly", { shouldDirty: true });
+              setValue("rateAmount", data.weeklyRate, { shouldDirty: true });
+            }
             if (data?.dailyRate > 0) setValue("dailyRate", data.dailyRate, { shouldDirty: true });
             if (data?.hourlyRate > 0) setValue("hourlyRate", data.hourlyRate, { shouldDirty: true });
             if (data?.guaranteedHoursPerWeek > 0) setValue("guaranteedHours", data.guaranteedHoursPerWeek, { shouldDirty: true });
