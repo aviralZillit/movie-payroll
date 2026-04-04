@@ -1,0 +1,29 @@
+version: 1
+applications:
+  - appRoot: .
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - cd client && npm ci
+            - cd server && npm ci
+        build:
+          commands:
+            - cd client && npm run build
+      artifacts:
+        baseDirectory: client/dist
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - client/node_modules/**/*
+          - server/node_modules/**/*
+    backend:
+      phases:
+        build:
+          commands:
+            - cd server && npm ci
+      artifacts:
+        baseDirectory: server
+        files:
+          - '**/*'
