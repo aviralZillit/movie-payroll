@@ -323,41 +323,6 @@ export default function DealMemoNew() {
   // Nominal lines (auto-generated from deal structure)
   const [nominalLines, setNominalLines] = useState([]);
 
-  const generateNominalLines = useCallback(() => {
-    const vals = getValues();
-    const territory = selectedProduction?.country || 'UK';
-    const lines = [];
-
-    // Core lines (always present)
-    const nicLabel = territory === 'US' ? 'FICA / Employer Tax' : territory === 'AU' ? 'Superannuation' : 'Employer NIC';
-    lines.push({ code: '2302', label: 'Basic Labour + HP', description: 'Contracted rate', costCentre: 'DEPT', isCore: true, taxCredit: true });
-    lines.push({ code: '2360', label: 'Overtime / Penalties', description: 'OT, meal penalties, turnaround', costCentre: 'DEPT', isCore: true, taxCredit: true });
-    lines.push({ code: '2399', label: nicLabel, description: 'Employer social contributions', costCentre: 'DEPT', isCore: true, taxCredit: true });
-
-    // Kit allowance
-    if (vals.kitAllowance > 0) lines.push({ code: '2350', label: 'Box/Kit Allowance', description: `${cSymbol}${vals.kitAllowance}/${vals.kitAllowancePeriod || 'weekly'}`, costCentre: 'DEPT', taxCredit: false });
-
-    // Other allowances
-    if (vals.carAllowance > 0) lines.push({ code: '2340', label: 'Car Allowance', description: `${cSymbol}${vals.carAllowance}`, costCentre: 'DEPT', taxCredit: false });
-    if (vals.phoneAllowance > 0) lines.push({ code: '2340', label: 'Phone Allowance', description: `${cSymbol}${vals.phoneAllowance}`, costCentre: 'DEPT', taxCredit: false });
-    if (vals.computerAllowance > 0) lines.push({ code: '2340', label: 'Computer Allowance', description: `${cSymbol}${vals.computerAllowance}`, costCentre: 'DEPT', taxCredit: false });
-    if (vals.travelAllowance > 0) lines.push({ code: '2340', label: 'Travel Allowance', description: `${cSymbol}${vals.travelAllowance}`, costCentre: 'DEPT', taxCredit: false });
-    if (vals.perDiem > 0) lines.push({ code: '2340', label: 'Per Diem', description: `${cSymbol}${vals.perDiem}/day`, costCentre: 'DEPT', taxCredit: false });
-    if (vals.housingAllowance > 0) lines.push({ code: '2340', label: 'Housing Allowance', description: `${cSymbol}${vals.housingAllowance}`, costCentre: 'DEPT', taxCredit: false });
-
-    // Custom allowances
-    (vals.customAllowances || []).forEach((ca) => {
-      if (ca.amount > 0) lines.push({ code: '2340', label: ca.name, description: `${cSymbol}${ca.amount}/${ca.period || 'weekly'}`, costCentre: 'DEPT', taxCredit: false });
-    });
-
-    // US-specific pension/H&W
-    if (territory === 'US' || territory === 'CA') {
-      lines.push({ code: '2397', label: 'Pension / Retirement', description: 'Union pension contribution', costCentre: 'DEPT', isCore: false, taxCredit: true });
-    }
-
-    setNominalLines(lines);
-  }, [getValues, selectedProduction, cSymbol]);
-
   const { data: productions, isLoading: prodsLoading } = useProductions();
   const rateLookup = useRateLookup();
   const createDealMemo = useCreateDealMemo();
@@ -398,6 +363,32 @@ export default function DealMemoNew() {
   const { data: designations, isLoading: desigsLoading } = useDesignations(watchedDepartmentId);
   const { data: budgetTiers, isLoading: tiersLoading } = useBudgetTiers(watchedUnionId, productionCountry);
   const { data: entities, isLoading: entitiesLoading } = useContractingEntities(watchedProductionId);
+
+  // Generate nominal lines from current form values
+  const generateNominalLines = useCallback(() => {
+    const vals = getValues();
+    const territory = selectedProduction?.country || 'UK';
+    const lines = [];
+    const cs = cSymbol;
+    const nicLabel = territory === 'US' ? 'FICA / Employer Tax' : territory === 'AU' ? 'Superannuation' : 'Employer NIC';
+    lines.push({ code: '2302', label: 'Basic Labour + HP', description: 'Contracted rate', costCentre: 'DEPT', isCore: true, taxCredit: true });
+    lines.push({ code: '2360', label: 'Overtime / Penalties', description: 'OT, meal penalties, turnaround', costCentre: 'DEPT', isCore: true, taxCredit: true });
+    lines.push({ code: '2399', label: nicLabel, description: 'Employer social contributions', costCentre: 'DEPT', isCore: true, taxCredit: true });
+    if (vals.kitAllowance > 0) lines.push({ code: '2350', label: 'Box/Kit Allowance', description: `${cs}${vals.kitAllowance}/${vals.kitAllowancePeriod || 'weekly'}`, costCentre: 'DEPT', taxCredit: false });
+    if (vals.carAllowance > 0) lines.push({ code: '2340', label: 'Car Allowance', description: `${cs}${vals.carAllowance}`, costCentre: 'DEPT', taxCredit: false });
+    if (vals.phoneAllowance > 0) lines.push({ code: '2340', label: 'Phone Allowance', description: `${cs}${vals.phoneAllowance}`, costCentre: 'DEPT', taxCredit: false });
+    if (vals.computerAllowance > 0) lines.push({ code: '2340', label: 'Computer Allowance', description: `${cs}${vals.computerAllowance}`, costCentre: 'DEPT', taxCredit: false });
+    if (vals.travelAllowance > 0) lines.push({ code: '2340', label: 'Travel Allowance', description: `${cs}${vals.travelAllowance}`, costCentre: 'DEPT', taxCredit: false });
+    if (vals.perDiem > 0) lines.push({ code: '2340', label: 'Per Diem', description: `${cs}${vals.perDiem}/day`, costCentre: 'DEPT', taxCredit: false });
+    if (vals.housingAllowance > 0) lines.push({ code: '2340', label: 'Housing Allowance', description: `${cs}${vals.housingAllowance}`, costCentre: 'DEPT', taxCredit: false });
+    (vals.customAllowances || []).forEach((ca) => {
+      if (ca.amount > 0) lines.push({ code: '2340', label: ca.name, description: `${cs}${ca.amount}/${ca.period || 'weekly'}`, costCentre: 'DEPT', taxCredit: false });
+    });
+    if (territory === 'US' || territory === 'CA') {
+      lines.push({ code: '2397', label: 'Pension / Retirement', description: 'Union pension contribution', costCentre: 'DEPT', isCore: false, taxCredit: true });
+    }
+    setNominalLines(lines);
+  }, [getValues, selectedProduction, cSymbol]);
 
   const personOptions = useMemo(() => {
     if (!selectedProduction?.members) return [];
