@@ -238,7 +238,11 @@ export default function Step4Allowances({ control, errors, watch, currencySymbol
                             <Label className="text-xs">Frequency</Label>
                             <Select value={f.value ?? ""} onValueChange={f.onChange}>
                               <SelectTrigger className="h-8 text-sm">
-                                <SelectValue />
+                                {f.value ? (
+                                  <span>{FREQUENCY_OPTIONS.find(o => o.value === f.value)?.label || f.value}</span>
+                                ) : (
+                                  <SelectValue placeholder="Select..." />
+                                )}
                               </SelectTrigger>
                               <SelectContent>
                                 {FREQUENCY_OPTIONS.map((opt) => (
@@ -259,7 +263,11 @@ export default function Step4Allowances({ control, errors, watch, currencySymbol
                             <Label className="text-xs">Tax Treatment</Label>
                             <Select value={f.value ?? ""} onValueChange={f.onChange}>
                               <SelectTrigger className="h-8 text-sm">
-                                <SelectValue />
+                                {f.value ? (
+                                  <span>{TAX_TREATMENT_OPTIONS.find(o => o.value === f.value)?.label || f.value}</span>
+                                ) : (
+                                  <SelectValue placeholder="Select..." />
+                                )}
                               </SelectTrigger>
                               <SelectContent>
                                 {TAX_TREATMENT_OPTIONS.map((opt) => (

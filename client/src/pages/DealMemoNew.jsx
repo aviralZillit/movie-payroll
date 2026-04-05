@@ -698,7 +698,7 @@ export default function DealMemoNew() {
   );
 
   // ---- Render steps (v2: 10 steps) ----
-  const commonProps = { control, errors, setValue, watch, country: productionCountry, cSymbol };
+  const commonProps = { control, errors, setValue, watch, country: productionCountry, cSymbol, currencySymbol: cSymbol };
 
   const renderStep = () => {
     switch (currentStep) {
