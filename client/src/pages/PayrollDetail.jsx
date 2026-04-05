@@ -307,7 +307,7 @@ export default function PayrollDetail() {
       </div>
 
       {/* ── Compact stat bar ───────────────────────────────── */}
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {[
           { label: "Gross Pay", value: fmt(summary.totalGross || totals.grossPay), icon: Banknote, color: "text-primary" },
           { label: "Fringes", value: fmt(summary.totalFringes || totals.totalFringes), icon: Receipt, color: "text-amber-500" },

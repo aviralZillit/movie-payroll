@@ -123,8 +123,22 @@ export default function DealMemoWizard({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* ---- Compact stepper ---- */}
-      <div className="flex items-start justify-between px-1">
+      {/* ---- Mobile: simple progress bar ---- */}
+      <div className="md:hidden">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-xs font-medium">{shortLabels[currentStep]}</span>
+          <span className="text-xs text-muted-foreground">{currentStep + 1}/{totalSteps}</span>
+        </div>
+        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+          <div
+            className="h-full rounded-full bg-primary transition-all duration-300"
+            style={{ width: `${((currentStep + 1) / totalSteps) * 100}%` }}
+          />
+        </div>
+      </div>
+
+      {/* ---- Desktop: full stepper ---- */}
+      <div className="hidden md:flex items-start justify-between px-1">
         {shortLabels.map((label, i) => (
           <div key={label} className="flex items-start flex-1 last:flex-none min-w-0">
             <StepIndicator

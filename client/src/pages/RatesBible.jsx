@@ -129,9 +129,9 @@ export default function RatesBible() {
   const selectedTerritoryData = territories.find(t => t.code.toLowerCase() === selectedTerritory);
 
   return (
-    <div className="flex" style={{ height: 'calc(100vh - 56px)' }}>
-      {/* ── Sidebar: Territory List ──────────────────────── */}
-      <div className="w-64 border-r border-border bg-card flex flex-col">
+    <div className="flex flex-col md:flex-row" style={{ height: 'calc(100vh - 56px)' }}>
+      {/* ── Sidebar: Territory List (horizontal scroll on mobile, vertical on desktop) ──── */}
+      <div className="md:w-64 border-b md:border-b-0 md:border-r border-border bg-card flex flex-col">
         <div className="p-3 border-b border-border">
           <div className="flex items-center gap-2 mb-2">
             <Globe className="h-4 w-4 text-primary" />
@@ -144,7 +144,27 @@ export default function RatesBible() {
             className="h-8 text-xs"
           />
         </div>
-        <ScrollArea className="flex-1">
+        {/* Mobile: horizontal scroll | Desktop: vertical list */}
+        <div className="md:hidden overflow-x-auto">
+          <div className="flex gap-1 p-1 min-w-max">
+            {filteredTerritories.map((t) => (
+              <button
+                key={t.code}
+                onClick={() => setSelectedTerritory(t.code.toLowerCase())}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-colors",
+                  selectedTerritory === t.code.toLowerCase()
+                    ? "bg-primary/10 text-primary font-medium border border-primary/30"
+                    : "hover:bg-muted/50 text-muted-foreground border border-transparent"
+                )}
+              >
+                <span>{t.flag}</span>
+                <span>{t.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <ScrollArea className="flex-1 hidden md:block">
           <div className="p-1">
             {filteredTerritories.map((t) => (
               <button
