@@ -126,11 +126,11 @@ function OwnerBadge({ owner }) {
 // ---------------------------------------------------------------------------
 // Step 1 - Crew Details
 // ---------------------------------------------------------------------------
-export default function Step1CrewDetails({ control, errors, setValue, watch, territory = "UK" }) {
+export default function Step1CrewDetails({ control, errors, setValue, watch, territory = "US" }) {
   const employmentStatus = watch("employmentStatus");
 
   const statusOptions = useMemo(
-    () => EMPLOYMENT_STATUSES[territory] || EMPLOYMENT_STATUSES.UK,
+    () => EMPLOYMENT_STATUSES[territory] || EMPLOYMENT_STATUSES.US,
     [territory]
   );
 

@@ -135,7 +135,7 @@ function CapSettings({ index, control }) {
 // ---------------------------------------------------------------------------
 // Step 4 - Allowances
 // ---------------------------------------------------------------------------
-export default function Step4Allowances({ control, errors, watch, currencySymbol = "\u00A3" }) {
+export default function Step4Allowances({ control, errors, watch, currencySymbol = "$" }) {
   const { fields, append, remove } = useFieldArray({
     control,
     name: "allowances",

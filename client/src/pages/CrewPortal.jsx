@@ -198,8 +198,8 @@ function SignDocumentModal({ open, onOpenChange, document, docIndex, dealMemoId,
 
 // ── Deal Memo Card with Documents + Fields ─────────────────────────────
 function DealMemoCard({ dealMemo }) {
-  const territory = dealMemo.territory || dealMemo.country || "UK";
-  const fields = CREW_FIELDS[territory] || CREW_FIELDS.UK;
+  const territory = dealMemo.territory || dealMemo.country || "US";
+  const fields = CREW_FIELDS[territory] || CREW_FIELDS.US;
   const [formValues, setFormValues] = useState(() => {
     const initial = {};
     fields.forEach((f) => { initial[f.key] = dealMemo[f.key] || ""; });

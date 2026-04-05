@@ -175,7 +175,7 @@ export default function PayrollDetail() {
   const items = run?.items || [];
   const summary = run?.summary || {};
   const statusCfg = STATUS_CONFIG[run?.status] || STATUS_CONFIG.draft;
-  const country = run?.productionId?.country || "UK";
+  const country = run?.productionId?.country;
   const fmt = (amount) => formatCurrency(amount || 0, country);
 
   const deptBreakdown = useMemo(() => {
@@ -438,8 +438,8 @@ export default function PayrollDetail() {
                   { icon: DollarSign, label: "OT Pay", value: fmt(totals.overtimePay), color: "" },
                   { icon: Equal, label: "Gross Pay", value: fmt(totals.grossPay), color: "font-bold" },
                   { icon: Receipt, label: "Fringes", value: fmt(totals.totalFringes), color: "text-amber-500" },
-                  { icon: TrendingDown, label: "Tax (PAYE)", value: `-${fmt(totals.tax)}`, color: "text-red-500" },
-                  { icon: TrendingDown, label: "Employee NI", value: `-${fmt(totals.employeeNI)}`, color: "text-red-500" },
+                  { icon: TrendingDown, label: country === "UK" ? "Tax (PAYE)" : "Income Tax", value: `-${fmt(totals.tax)}`, color: "text-red-500" },
+                  { icon: TrendingDown, label: country === "UK" ? "Employee NI" : "Employee Tax", value: `-${fmt(totals.employeeNI)}`, color: "text-red-500" },
                 ].map(({ icon: Icon, label, value, color }) => (
                   <div key={label} className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5 text-muted-foreground">

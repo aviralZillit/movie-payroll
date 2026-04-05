@@ -48,7 +48,7 @@ const HP_MODE_OPTIONS = [
 // ---------------------------------------------------------------------------
 // Currency input helper
 // ---------------------------------------------------------------------------
-function CurrencyInput({ label, value, onChange, currencySymbol = "\u00A3", error, disabled, className }) {
+function CurrencyInput({ label, value, onChange, currencySymbol = "$", error, disabled, className }) {
   return (
     <div className={cn("space-y-1.5", className)}>
       <Label>{label}</Label>
@@ -79,8 +79,8 @@ export default function Step3Rates({
   errors,
   setValue,
   watch,
-  currencySymbol = "\u00A3",
-  territory = "UK",
+  currencySymbol = "$",
+  territory,
   unionKey,
   designationName,
   budgetTierName,

@@ -83,7 +83,7 @@ export default function Payroll() {
   const runs = data?.data || [];
   const pagination = data?.pagination || { page: 1, totalPages: 1, total: 0 };
   // Derive country from first run's production (for summary currency display)
-  const summaryCountry = runs[0]?.productionId?.country || "UK";
+  const summaryCountry = runs[0]?.productionId?.country;
   // Compute stats from runs if stats endpoint unavailable
   const stats = statsData || (() => {
     const totals = { totalGross: 0, totalFringes: 0, totalNet: 0, headcount: 0 };

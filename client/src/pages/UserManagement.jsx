@@ -452,7 +452,7 @@ export default function UserManagement() {
                       <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">
                         {user.createdAt
                           ? new Date(user.createdAt).toLocaleDateString(
-                              "en-GB",
+                              undefined,
                               {
                                 day: "numeric",
                                 month: "short",

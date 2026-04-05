@@ -59,7 +59,7 @@ export default function Step9PreviewIssue({
   onSaveDraft,
   isSubmitting = false,
   labels = {},
-  currencySymbol = "\u00A3",
+  currencySymbol = "$",
 }) {
   const data = watch();
 

@@ -43,6 +43,7 @@ import {
 } from "@/hooks/useRateCards";
 
 import { Button } from "@/components/ui/button";
+import { formatCurrency } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -50,12 +51,7 @@ import { Button } from "@/components/ui/button";
 
 function formatMoney(value, country) {
   if (value == null) return "--";
-  const isUS = country === "US";
-  return new Intl.NumberFormat(isUS ? "en-US" : "en-GB", {
-    style: "currency",
-    currency: isUS ? "USD" : "GBP",
-    minimumFractionDigits: 2,
-  }).format(value);
+  return formatCurrency(value, country);
 }
 
 function formatPercent(value) {
@@ -545,7 +541,7 @@ export default function RateCards() {
                   </Badge>
                   {rates.verifiedAt && (
                     <span className="text-xs text-muted-foreground">
-                      {new Date(rates.verifiedAt).toLocaleDateString("en-GB", {
+                      {new Date(rates.verifiedAt).toLocaleDateString(undefined, {
                         day: "numeric",
                         month: "short",
                         year: "numeric",

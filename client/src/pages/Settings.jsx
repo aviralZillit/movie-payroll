@@ -426,7 +426,7 @@ export default function Settings() {
             <span className="text-muted-foreground">Member Since</span>
             <span className="text-xs">
               {user?.createdAt
-                ? new Date(user.createdAt).toLocaleDateString("en-GB", {
+                ? new Date(user.createdAt).toLocaleDateString(undefined, {
                     day: "numeric",
                     month: "short",
                     year: "numeric",

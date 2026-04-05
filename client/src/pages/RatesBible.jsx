@@ -269,7 +269,7 @@ export default function RatesBible() {
                       <div>
                         <CardTitle className="text-sm font-semibold">{agreement.agreementName}</CardTitle>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {agreement.union} • {agreement.type} • Effective: {agreement.effectiveFrom ? new Date(agreement.effectiveFrom).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) : 'N/A'}
+                          {agreement.union} • {agreement.type} • Effective: {agreement.effectiveFrom ? new Date(agreement.effectiveFrom).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : 'N/A'}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">

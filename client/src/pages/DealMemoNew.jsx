@@ -407,7 +407,7 @@ export default function DealMemoNew() {
   );
 
   // Derive country from the selected production
-  const productionCountry = selectedProduction?.country || "UK";
+  const productionCountry = selectedProduction?.country;
   const cSymbol = currencySymbol(productionCountry);
 
   // API-driven cascading selects (country-aware)
@@ -420,7 +420,7 @@ export default function DealMemoNew() {
   // Generate nominal lines from current form values
   const generateNominalLines = useCallback(() => {
     const vals = getValues();
-    const territory = selectedProduction?.country || 'UK';
+    const territory = selectedProduction?.country;
     const lines = [];
     const cs = cSymbol;
     const nicLabel = territory === 'US' ? 'FICA / Employer Tax' : territory === 'AU' ? 'Superannuation' : 'Employer NIC';
@@ -1820,7 +1820,7 @@ function StepAllowances({ control, errors, watch, setValue, country, cSymbol }) 
         <h2 className="text-lg font-semibold">Allowances</h2>
       </div>
       <p className="text-sm text-muted-foreground">
-        Allowance amounts in {country === "US" ? "USD" : "GBP"}. Leave at 0 if not applicable.
+        Allowance amounts in local currency. Leave at 0 if not applicable.
       </p>
 
       {/* Production Fee */}

@@ -10,7 +10,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { cn, formatCurrency } from "@/lib/utils";
 
-function BreakdownStep({ label, amount, type = "add", delay = 0 }) {
+function BreakdownStep({ label, amount, type = "add", delay = 0, country }) {
   const icons = {
     add: <Plus className="h-3 w-3" />,
     subtract: <Minus className="h-3 w-3" />,
@@ -51,7 +51,7 @@ function BreakdownStep({ label, amount, type = "add", delay = 0 }) {
           )}
         >
           {type === "subtract" ? "-" : type === "add" ? "+" : ""}
-          {formatCurrency(Math.abs(amount))}
+          {formatCurrency(Math.abs(amount), country)}
         </span>
       </div>
     </motion.div>
@@ -77,7 +77,10 @@ export default function GrossToNetBreakdown({
   pension = 0,
   otherDeductions = 0,
   netPay = 0,
+  country,
 }) {
+  const taxLabel = country === "UK" ? "Income Tax (PAYE)" : "Income Tax";
+  const niLabel = country === "UK" ? "Employee NI" : country === "US" ? "FICA" : "Employee Deductions";
   const steps = useMemo(
     () => [
       { label: "Base Pay", amount: basePay, type: "base" },
@@ -91,9 +94,9 @@ export default function GrossToNetBreakdown({
         ? [{ label: "Allowances", amount: allowances, type: "add" }]
         : []),
       { label: "Gross Pay", amount: grossPay, type: "equals" },
-      { label: "Income Tax (PAYE)", amount: tax, type: "subtract" },
+      { label: taxLabel, amount: tax, type: "subtract" },
       ...(employeeNI > 0
-        ? [{ label: "Employee NI", amount: employeeNI, type: "subtract" }]
+        ? [{ label: niLabel, amount: employeeNI, type: "subtract" }]
         : []),
       ...(pension > 0
         ? [{ label: "Pension", amount: pension, type: "subtract" }]
@@ -121,6 +124,7 @@ export default function GrossToNetBreakdown({
                 amount={step.amount}
                 type={step.type}
                 delay={i * 0.05}
+                country={country}
               />
             </div>
           ))}
@@ -144,10 +148,10 @@ export default function GrossToNetBreakdown({
           </div>
           <div className="flex items-center justify-between text-xs">
             <span className="font-medium tabular-nums">
-              {formatCurrency(grossPay)}
+              {formatCurrency(grossPay, country)}
             </span>
             <span className="font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
-              {formatCurrency(netPay)}
+              {formatCurrency(netPay, country)}
             </span>
           </div>
         </div>

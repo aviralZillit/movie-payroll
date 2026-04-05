@@ -145,12 +145,12 @@ export default function Step6Compliance({
   control,
   errors,
   watch,
-  territory = 'UK',
+  territory = 'US',
   complianceChecks: propChecks,
   onboardingItems: propItems,
 }) {
   // Use props if provided, otherwise generate from territory
-  const data = COMPLIANCE_DATA[territory] || COMPLIANCE_DATA.UK;
+  const data = COMPLIANCE_DATA[territory] || COMPLIANCE_DATA.US;
   const complianceChecks = propChecks?.length > 0 ? propChecks : data.checks;
   const onboardingItems = propItems?.length > 0 ? propItems : data.onboarding;
   return (

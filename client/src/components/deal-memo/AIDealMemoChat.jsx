@@ -41,9 +41,9 @@ function FormDataCard({ formData, onApply }) {
     { label: 'Department', value: labels.department },
     { label: 'Designation', value: labels.designation },
     { label: 'Budget Tier', value: labels.budgetTier },
-    { label: 'Weekly Rate', value: formData.weeklyRate ? formatCurrency(formData.weeklyRate) : null },
-    { label: 'Daily Rate', value: formData.dailyRate ? formatCurrency(formData.dailyRate) : null },
-    { label: 'Hourly Rate', value: formData.hourlyRate ? formatCurrency(formData.hourlyRate) : null },
+    { label: 'Weekly Rate', value: formData.weeklyRate ? formatCurrency(formData.weeklyRate, formData.country) : null },
+    { label: 'Daily Rate', value: formData.dailyRate ? formatCurrency(formData.dailyRate, formData.country) : null },
+    { label: 'Hourly Rate', value: formData.hourlyRate ? formatCurrency(formData.hourlyRate, formData.country) : null },
   ].filter((f) => f.value);
 
   return (

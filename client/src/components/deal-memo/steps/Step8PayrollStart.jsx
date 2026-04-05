@@ -119,13 +119,13 @@ export default function Step8PayrollStart({
   control,
   errors,
   watch,
-  territory = "UK",
+  territory,
   bureaus: propBureaus,
   outstandingFields: propFields,
 }) {
   // Use props if provided, otherwise generate from territory
   const bureaus = propBureaus?.length > 0 ? propBureaus : (BUREAU_OPTIONS[territory] || BUREAU_OPTIONS.DEFAULT);
-  const territoryFields = OUTSTANDING_FIELDS[territory] || OUTSTANDING_FIELDS.UK;
+  const territoryFields = OUTSTANDING_FIELDS[territory] || OUTSTANDING_FIELDS.DEFAULT || [];
 
   // Check which fields the crew has already filled (from form state)
   const formValues = watch();

@@ -42,7 +42,7 @@ export default function RateFieldWithInfo({
   disabled = false,
   className,
   error,
-  currencySymbol = "£",
+  currencySymbol = "$",
 }) {
   const validateRate = useValidateRate();
   const [validation, setValidation] = useState(null);

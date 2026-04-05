@@ -85,9 +85,9 @@ import { Upload } from "lucide-react";
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatGBP(value) {
+function formatRate(value, country) {
   if (value == null) return "--";
-  return formatCurrency(value);
+  return formatCurrency(value, country);
 }
 
 function formatPercent(value) {
@@ -217,13 +217,13 @@ function EditRateCardDialog({ rateCard, open, onOpenChange }) {
   if (!rateCard) return null;
 
   const rateFields = [
-    { key: "weeklyRate", label: "Weekly (£)" },
-    { key: "dailyRate", label: "Daily (£)" },
-    { key: "hourlyRate", label: "Hourly (£)" },
-    { key: "overtimeRate1x5", label: "OT 1.5x (£)" },
-    { key: "overtimeRate2x", label: "OT 2x (£)" },
-    { key: "sixthDayRate", label: "6th Day (£)" },
-    { key: "seventhDayRate", label: "7th Day (£)" },
+    { key: "weeklyRate", label: "Weekly" },
+    { key: "dailyRate", label: "Daily" },
+    { key: "hourlyRate", label: "Hourly" },
+    { key: "overtimeRate1x5", label: "OT 1.5x" },
+    { key: "overtimeRate2x", label: "OT 2x" },
+    { key: "sixthDayRate", label: "6th Day" },
+    { key: "seventhDayRate", label: "7th Day" },
     { key: "nightPremiumPct", label: "Night %" },
   ];
 
@@ -459,7 +459,7 @@ function ComparisonView({ rateCards, budgetTiers }) {
                                 key={tier.code}
                                 className="text-right tabular-nums"
                               >
-                                {rate != null ? formatGBP(rate) : (
+                                {rate != null ? formatRate(rate) : (
                                   <span className="text-muted-foreground/40">
                                     --
                                   </span>
@@ -1237,25 +1237,25 @@ function RateCardRow({ rc, idx, onEdit }) {
       </TableCell>
       <TableCell className="text-sm">{rc.budgetTierId?.name || "--"}</TableCell>
       <TableCell className="text-right tabular-nums font-medium">
-        {formatGBP(rc.weeklyRate)}
+        {formatRate(rc.weeklyRate, rc.unionId?.country)}
       </TableCell>
       <TableCell className="text-right tabular-nums">
-        {formatGBP(rc.dailyRate)}
+        {formatRate(rc.dailyRate, rc.unionId?.country)}
       </TableCell>
       <TableCell className="text-right tabular-nums">
-        {formatGBP(rc.hourlyRate)}
+        {formatRate(rc.hourlyRate, rc.unionId?.country)}
       </TableCell>
       <TableCell className="text-right tabular-nums">
-        {formatGBP(rc.overtimeRate1x5)}
+        {formatRate(rc.overtimeRate1x5, rc.unionId?.country)}
       </TableCell>
       <TableCell className="text-right tabular-nums">
-        {formatGBP(rc.overtimeRate2x)}
+        {formatRate(rc.overtimeRate2x, rc.unionId?.country)}
       </TableCell>
       <TableCell className="text-right tabular-nums">
-        {formatGBP(rc.sixthDayRate)}
+        {formatRate(rc.sixthDayRate, rc.unionId?.country)}
       </TableCell>
       <TableCell className="text-right tabular-nums">
-        {formatGBP(rc.seventhDayRate)}
+        {formatRate(rc.seventhDayRate, rc.unionId?.country)}
       </TableCell>
       <TableCell className="text-right tabular-nums">
         <span
@@ -1314,7 +1314,7 @@ function RateCardRow({ rc, idx, onEdit }) {
             <TooltipContent>
               Verified
               {rc.verifiedAt &&
-                ` on ${new Date(rc.verifiedAt).toLocaleDateString("en-GB")}`}
+                ` on ${new Date(rc.verifiedAt).toLocaleDateString()}`}
             </TooltipContent>
           </Tooltip>
         ) : (

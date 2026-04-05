@@ -187,14 +187,14 @@ function ProductionCard({ production, index, onClick }) {
             </span>
             <span className="flex items-center gap-1.5">
               <MapPin className="h-3.5 w-3.5" />
-              {p.country || "UK"}
+              {p.country || "--"}
             </span>
           </div>
 
           {/* Budget */}
           <div className="flex items-center gap-1.5 text-sm">
             <Banknote className="h-3.5 w-3.5 text-emerald-500" />
-            <span className="font-semibold">{formatCurrency(p.budget)}</span>
+            <span className="font-semibold">{formatCurrency(p.budget, p.country)}</span>
             <span className="text-muted-foreground">budget</span>
           </div>
 

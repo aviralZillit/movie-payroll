@@ -384,7 +384,7 @@ export default function ProductionDetail() {
             <InfoField
               icon={Banknote}
               label="Budget"
-              value={formatCurrency(p.budget)}
+              value={formatCurrency(p.budget, p.country)}
             />
             <InfoField icon={Banknote} label="Currency" value={p.currency} />
             <InfoField
@@ -554,7 +554,7 @@ export default function ProductionDetail() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm font-medium">
-                        {formatCurrency(dm.weeklyRate)}
+                        {formatCurrency(dm.weeklyRate, p.country)}
                       </TableCell>
                     </TableRow>
                   ))}
