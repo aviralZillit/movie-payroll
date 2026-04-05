@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -72,6 +72,7 @@ import {
   Sparkles,
   AlertCircle,
   Plus,
+  Save,
   X,
   Home,
 } from "lucide-react";
@@ -345,10 +346,15 @@ export default function DealMemoNew() {
     }
   }, [user, navigate]);
 
-  const [currentStep, setCurrentStep] = useState(0);
+  const DRAFT_KEY = "deal-memo-draft";
+  const [currentStep, setCurrentStep] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(DRAFT_KEY + "-step")) || 0; } catch { return 0; }
+  });
   const [direction, setDirection] = useState(1);
   const [rateSource, setRateSource] = useState(null);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
+  const autoSaveTimerRef = useRef(null);
 
   // Store display labels for the review step
   const [classificationLabels, setClassificationLabels] = useState({
@@ -365,6 +371,14 @@ export default function DealMemoNew() {
   const rateLookup = useRateLookup();
   const createDealMemo = useCreateDealMemo();
 
+  // Load draft from localStorage if available
+  const savedDraft = useMemo(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  }, []);
+
   const {
     control,
     handleSubmit,
@@ -372,10 +386,11 @@ export default function DealMemoNew() {
     setValue,
     trigger,
     getValues,
-    formState: { errors },
+    reset,
+    formState: { errors, isDirty },
   } = useForm({
     resolver: zodResolver(dealMemoSchema),
-    defaultValues: DEFAULT_VALUES,
+    defaultValues: savedDraft || DEFAULT_VALUES,
     mode: "onTouched",
   });
 
@@ -427,6 +442,38 @@ export default function DealMemoNew() {
     }
     setNominalLines(lines);
   }, [getValues, selectedProduction, cSymbol]);
+
+  // ---- Draft save/load ----
+  const saveDraft = useCallback(() => {
+    try {
+      const vals = getValues();
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(vals));
+      localStorage.setItem(DRAFT_KEY + "-step", JSON.stringify(currentStep));
+      setDraftSaved(true);
+      setTimeout(() => setDraftSaved(false), 2000);
+    } catch (e) {
+      console.warn("Failed to save draft:", e);
+    }
+  }, [getValues, currentStep]);
+
+  const clearDraft = useCallback(() => {
+    localStorage.removeItem(DRAFT_KEY);
+    localStorage.removeItem(DRAFT_KEY + "-step");
+  }, []);
+
+  // Auto-save every 5 seconds when form is dirty
+  useEffect(() => {
+    if (!isDirty) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      try {
+        const vals = getValues();
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(vals));
+        localStorage.setItem(DRAFT_KEY + "-step", JSON.stringify(currentStep));
+      } catch (e) { /* ignore */ }
+    }, 5000);
+    return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
+  }, [isDirty, getValues, currentStep]);
 
   const personOptions = useMemo(() => {
     if (!selectedProduction?.members) return [];
@@ -655,6 +702,7 @@ export default function DealMemoNew() {
 
     createDealMemo.mutate(payload, {
       onSuccess: (result) => {
+        clearDraft(); // Clear saved draft on successful creation
         toast.success("Deal memo created successfully");
         navigate(`/deal-memos/${result._id || result.id}`);
       },
@@ -829,6 +877,19 @@ export default function DealMemoNew() {
         </Button>
       </div>
 
+      {/* Draft resume banner */}
+      {savedDraft && (
+        <div className="flex items-center justify-between rounded-lg border border-blue-500/30 bg-blue-500/5 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Save className="size-4 text-blue-500" />
+            <span className="text-sm">Resuming from saved draft (Step {currentStep + 1})</span>
+          </div>
+          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => { clearDraft(); reset(DEFAULT_VALUES); setCurrentStep(0); }}>
+            Discard Draft
+          </Button>
+        </div>
+      )}
+
       {/* AI Chat Panel */}
       <AIDealMemoChat
         open={aiPanelOpen}
@@ -845,6 +906,8 @@ export default function DealMemoNew() {
             onNext={goNext}
             onBack={goBack}
             onSubmit={onSubmit}
+            onSaveDraft={saveDraft}
+            draftSaved={draftSaved}
             isSubmitting={createDealMemo.isPending}
           >
             {renderStep()}

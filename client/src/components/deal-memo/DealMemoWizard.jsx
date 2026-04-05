@@ -110,6 +110,8 @@ export default function DealMemoWizard({
   onNext,
   onBack,
   onSubmit,
+  onSaveDraft,
+  draftSaved = false,
   isSubmitting = false,
   children,
   stepLabels = STEP_LABELS,
@@ -154,15 +156,31 @@ export default function DealMemoWizard({
 
       {/* ---- Navigation ---- */}
       <div className="flex items-center justify-between border-t pt-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onBack}
-          disabled={isFirst}
-          className={cn(isFirst && "invisible")}
-        >
-          Back
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onBack}
+            disabled={isFirst}
+            className={cn(isFirst && "invisible")}
+          >
+            Back
+          </Button>
+          {onSaveDraft && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onSaveDraft}
+              className="text-muted-foreground"
+            >
+              {draftSaved ? (
+                <><Check className="size-3.5 mr-1 text-emerald-500" /> Saved</>
+              ) : (
+                "Save Draft"
+              )}
+            </Button>
+          )}
+        </div>
 
         <span className="text-xs text-muted-foreground">
           Step {currentStep + 1} of {totalSteps}
