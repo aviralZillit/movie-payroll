@@ -414,6 +414,19 @@ export const crewComplete = asyncHandler(async (req, res) => {
   }
 
   Object.assign(deal, updates);
+
+  // Auto-update compliance checklist: check items whose crewField was just filled
+  if (deal.complianceChecklist && deal.complianceChecklist.length > 0) {
+    const updatedFields = Object.keys(updates).filter((k) => updates[k]); // non-empty values
+    for (const item of deal.complianceChecklist) {
+      if (item.crewField && updatedFields.includes(item.crewField) && !item.isChecked) {
+        item.isChecked = true;
+        item.checkedAt = new Date();
+        item.checkedBy = req.user._id;
+      }
+    }
+  }
+
   await deal.save();
 
   const populated = await DealMemo.findById(deal._id)

@@ -665,6 +665,47 @@ export default function DealMemoDetail() {
         </CardContent>
       </Card>
 
+      {/* Compliance Checklist */}
+      {memo.complianceChecklist && memo.complianceChecklist.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="size-4 text-primary" />
+              <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Compliance & Onboarding
+              </CardTitle>
+              <Badge variant="outline" className="ml-auto text-xs">
+                {memo.complianceChecklist.filter(c => c.isChecked).length}/{memo.complianceChecklist.length} complete
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {memo.complianceChecklist.map((item, idx) => (
+                <div key={idx} className="flex items-center justify-between rounded-md border px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    {item.isChecked ? (
+                      <CheckCircle2 className="size-4 text-emerald-500" />
+                    ) : (
+                      <div className="size-4 rounded-full border-2 border-muted-foreground/30" />
+                    )}
+                    <span className={cn("text-sm", item.isChecked && "text-muted-foreground line-through")}>{item.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-[10px]">{item.responsibility}</Badge>
+                    <Badge variant="outline" className={cn("text-[10px]",
+                      item.isChecked ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" : "bg-amber-500/10 text-amber-600 border-amber-500/30"
+                    )}>
+                      {item.isChecked ? "Done" : "Pending"}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Negotiation History */}
       {memo.statusHistory && memo.statusHistory.length > 0 && (
         <Card>

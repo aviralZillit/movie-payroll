@@ -297,6 +297,43 @@ function FilterSelect({
 // ---------------------------------------------------------------------------
 const ALLOWED_CREATE_ROLES = ['super_admin', 'payroll_admin', 'production_accountant'];
 
+// Build compliance checklist for payload (mirrors server complianceService.js)
+function buildComplianceChecklist(territory) {
+  const CHECKLISTS = {
+    UK: [
+      { itemKey: 'rtw_check', name: 'Right to Work check completed', responsibility: 'PRODUCTION', isRequired: true, isChecked: false },
+      { itemKey: 'ni_number', name: 'NI Number provided', responsibility: 'CREW', isRequired: true, isChecked: false, crewField: 'niNumber' },
+      { itemKey: 'tax_code', name: 'Tax code provided', responsibility: 'CREW', isRequired: true, isChecked: false, crewField: 'taxCode' },
+      { itemKey: 'bank_details', name: 'Bank details provided', responsibility: 'CREW', isRequired: true, isChecked: false, crewField: 'bankSortCode' },
+      { itemKey: 'nda_signed', name: 'NDA signed', responsibility: 'PRODUCTION', isRequired: true, isChecked: false },
+      { itemKey: 'hb_policy', name: 'Anti-Harassment policy signed', responsibility: 'PRODUCTION', isRequired: true, isChecked: false },
+      { itemKey: 'hs_policy', name: 'Health & Safety policy signed', responsibility: 'PRODUCTION', isRequired: true, isChecked: false },
+      { itemKey: 'emergency', name: 'Emergency contact details', responsibility: 'CREW', isRequired: false, isChecked: false, crewField: 'emergencyContact' },
+    ],
+    US: [
+      { itemKey: 'i9_completed', name: 'I-9 Work Authorization completed', responsibility: 'PRODUCTION', isRequired: true, isChecked: false },
+      { itemKey: 'w4_completed', name: 'W-4 Federal Withholding form', responsibility: 'CREW', isRequired: true, isChecked: false, crewField: 'w4FilingStatus' },
+      { itemKey: 'state_withholding', name: 'State withholding form', responsibility: 'CREW', isRequired: true, isChecked: false, crewField: 'stateWithholding' },
+      { itemKey: 'ssn_provided', name: 'SSN provided', responsibility: 'CREW', isRequired: true, isChecked: false, crewField: 'ssn' },
+      { itemKey: 'union_card', name: 'Union card number verified', responsibility: 'PRODUCTION', isRequired: true, isChecked: false },
+      { itemKey: 'ach_details', name: 'ACH routing + account number', responsibility: 'CREW', isRequired: true, isChecked: false, crewField: 'achRoutingNumber' },
+      { itemKey: 'nda_signed', name: 'NDA signed', responsibility: 'PRODUCTION', isRequired: true, isChecked: false },
+    ],
+    CA: [
+      { itemKey: 'sin_provided', name: 'SIN provided', responsibility: 'CREW', isRequired: true, isChecked: false, crewField: 'sin' },
+      { itemKey: 'td1_federal', name: 'TD1 Federal form', responsibility: 'CREW', isRequired: true, isChecked: false },
+      { itemKey: 'bank_details', name: 'Bank details', responsibility: 'CREW', isRequired: true, isChecked: false },
+      { itemKey: 'union_card', name: 'Union card number', responsibility: 'PRODUCTION', isRequired: true, isChecked: false },
+    ],
+    AU: [
+      { itemKey: 'tfn_provided', name: 'Tax File Number provided', responsibility: 'CREW', isRequired: true, isChecked: false, crewField: 'tfn' },
+      { itemKey: 'super_choice', name: 'Super fund choice form', responsibility: 'CREW', isRequired: true, isChecked: false, crewField: 'superFund' },
+      { itemKey: 'bank_details', name: 'BSB + Account number', responsibility: 'CREW', isRequired: true, isChecked: false, crewField: 'bsb' },
+    ],
+  };
+  return CHECKLISTS[territory] || CHECKLISTS.UK;
+}
+
 export default function DealMemoNew() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
@@ -612,6 +649,8 @@ export default function DealMemoNew() {
       payFrequency: data.payFrequency || 'weekly',
       // Documents
       signingDocuments: data.documents?.filter(d => d.filename) || undefined,
+      // Compliance checklist (auto-generated from territory)
+      complianceChecklist: buildComplianceChecklist(productionCountry),
     };
 
     createDealMemo.mutate(payload, {
