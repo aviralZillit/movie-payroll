@@ -68,8 +68,25 @@ const signingDocumentSchema = new mongoose.Schema({
   description: String,
   requiresSignature: { type: Boolean, default: true },
   isProductionContract: { type: Boolean, default: false },
+  isStandard: { type: Boolean, default: false },
   status: { type: String, enum: ['pending', 'sent', 'signed', 'declined'], default: 'pending' },
   signedAt: Date,
+  signedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  signedIP: String,
+  signatureText: String,
+  signatureMethod: { type: String, enum: ['typed', 'drawn', 'docusign'], default: 'typed' },
+  fileUrl: String,
+  fileSize: Number,
+}, { _id: false });
+
+const approvalStepSchema = new mongoose.Schema({
+  step: { type: Number, required: true },
+  approverRole: String,
+  approverId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  label: String,
+  status: { type: String, enum: ['pending', 'approved', 'rejected', 'skipped'], default: 'pending' },
+  approvedAt: Date,
+  note: String,
 }, { _id: false });
 
 // ─── Main schema ─────────────────────────────────────────────────────
@@ -175,7 +192,7 @@ const dealMemoSchema = new mongoose.Schema(
     // Status (existing)
     status: {
       type: String,
-      enum: ['draft', 'sent', 'negotiating', 'signed', 'active', 'completed', 'cancelled', 'issued'],
+      enum: ['draft', 'sent', 'negotiating', 'signed', 'pending_approval', 'active', 'completed', 'cancelled', 'issued'],
       default: 'draft',
     },
 
@@ -285,6 +302,10 @@ const dealMemoSchema = new mongoose.Schema(
     // ═══ STEP 7: Documents ═══════════════════════════════════════════
     signingDocuments: [signingDocumentSchema],
     signingEnvelopeId: String,
+
+    // ═══ APPROVAL CHAIN ══════════════════════════════════════════════
+    approvalStatus: [approvalStepSchema],
+    currentApprovalStep: { type: Number, default: 0 },
 
     // ═══ STEP 8: Payroll Start ═══════════════════════════════════════
     payrollBureau: String,

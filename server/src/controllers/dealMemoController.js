@@ -1,13 +1,16 @@
-import { DealMemo, Production } from '../models/index.js';
+import path from 'path';
+import { DealMemo, Production, ProductionSettings } from '../models/index.js';
 import * as rateEngine from '../services/rateEngine.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import AppError from '../utils/AppError.js';
+import { UPLOADS_DIR } from '../middleware/upload.js';
 
 const VALID_TRANSITIONS = {
   draft: ['sent', 'cancelled'],
   sent: ['negotiating', 'signed', 'cancelled'],
   negotiating: ['sent', 'signed', 'cancelled'],
-  signed: ['active', 'cancelled'],
+  signed: ['pending_approval', 'active', 'cancelled'],
+  pending_approval: ['active', 'draft', 'cancelled'],
   active: ['completed', 'cancelled'],
   completed: [],
   cancelled: [],
@@ -436,4 +439,254 @@ export const crewComplete = asyncHandler(async (req, res) => {
     .populate('designationId', 'code name');
 
   res.json({ success: true, data: populated });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// Document Upload, Download & Signing
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * POST /api/deal-memos/:id/documents/:docIndex/upload
+ * Upload a file for a signing document. Requires multer middleware.
+ */
+export const uploadDocument = asyncHandler(async (req, res) => {
+  const deal = await DealMemo.findById(req.params.id);
+  if (!deal) throw new AppError('Deal memo not found.', 404);
+
+  const docIndex = parseInt(req.params.docIndex);
+  if (!deal.signingDocuments || docIndex >= deal.signingDocuments.length) {
+    throw new AppError('Document index out of range.', 400);
+  }
+
+  if (!req.file) throw new AppError('No file uploaded.', 400);
+
+  deal.signingDocuments[docIndex].fileUrl = `/uploads/${req.file.filename}`;
+  deal.signingDocuments[docIndex].fileSize = req.file.size;
+  deal.signingDocuments[docIndex].filename = req.file.originalname;
+  await deal.save();
+
+  res.json({ success: true, data: { fileUrl: deal.signingDocuments[docIndex].fileUrl, filename: req.file.originalname } });
+});
+
+/**
+ * GET /api/deal-memos/:id/documents/:docIndex/download
+ * Download a signing document file.
+ */
+export const downloadDocument = asyncHandler(async (req, res) => {
+  const deal = await DealMemo.findById(req.params.id);
+  if (!deal) throw new AppError('Deal memo not found.', 404);
+
+  const docIndex = parseInt(req.params.docIndex);
+  if (!deal.signingDocuments || docIndex >= deal.signingDocuments.length) {
+    throw new AppError('Document index out of range.', 400);
+  }
+
+  const doc = deal.signingDocuments[docIndex];
+  if (!doc.fileUrl) throw new AppError('No file uploaded for this document.', 404);
+
+  const filePath = path.join(UPLOADS_DIR, path.basename(doc.fileUrl));
+  res.download(filePath, doc.filename || 'document.pdf');
+});
+
+/**
+ * POST /api/deal-memos/:id/documents/:docIndex/sign
+ * Crew member signs a document (built-in e-signing).
+ * Body: { signatureText: "John Smith", agreed: true }
+ */
+export const signDocument = asyncHandler(async (req, res) => {
+  const deal = await DealMemo.findById(req.params.id);
+  if (!deal) throw new AppError('Deal memo not found.', 404);
+
+  // Only the assigned crew member can sign
+  if (deal.personId.toString() !== req.user._id.toString()) {
+    throw new AppError('Only the assigned crew member can sign documents.', 403);
+  }
+
+  const docIndex = parseInt(req.params.docIndex);
+  if (!deal.signingDocuments || docIndex >= deal.signingDocuments.length) {
+    throw new AppError('Document index out of range.', 400);
+  }
+
+  const { signatureText, agreed } = req.body;
+  if (!signatureText || !agreed) {
+    throw new AppError('Signature text and agreement confirmation required.', 400);
+  }
+
+  const doc = deal.signingDocuments[docIndex];
+  if (!doc.requiresSignature) {
+    throw new AppError('This document does not require a signature.', 400);
+  }
+  if (doc.status === 'signed') {
+    throw new AppError('This document is already signed.', 400);
+  }
+
+  doc.status = 'signed';
+  doc.signedAt = new Date();
+  doc.signedBy = req.user._id;
+  doc.signatureText = signatureText;
+  doc.signedIP = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+  doc.signatureMethod = 'typed';
+
+  // Check if ALL required documents are now signed
+  const allRequiredSigned = deal.signingDocuments
+    .filter((d) => d.requiresSignature)
+    .every((d) => d.status === 'signed');
+
+  await deal.save();
+
+  // Auto-transition to 'signed' if all docs signed
+  let autoTransitioned = false;
+  if (allRequiredSigned && deal.status === 'sent') {
+    deal.status = 'signed';
+    deal.signedAt = new Date();
+    deal.statusHistory.push({
+      fromStatus: 'sent',
+      toStatus: 'signed',
+      changedBy: req.user._id,
+      note: 'All required documents signed',
+    });
+    await deal.save();
+    autoTransitioned = true;
+  }
+
+  res.json({
+    success: true,
+    data: {
+      documentStatus: doc.status,
+      signedAt: doc.signedAt,
+      allDocumentsSigned: allRequiredSigned,
+      dealMemoStatus: deal.status,
+      autoTransitioned,
+    },
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// Flexible Approval Chain
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * GET /api/deal-memos/pending-approvals
+ * List deal memos pending the current user's approval.
+ */
+export const getPendingApprovals = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const userRole = req.user.role;
+
+  // Find deals in 'pending_approval' status where current step matches this user's role
+  const deals = await DealMemo.find({ status: 'pending_approval' })
+    .populate('productionId', 'name code')
+    .populate('personId', 'firstName lastName email')
+    .populate('unionId', 'code name')
+    .populate('departmentId', 'code name')
+    .populate('designationId', 'code name')
+    .sort({ updatedAt: -1 })
+    .lean();
+
+  // Filter to only deals where current approval step matches this user
+  const pending = deals.filter((deal) => {
+    if (!deal.approvalStatus || deal.currentApprovalStep == null) return false;
+    const currentStep = deal.approvalStatus.find(
+      (s) => s.step === deal.currentApprovalStep && s.status === 'pending'
+    );
+    if (!currentStep) return false;
+    // Match by userId or by role
+    if (currentStep.approverId?.toString() === userId.toString()) return true;
+    if (currentStep.approverRole === userRole) return true;
+    return false;
+  });
+
+  res.json({ success: true, data: pending });
+});
+
+/**
+ * PATCH /api/deal-memos/:id/approve
+ * Approve the current approval step.
+ */
+export const approveDealMemo = asyncHandler(async (req, res) => {
+  const deal = await DealMemo.findById(req.params.id);
+  if (!deal) throw new AppError('Deal memo not found.', 404);
+
+  if (deal.status !== 'pending_approval') {
+    throw new AppError('Deal memo is not pending approval.', 400);
+  }
+
+  const currentStep = deal.approvalStatus?.find(
+    (s) => s.step === deal.currentApprovalStep && s.status === 'pending'
+  );
+  if (!currentStep) throw new AppError('No pending approval step found.', 400);
+
+  // Verify this user can approve this step
+  const canApprove = currentStep.approverId?.toString() === req.user._id.toString() ||
+    currentStep.approverRole === req.user.role ||
+    ['super_admin', 'payroll_admin'].includes(req.user.role);
+
+  if (!canApprove) throw new AppError('You are not authorized to approve this step.', 403);
+
+  currentStep.status = 'approved';
+  currentStep.approverId = req.user._id;
+  currentStep.approvedAt = new Date();
+  currentStep.note = req.body.note || '';
+
+  // Check if there's a next step
+  const nextStep = deal.approvalStatus?.find(
+    (s) => s.step === deal.currentApprovalStep + 1 && s.status === 'pending'
+  );
+
+  if (nextStep) {
+    deal.currentApprovalStep += 1;
+  } else {
+    // All steps approved → activate
+    deal.status = 'active';
+    deal.statusHistory.push({
+      fromStatus: 'pending_approval',
+      toStatus: 'active',
+      changedBy: req.user._id,
+      note: 'All approval steps completed',
+    });
+  }
+
+  await deal.save();
+
+  res.json({ success: true, data: deal });
+});
+
+/**
+ * PATCH /api/deal-memos/:id/reject-approval
+ * Reject the current approval step with reason.
+ */
+export const rejectApproval = asyncHandler(async (req, res) => {
+  const deal = await DealMemo.findById(req.params.id);
+  if (!deal) throw new AppError('Deal memo not found.', 404);
+
+  if (deal.status !== 'pending_approval') {
+    throw new AppError('Deal memo is not pending approval.', 400);
+  }
+
+  const { reason } = req.body;
+  if (!reason) throw new AppError('Rejection reason is required.', 400);
+
+  const currentStep = deal.approvalStatus?.find(
+    (s) => s.step === deal.currentApprovalStep && s.status === 'pending'
+  );
+  if (currentStep) {
+    currentStep.status = 'rejected';
+    currentStep.approverId = req.user._id;
+    currentStep.approvedAt = new Date();
+    currentStep.note = reason;
+  }
+
+  // Reset to draft for rework
+  deal.status = 'draft';
+  deal.currentApprovalStep = 0;
+  deal.statusHistory.push({
+    fromStatus: 'pending_approval',
+    toStatus: 'draft',
+    changedBy: req.user._id,
+    note: `Approval rejected: ${reason}`,
+  });
+
+  await deal.save();
+
+  res.json({ success: true, data: deal });
 });

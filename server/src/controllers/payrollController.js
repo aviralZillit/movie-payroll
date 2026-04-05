@@ -74,6 +74,7 @@ export const calculateRun = asyncHandler(async (req, res) => {
   }).populate('ownerId', 'firstName lastName email');
 
   const items = [];
+  const warnings = [];
   let totalGross = new Decimal(0);
   let totalFringes = new Decimal(0);
   let totalDeductions = new Decimal(0);
@@ -85,6 +86,21 @@ export const calculateRun = asyncHandler(async (req, res) => {
       .populate('unionId', 'code name')
       .populate('departmentId', 'code name')
       .populate('designationId', 'code name');
+
+    // Compliance gate: skip crew members with incomplete required compliance
+    if (dealMemo?.complianceChecklist?.length > 0) {
+      const requiredItems = dealMemo.complianceChecklist.filter(c => c.isRequired);
+      const incompleteItems = requiredItems.filter(c => !c.isChecked);
+      if (incompleteItems.length > 0) {
+        warnings.push({
+          person: `${tc.ownerId?.firstName} ${tc.ownerId?.lastName}`,
+          timecardNumber: tc.timecardNumber,
+          reason: 'Compliance incomplete',
+          missing: incompleteItems.map(c => c.name),
+        });
+        continue; // Skip this crew member
+      }
+    }
 
     if (!dealMemo) continue;
 
@@ -151,7 +167,7 @@ export const calculateRun = asyncHandler(async (req, res) => {
     .populate('productionId', 'name code country currency')
     .populate('processedById', 'firstName lastName email');
 
-  res.json({ success: true, data: populated });
+  res.json({ success: true, data: populated, warnings: warnings.length > 0 ? warnings : undefined });
 });
 
 /**

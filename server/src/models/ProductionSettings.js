@@ -59,6 +59,15 @@ const productionSettingsSchema = new mongoose.Schema(
       description: String,
       requiresSignature: { type: Boolean, default: true },
     }],
+
+    // Flexible approval chain (configurable per production)
+    approvalChain: [{
+      step: { type: Number, required: true },
+      role: { type: String, required: true },     // e.g. 'department_head', 'production_accountant', 'payroll_admin'
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // optional — specific user
+      label: { type: String, required: true },     // e.g. 'HOD Approval', 'Line Producer Review'
+      isRequired: { type: Boolean, default: true },
+    }],
   },
   { timestamps: true }
 );

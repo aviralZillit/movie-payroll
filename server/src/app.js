@@ -45,6 +45,10 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
+
+// Serve uploaded files
+import { UPLOADS_DIR } from './middleware/upload.js';
+app.use('/uploads', express.static(UPLOADS_DIR));
 if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('dev'));
 }
