@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import {
   User, Film, Shield, CheckCircle2, AlertCircle, Save, Loader2,
+  FileText, Pen, Download, Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,15 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import api from "@/lib/axios";
 import useAuthStore from "@/store/authStore";
@@ -75,6 +85,118 @@ function useCrewComplete(dealMemoId) {
   });
 }
 
+function useSignDocument(dealMemoId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ docIndex, signatureText }) => {
+      const { data } = await api.post(`/deal-memos/${dealMemoId}/documents/${docIndex}/sign`, {
+        signatureText,
+        agreed: true,
+      });
+      return data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["deal-memos"] });
+    },
+  });
+}
+
+// ── Signing Modal ──────────────────────────────────────────────────────
+function SignDocumentModal({ open, onOpenChange, document, docIndex, dealMemoId, onSigned }) {
+  const [signatureText, setSignatureText] = useState("");
+  const [agreed, setAgreed] = useState(false);
+  const signDoc = useSignDocument(dealMemoId);
+
+  const handleSign = () => {
+    if (!signatureText.trim() || !agreed) return;
+    signDoc.mutate(
+      { docIndex, signatureText: signatureText.trim() },
+      {
+        onSuccess: (result) => {
+          toast.success("Document signed successfully");
+          onOpenChange(false);
+          setSignatureText("");
+          setAgreed(false);
+          if (onSigned) onSigned(result);
+        },
+        onError: (err) => toast.error(err?.response?.data?.message || "Failed to sign"),
+      }
+    );
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Pen className="size-5 text-primary" />
+            Sign Document
+          </DialogTitle>
+          <DialogDescription>
+            {document?.filename} — {document?.description}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          {document?.fileUrl && (
+            <div className="rounded-md border bg-muted/30 p-4 text-center">
+              <a href={document.fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 text-sm text-primary hover:underline">
+                <Download className="size-4" />
+                Download & Review Document
+              </a>
+            </div>
+          )}
+
+          <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-4">
+            <p className="text-sm">
+              By typing your name below and clicking "Sign", you confirm that you have read and agree
+              to the terms of this document. This constitutes your electronic signature.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Type your full name as signature</Label>
+            <Input
+              value={signatureText}
+              onChange={(e) => setSignatureText(e.target.value)}
+              placeholder="e.g. John Smith"
+              className="text-lg font-serif italic"
+            />
+          </div>
+
+          <div className="flex items-start gap-2">
+            <Checkbox
+              checked={agreed}
+              onCheckedChange={setAgreed}
+              id="agree-check"
+            />
+            <label htmlFor="agree-check" className="text-sm text-muted-foreground cursor-pointer leading-tight">
+              I have read this document and agree to its terms. I understand this is a legally binding electronic signature.
+            </label>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button
+            onClick={handleSign}
+            disabled={!signatureText.trim() || !agreed || signDoc.isPending}
+            className="bg-emerald-600 hover:bg-emerald-700"
+          >
+            {signDoc.isPending ? (
+              <Loader2 className="size-4 mr-1.5 animate-spin" />
+            ) : (
+              <Pen className="size-4 mr-1.5" />
+            )}
+            Sign Document
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Deal Memo Card with Documents + Fields ─────────────────────────────
 function DealMemoCard({ dealMemo }) {
   const territory = dealMemo.territory || dealMemo.country || "UK";
   const fields = CREW_FIELDS[territory] || CREW_FIELDS.UK;
@@ -85,6 +207,13 @@ function DealMemoCard({ dealMemo }) {
   });
 
   const crewComplete = useCrewComplete(dealMemo._id);
+  const [signingDoc, setSigningDoc] = useState(null); // { doc, index }
+
+  const signingDocs = dealMemo.signingDocuments || [];
+  const docsRequiringSignature = signingDocs.filter(d => d.requiresSignature);
+  const docsSigned = docsRequiringSignature.filter(d => d.status === 'signed');
+  const allDocsSigned = docsRequiringSignature.length > 0 && docsSigned.length === docsRequiringSignature.length;
+
   const completedCount = fields.filter((f) => formValues[f.key]).length;
   const totalRequired = fields.filter((f) => f.required).length;
   const requiredCompleted = fields.filter((f) => f.required && formValues[f.key]).length;
@@ -123,7 +252,82 @@ function DealMemoCard({ dealMemo }) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="pt-4">
+      <CardContent className="pt-4 space-y-6">
+        {/* Documents to Sign */}
+        {signingDocs.length > 0 && (
+          <div>
+            <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
+              <FileText className="size-4 text-primary" />
+              Documents to Sign
+              <Badge variant="outline" className="text-[10px] ml-auto">
+                {docsSigned.length}/{docsRequiringSignature.length} signed
+              </Badge>
+            </h3>
+            <div className="space-y-2">
+              {signingDocs.map((doc, idx) => (
+                <div key={idx} className={cn(
+                  "flex items-center justify-between rounded-lg border px-4 py-3",
+                  doc.status === 'signed' && "bg-emerald-500/5 border-emerald-500/20"
+                )}>
+                  <div className="flex items-center gap-3">
+                    {doc.status === 'signed' ? (
+                      <CheckCircle2 className="size-5 text-emerald-500 shrink-0" />
+                    ) : (
+                      <FileText className="size-5 text-muted-foreground shrink-0" />
+                    )}
+                    <div>
+                      <p className="text-sm font-medium">{doc.filename}</p>
+                      <p className="text-xs text-muted-foreground">{doc.description}</p>
+                      {doc.status === 'signed' && doc.signedAt && (
+                        <p className="text-[10px] text-emerald-600 mt-0.5">
+                          Signed {format(new Date(doc.signedAt), "dd MMM yyyy 'at' HH:mm")}
+                          {doc.signatureText && ` by ${doc.signatureText}`}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  {doc.requiresSignature && doc.status !== 'signed' ? (
+                    <Button
+                      size="sm"
+                      onClick={() => setSigningDoc({ doc, index: idx })}
+                      className="bg-primary"
+                    >
+                      <Pen className="size-3.5 mr-1" />
+                      Review & Sign
+                    </Button>
+                  ) : doc.status === 'signed' ? (
+                    <Badge className="bg-emerald-500 text-white text-xs">
+                      <Check className="size-3 mr-1" /> Signed
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-xs">Read-only</Badge>
+                  )}
+                </div>
+              ))}
+            </div>
+            <Separator className="mt-4" />
+          </div>
+        )}
+
+        {/* Signing Modal */}
+        {signingDoc && (
+          <SignDocumentModal
+            open={!!signingDoc}
+            onOpenChange={(open) => !open && setSigningDoc(null)}
+            document={signingDoc.doc}
+            docIndex={signingDoc.index}
+            dealMemoId={dealMemo._id}
+            onSigned={() => setSigningDoc(null)}
+          />
+        )}
+
+        {/* Crew Fields */}
+        <div>
+          <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
+            <User className="size-4 text-primary" />
+            Your Details
+          </h3>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           {fields.map((field) => (
             <div key={field.key} className="space-y-1.5">
