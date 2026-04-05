@@ -2,6 +2,7 @@ import { addSchemaVersion } from './001-add-schema-version.js';
 import { seedTerritories } from './002-seed-territories.js';
 import { seedRateBible } from './003-seed-rate-bible.js';
 import { dealMemoV2Fields } from './004-deal-memo-v2-fields.js';
+import { createContractingEntities } from './005-create-contracting-entities.js';
 
 /**
  * Ordered list of all migrations.
@@ -28,5 +29,10 @@ export const migrations = [
     id: '004-deal-memo-v2-fields',
     description: 'Upgrade existing deal memos to v2 schema with territory, hpMode, nominalLines, compliance',
     up: dealMemoV2Fields,
+  },
+  {
+    id: '005-create-contracting-entities',
+    description: 'Auto-create contracting entities for existing productions',
+    up: createContractingEntities,
   },
 ];

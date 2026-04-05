@@ -23,38 +23,37 @@ const router = Router();
 
 router.use(auth);
 
+// Static routes MUST come before parameterized /:id routes
 router.get('/my-deals', getMyDeals);
-router.get('/', getAll);
-router.get('/:id', getById);
+router.get('/pending-approvals', getPendingApprovals);
 router.get('/production/:productionId', getByProduction);
+router.get('/', getAll);
+
 router.post(
   '/',
   authorize('super_admin', 'payroll_admin', 'production_accountant'),
   create
 );
+
+// Parameterized routes (/:id)
+router.get('/:id', getById);
 router.put(
   '/:id',
   authorize('super_admin', 'payroll_admin', 'production_accountant'),
   update
 );
-// Crew self-completion of their fields (NI, bank, etc.)
 router.patch('/:id/crew-complete', crewComplete);
-
-// Document upload, download, signing
-router.post('/:id/documents/:docIndex/upload', upload.single('file'), uploadDocument);
-router.get('/:id/documents/:docIndex/download', downloadDocument);
-router.post('/:id/documents/:docIndex/sign', signDocument);
-
-// Approval chain
-router.get('/pending-approvals', getPendingApprovals);
 router.patch('/:id/approve', approveDealMemo);
 router.patch('/:id/reject-approval', rejectApproval);
-
-// Transition is open to all authenticated roles; fine-grained checks are in the controller
 router.patch(
   '/:id/transition',
   authorize('super_admin', 'payroll_admin', 'production_accountant', 'department_head', 'crew_member'),
   transitionStatus
 );
+
+// Document upload, download, signing
+router.post('/:id/documents/:docIndex/upload', upload.single('file'), uploadDocument);
+router.get('/:id/documents/:docIndex/download', downloadDocument);
+router.post('/:id/documents/:docIndex/sign', signDocument);
 
 export default router;
