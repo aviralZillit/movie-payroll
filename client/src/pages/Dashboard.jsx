@@ -190,6 +190,65 @@ export default function Dashboard() {
     return "Good evening";
   }, []);
 
+  const isCrewMember = user?.role === 'crew_member';
+  const isDeptHead = user?.role === 'department_head';
+  const isAdmin = ['super_admin', 'payroll_admin', 'production_accountant'].includes(user?.role);
+
+  // Crew member gets a simpler dashboard
+  if (isCrewMember) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-6 p-6"
+      >
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {greeting}, {user?.firstName || "there"}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Welcome to your crew portal
+          </p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div
+            className="rounded-lg border bg-card p-6 cursor-pointer hover:bg-muted/50 transition-colors"
+            onClick={() => navigate("/crew-portal")}
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-md bg-primary/10"><FileText className="size-5 text-primary" /></div>
+              <h3 className="font-semibold">Crew Portal</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">Complete your employment details and sign documents</p>
+          </div>
+
+          <div
+            className="rounded-lg border bg-card p-6 cursor-pointer hover:bg-muted/50 transition-colors"
+            onClick={() => navigate("/deal-memos")}
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-md bg-blue-500/10"><FileText className="size-5 text-blue-500" /></div>
+              <h3 className="font-semibold">My Deal Memos</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">View your deal memos and compensation terms</p>
+          </div>
+
+          <div
+            className="rounded-lg border bg-card p-6 cursor-pointer hover:bg-muted/50 transition-colors"
+            onClick={() => navigate("/timecards")}
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-md bg-amber-500/10"><Clock className="size-5 text-amber-500" /></div>
+              <h3 className="font-semibold">My Timecards</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">Enter your weekly hours and submit for approval</p>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
