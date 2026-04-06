@@ -40,6 +40,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import DealMemoWizard from "@/components/deal-memo/DealMemoWizard";
 import RateFieldWithInfo from "@/components/deal-memo/RateFieldWithInfo";
 import AIDealMemoChat from "@/components/deal-memo/AIDealMemoChat";
+import DealMemoSummaryPanel from "@/components/deal-memo/DealMemoSummaryPanel";
 
 import {
   useProductions,
@@ -424,21 +425,26 @@ export default function DealMemoNew() {
     const lines = [];
     const cs = cSymbol;
     const nicLabel = territory === 'US' ? 'FICA / Employer Tax' : territory === 'AU' ? 'Superannuation' : 'Employer NIC';
-    lines.push({ code: '2302', label: 'Basic Labour + HP', description: 'Contracted rate', costCentre: 'DEPT', isCore: true, taxCredit: true });
-    lines.push({ code: '2360', label: 'Overtime / Penalties', description: 'OT, meal penalties, turnaround', costCentre: 'DEPT', isCore: true, taxCredit: true });
-    lines.push({ code: '2399', label: nicLabel, description: 'Employer social contributions', costCentre: 'DEPT', isCore: true, taxCredit: true });
-    if (vals.kitAllowance > 0) lines.push({ code: '2350', label: 'Box/Kit Allowance', description: `${cs}${vals.kitAllowance}/${vals.kitAllowancePeriod || 'weekly'}`, costCentre: 'DEPT', taxCredit: false });
-    if (vals.carAllowance > 0) lines.push({ code: '2340', label: 'Car Allowance', description: `${cs}${vals.carAllowance}`, costCentre: 'DEPT', taxCredit: false });
-    if (vals.phoneAllowance > 0) lines.push({ code: '2340', label: 'Phone Allowance', description: `${cs}${vals.phoneAllowance}`, costCentre: 'DEPT', taxCredit: false });
-    if (vals.computerAllowance > 0) lines.push({ code: '2340', label: 'Computer Allowance', description: `${cs}${vals.computerAllowance}`, costCentre: 'DEPT', taxCredit: false });
-    if (vals.travelAllowance > 0) lines.push({ code: '2340', label: 'Travel Allowance', description: `${cs}${vals.travelAllowance}`, costCentre: 'DEPT', taxCredit: false });
-    if (vals.perDiem > 0) lines.push({ code: '2340', label: 'Per Diem', description: `${cs}${vals.perDiem}/day`, costCentre: 'DEPT', taxCredit: false });
-    if (vals.housingAllowance > 0) lines.push({ code: '2340', label: 'Housing Allowance', description: `${cs}${vals.housingAllowance}`, costCentre: 'DEPT', taxCredit: false });
+    const weekly = Number(vals.weeklyRate) || Number(vals.dailyRate) * 5 || Number(vals.hourlyRate) * 50 || 0;
+    const hpWeekly = (vals.hpMode === 'excl' && territory !== 'US') ? weekly * 0.1207 : 0;
+    const nicPct = territory === 'US' ? 0.0765 : territory === 'AU' ? 0.115 : 0.138;
+    const penPct = territory === 'US' ? (Number(vals.phPct) || 20) / 100 : territory === 'AU' ? 0 : 0.03;
+
+    lines.push({ code: '2302', label: 'Basic Labour + HP', description: 'Contracted rate', costCentre: 'DEPT', isCore: true, taxCredit: true, estimatedWeekly: weekly + hpWeekly });
+    lines.push({ code: '2360', label: 'Overtime / Penalties', description: 'OT, meal penalties, turnaround', costCentre: 'DEPT', isCore: true, taxCredit: true, estimatedWeekly: null });
+    lines.push({ code: '2399', label: nicLabel, description: 'Employer social contributions', costCentre: 'DEPT', isCore: true, taxCredit: true, estimatedWeekly: weekly * nicPct });
+    if (vals.kitAllowance > 0) lines.push({ code: '2350', label: 'Box/Kit Allowance', description: `${cs}${vals.kitAllowance}/${vals.kitAllowancePeriod || 'weekly'}`, costCentre: 'DEPT', taxCredit: false, estimatedWeekly: Number(vals.kitAllowance) });
+    if (vals.carAllowance > 0) lines.push({ code: '2340', label: 'Car Allowance', description: `${cs}${vals.carAllowance}`, costCentre: 'DEPT', taxCredit: false, estimatedWeekly: Number(vals.carAllowance) });
+    if (vals.phoneAllowance > 0) lines.push({ code: '2340', label: 'Phone Allowance', description: `${cs}${vals.phoneAllowance}`, costCentre: 'DEPT', taxCredit: false, estimatedWeekly: Number(vals.phoneAllowance) });
+    if (vals.computerAllowance > 0) lines.push({ code: '2340', label: 'Computer Allowance', description: `${cs}${vals.computerAllowance}`, costCentre: 'DEPT', taxCredit: false, estimatedWeekly: Number(vals.computerAllowance) });
+    if (vals.travelAllowance > 0) lines.push({ code: '2340', label: 'Travel Allowance', description: `${cs}${vals.travelAllowance}`, costCentre: 'DEPT', taxCredit: false, estimatedWeekly: Number(vals.travelAllowance) });
+    if (vals.perDiem > 0) lines.push({ code: '2340', label: 'Per Diem', description: `${cs}${vals.perDiem}/day`, costCentre: 'DEPT', taxCredit: false, estimatedWeekly: Number(vals.perDiem) * 5 });
+    if (vals.housingAllowance > 0) lines.push({ code: '2340', label: 'Housing Allowance', description: `${cs}${vals.housingAllowance}`, costCentre: 'DEPT', taxCredit: false, estimatedWeekly: Number(vals.housingAllowance) });
     (vals.customAllowances || []).forEach((ca) => {
-      if (ca.amount > 0) lines.push({ code: '2340', label: ca.name, description: `${cs}${ca.amount}/${ca.period || 'weekly'}`, costCentre: 'DEPT', taxCredit: false });
+      if (ca.amount > 0) lines.push({ code: '2340', label: ca.name, description: `${cs}${ca.amount}/${ca.period || 'weekly'}`, costCentre: 'DEPT', taxCredit: false, estimatedWeekly: Number(ca.amount) });
     });
     if (territory === 'US' || territory === 'CA') {
-      lines.push({ code: '2397', label: 'Pension / Retirement', description: 'Union pension contribution', costCentre: 'DEPT', isCore: false, taxCredit: true });
+      lines.push({ code: '2397', label: 'Pension / Retirement', description: 'Union pension contribution', costCentre: 'DEPT', isCore: false, taxCredit: true, estimatedWeekly: weekly * penPct });
     }
     setNominalLines(lines);
   }, [getValues, selectedProduction, cSymbol]);
@@ -897,7 +903,8 @@ export default function DealMemoNew() {
         onApplyFormData={handleAIApply}
       />
 
-      {/* Wizard */}
+      {/* Wizard + Right Panel */}
+      <div className="grid gap-6 xl:grid-cols-[1fr_300px]">
       <Card>
         <CardContent className="pt-6">
           <DealMemoWizard
@@ -914,6 +921,17 @@ export default function DealMemoNew() {
           </DealMemoWizard>
         </CardContent>
       </Card>
+
+      {/* Right summary panel (desktop only) */}
+      <div className="hidden xl:block">
+        <DealMemoSummaryPanel
+          watch={watch}
+          country={productionCountry}
+          currencySymbol={cSymbol}
+          classificationLabels={classificationLabels}
+        />
+      </div>
+      </div>
     </motion.div>
   );
 }

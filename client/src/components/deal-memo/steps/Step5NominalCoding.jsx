@@ -110,29 +110,33 @@ export default function Step5NominalCoding({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-28">Code</TableHead>
+                    <TableHead className="w-20">Code</TableHead>
                     <TableHead>Label</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead className="w-32">Cost Centre</TableHead>
-                    <TableHead className="w-28">Tax Credit</TableHead>
+                    <TableHead className="hidden sm:table-cell">Description</TableHead>
+                    <TableHead className="text-right w-28">Est. Weekly</TableHead>
+                    <TableHead className="w-24">Cost Centre</TableHead>
+                    <TableHead className="w-24">Tax Credit</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {nominalLines.map((line, idx) => (
                     <TableRow key={idx}>
-                      <TableCell className="font-mono text-sm">{line.code}</TableCell>
-                      <TableCell className="font-medium">{line.label}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
+                      <TableCell className="font-mono text-xs">{line.code}</TableCell>
+                      <TableCell className="font-medium text-sm">{line.label}</TableCell>
+                      <TableCell className="text-muted-foreground text-xs hidden sm:table-cell">
                         {line.description}
                       </TableCell>
-                      <TableCell className="font-mono text-sm">{line.costCentre}</TableCell>
+                      <TableCell className="text-right font-mono text-xs tabular-nums">
+                        {line.estimatedWeekly != null ? `${line.estimatedWeekly.toFixed(0)}` : "—"}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">{line.costCentre}</TableCell>
                       <TableCell>
                         {line.taxCredit ? (
-                          <Badge variant="outline" className="text-emerald-600 border-emerald-500/50 text-xs">
+                          <Badge variant="outline" className="text-emerald-600 border-emerald-500/50 text-[10px]">
                             Eligible
                           </Badge>
                         ) : (
-                          <Badge variant="secondary" className="text-xs">
+                          <Badge variant="secondary" className="text-[10px]">
                             N/A
                           </Badge>
                         )}
