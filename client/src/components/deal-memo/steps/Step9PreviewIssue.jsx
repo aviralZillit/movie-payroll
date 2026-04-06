@@ -98,44 +98,56 @@ export default function Step9PreviewIssue({
     return { weekly, hp, allowances: allowTotal, onCosts, total };
   }, [data, totalAllowances, labels]);
 
-  const handleDownloadPDF = useCallback(async () => {
+  const handleDownloadPDF = useCallback(() => {
     if (!previewRef.current) return;
-    try {
-      const html2canvas = (await import("html2canvas")).default;
-      const { jsPDF } = await import("jspdf");
 
-      const element = previewRef.current;
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-      });
+    // Clone the preview content into a new window for clean printing
+    const printWindow = window.open("", "_blank", "width=800,height=1100");
+    if (!printWindow) return;
 
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-      // Handle multi-page if content is tall
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      let heightLeft = pdfHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft > 0) {
-        position = heightLeft - pdfHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
-        heightLeft -= pageHeight;
-      }
-
-      const filename = `Deal-Memo-${labels.person || "Draft"}-${new Date().toISOString().slice(0, 10)}.pdf`;
-      pdf.save(filename);
-    } catch (err) {
-      console.error("PDF generation failed:", err);
-    }
+    const content = previewRef.current.innerHTML;
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Deal Memo - ${labels.person || "Draft"}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111; background: #fff; padding: 32px; font-size: 13px; line-height: 1.5; }
+          h1, h2, h3, h4 { color: #111; }
+          .text-muted-foreground { color: #666; }
+          .font-medium { font-weight: 500; }
+          .font-semibold { font-weight: 600; }
+          .font-bold { font-weight: 700; }
+          .tabular-nums { font-variant-numeric: tabular-nums; }
+          .text-xs { font-size: 11px; }
+          .text-sm { font-size: 13px; }
+          .text-lg { font-size: 16px; }
+          .text-emerald-500, .text-emerald-600 { color: #10b981; }
+          .text-amber-500 { color: #f59e0b; }
+          .text-red-500 { color: #ef4444; }
+          .text-primary { color: #3b82f6; }
+          [class*="border"] { border-color: #e5e7eb; }
+          [class*="rounded"] { border-radius: 6px; }
+          [class*="separator"], hr { border-top: 1px solid #e5e7eb; margin: 12px 0; }
+          [class*="badge"] { display: inline-flex; padding: 2px 8px; border-radius: 9999px; font-size: 10px; border: 1px solid #e5e7eb; }
+          svg { display: none; }
+          @media print { body { padding: 16px; } }
+          @page { margin: 20mm; }
+        </style>
+      </head>
+      <body>
+        <h1 style="font-size:20px;margin-bottom:4px;">Deal Memo</h1>
+        <p style="color:#666;margin-bottom:24px;font-size:12px;">${labels.person || "Draft"} — ${new Date().toLocaleDateString()}</p>
+        ${content}
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500);
   }, [labels]);
 
   return (
