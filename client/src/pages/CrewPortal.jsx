@@ -368,7 +368,7 @@ export default function CrewPortal() {
   const { data: dealMemos = [], isLoading } = useMyDealMemos();
 
   const activeDealMemos = dealMemos.filter((dm) =>
-    ["sent", "signed", "active", "issued"].includes(dm.status)
+    ["sent", "signed", "active", "issued", "completed", "pending_approval", "draft"].includes(dm.status)
   );
 
   return (
