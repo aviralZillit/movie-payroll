@@ -707,7 +707,6 @@ export default function DealMemoNew() {
       );
 
       // Also fetch territory rule defaults for fringes/OT
-      const unionCode = (unions ?? []).find((u) => u._id === vals.unionId)?.code;
       if (unionCode) {
         api.get(`/territories/${productionCountry}/rules/${unionCode}`).then(({ data: ruleResp }) => {
           const rule = ruleResp?.data;
