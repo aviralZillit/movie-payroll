@@ -155,7 +155,7 @@ export default function Step8PayrollStart({
                 <Label>Bureau</Label>
                 <Select value={field.value ?? ""} onValueChange={field.onChange}>
                   <SelectTrigger className={cn(errors.bureauId && "border-destructive")}>
-                    <SelectValue placeholder={bureausLoading ? "Loading..." : "Select bureau..."} />
+                    <SelectValue placeholder="Select bureau..." />
                   </SelectTrigger>
                   <SelectContent>
                     {(bureaus ?? []).map((b) => (
