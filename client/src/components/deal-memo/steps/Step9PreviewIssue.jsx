@@ -1,3 +1,4 @@
+import { useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import {
   Building,
   Send,
   Save,
+  Download,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -62,16 +64,63 @@ export default function Step9PreviewIssue({
   currencySymbol = "\u00A3",
 }) {
   const data = watch();
+  const previewRef = useRef(null);
 
   const allowances = data.allowances || [];
   const documents = data.documents || [];
   const totalAllowances = allowances.reduce((sum, a) => sum + (Number(a?.amount) || 0), 0);
 
+  const handleDownloadPDF = useCallback(async () => {
+    if (!previewRef.current) return;
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const { jsPDF } = await import("jspdf");
+
+      const element = previewRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      // Handle multi-page if content is tall
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      let heightLeft = pdfHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - pdfHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const filename = `Deal-Memo-${labels.person || "Draft"}-${new Date().toISOString().slice(0, 10)}.pdf`;
+      pdf.save(filename);
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+    }
+  }, [labels]);
+
   return (
     <div className="space-y-6">
-      <Card>
+      <Card ref={previewRef}>
         <CardHeader className="pb-4">
-          <CardTitle className="text-lg">Deal Memo Preview</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Deal Memo Preview</CardTitle>
+            <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
+              <Download className="size-4 mr-1.5" />
+              Download PDF
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Entity & Territory */}
