@@ -8,24 +8,51 @@ import { RateBibleEntry } from '../models/index.js';
  * Fuzzy match a grade name against a rate row grade.
  * Handles: "1st Assistant Director" matching "1st AD (Studio)"
  */
-function gradeMatches(rateGrade, searchGrade) {
-  if (!rateGrade || !searchGrade) return false;
-  const a = rateGrade.toLowerCase();
-  const b = searchGrade.toLowerCase();
-  // Direct includes (either direction)
-  if (a.includes(b) || b.includes(a)) return true;
-  // Token-based: split into words and check overlap
-  const aTokens = a.replace(/[()\/,]/g, ' ').split(/\s+/).filter(t => t.length > 1);
-  const bTokens = b.replace(/[()\/,]/g, ' ').split(/\s+/).filter(t => t.length > 1);
-  // If 2+ tokens match, it's a hit (e.g. "1st" + "director" matches "1st" + "AD")
-  const matching = bTokens.filter(bt => aTokens.some(at => at.includes(bt) || bt.includes(at)));
-  if (matching.length >= 2) return true;
-  // Abbreviation match: "AD" = "Assistant Director", "AC" = "Assistant Camera"
+/**
+ * Score how well a rate grade matches a search grade.
+ * Returns 0 (no match) to 100 (exact match).
+ * Uses scoring instead of boolean to pick the BEST match.
+ */
+function gradeMatchScore(rateGrade, searchGrade) {
+  if (!rateGrade || !searchGrade) return 0;
+  const a = rateGrade.toLowerCase().trim();
+  const b = searchGrade.toLowerCase().trim();
+
+  // Exact match
+  if (a === b) return 100;
+
+  // Direct includes (one contains the other fully)
+  if (a.includes(b)) return 90;
+  if (b.includes(a)) return 85;
+
+  // Expand abbreviations for comparison
   const ABBREVS = { 'ad': 'assistant director', 'ac': 'assistant camera', 'dop': 'director of photography', 'upm': 'unit production manager', 'hmu': 'hair make-up', 'sfx': 'special effects', 'dit': 'digital imaging technician' };
+  let aExpanded = a;
+  let bExpanded = b;
   for (const [abbr, full] of Object.entries(ABBREVS)) {
-    if ((a.includes(abbr) && b.includes(full)) || (b.includes(abbr) && a.includes(full))) return true;
+    // Only expand standalone abbreviations (word boundary), not substrings
+    aExpanded = aExpanded.replace(new RegExp(`\\b${abbr}\\b`, 'g'), full);
+    bExpanded = bExpanded.replace(new RegExp(`\\b${abbr}\\b`, 'g'), full);
   }
-  return false;
+
+  // After expansion, check includes again
+  if (aExpanded.includes(bExpanded) || bExpanded.includes(aExpanded)) return 80;
+
+  // Token-based scoring
+  const aTokens = aExpanded.replace(/[()\/,]/g, ' ').split(/\s+/).filter(t => t.length > 1);
+  const bTokens = bExpanded.replace(/[()\/,]/g, ' ').split(/\s+/).filter(t => t.length > 1);
+  const matching = bTokens.filter(bt => aTokens.some(at => at === bt));
+  const matchRatio = bTokens.length > 0 ? matching.length / bTokens.length : 0;
+
+  // Need at least 50% of search tokens to match AND at least 2 tokens
+  if (matching.length >= 2 && matchRatio >= 0.5) return Math.round(40 + matchRatio * 40);
+
+  return 0;
+}
+
+// Boolean wrapper for backward compat
+function gradeMatches(rateGrade, searchGrade) {
+  return gradeMatchScore(rateGrade, searchGrade) >= 40;
 }
 
 export async function verifyRate({ territoryCode, agreementId, grade, budgetTier, proposedWeeklyRate }) {
@@ -62,14 +89,23 @@ export async function verifyRate({ territoryCode, agreementId, grade, budgetTier
       return result;
     }
 
-    // Search across all entries for the grade
+    // Search across all entries — pick the BEST scoring match
+    let bestMatch = null;
+    let bestEntry = null;
+    let bestScore = 0;
     for (const e of entries) {
-      const match = e.rates.find(
-        (r) => r.grade && !r.isHeader && gradeMatches(r.grade, grade)
-      );
-      if (match) {
-        return buildResult(result, match, e, proposedWeeklyRate);
+      for (const r of e.rates) {
+        if (!r.grade || r.isHeader) continue;
+        const score = gradeMatchScore(r.grade, grade);
+        if (score > bestScore) {
+          bestScore = score;
+          bestMatch = r;
+          bestEntry = e;
+        }
       }
+    }
+    if (bestMatch && bestScore >= 40) {
+      return buildResult(result, bestMatch, bestEntry, proposedWeeklyRate);
     }
 
     result.warning = `No verified minimum found for "${grade}" in ${territoryCode}`;
@@ -80,24 +116,27 @@ export async function verifyRate({ territoryCode, agreementId, grade, budgetTier
   result.source = entry.sourceUrl;
   result.pdfUrl = entry.pdfUrl;
 
-  // Find matching rate row
-  const matchingRows = entry.rates.filter(
-    (r) => r.grade && !r.isHeader &&
-    gradeMatches(r.grade, grade) &&
-    (!budgetTier || !r.budgetTier || r.budgetTier.toLowerCase().includes(budgetTier?.toLowerCase()))
-  );
-
-  if (matchingRows.length === 0) {
-    // Try broader search without budget tier
-    const broadMatch = entry.rates.find(
-      (r) => r.grade && !r.isHeader && gradeMatches(r.grade, grade)
-    );
-    if (broadMatch) {
-      return buildResult(result, broadMatch, entry, proposedWeeklyRate);
+  // Find BEST matching rate row (by score, not first match)
+  let bestRow = null;
+  let bestRowScore = 0;
+  for (const r of entry.rates) {
+    if (!r.grade || r.isHeader) continue;
+    const score = gradeMatchScore(r.grade, grade);
+    const tierMatch = !budgetTier || !r.budgetTier || r.budgetTier.toLowerCase().includes(budgetTier?.toLowerCase());
+    // Boost score if budget tier matches
+    const adjustedScore = tierMatch ? score + 10 : score;
+    if (adjustedScore > bestRowScore) {
+      bestRowScore = adjustedScore;
+      bestRow = r;
     }
+  }
+
+  if (!bestRow || bestRowScore < 40) {
     result.warning = `No rate row found for "${grade}" in ${entry.agreementName}`;
     return result;
   }
+
+  const matchingRows = [bestRow];
 
   const bestMatch = matchingRows[0];
   return buildResult(result, bestMatch, entry, proposedWeeklyRate);
