@@ -195,7 +195,7 @@ export default function DealMemos() {
             label="Export"
           />
           {isAdmin && (
-            <Button onClick={() => navigate("/deal-memos/new")}>
+            <Button onClick={() => { localStorage.removeItem("deal-memo-draft"); localStorage.removeItem("deal-memo-draft-step"); localStorage.removeItem("deal-memo-draft-labels"); navigate("/deal-memos/new"); }}>
               <Plus className="size-4 mr-1.5" />
               New Deal Memo
             </Button>
@@ -301,7 +301,7 @@ export default function DealMemos() {
                 {hasFilters || searchQuery ? "No deal memos match your filters." : "No deal memos yet."}
               </p>
               {!hasFilters && !searchQuery && isAdmin && (
-                <Button variant="outline" size="sm" onClick={() => navigate("/deal-memos/new")}>
+                <Button variant="outline" size="sm" onClick={() => { localStorage.removeItem("deal-memo-draft"); localStorage.removeItem("deal-memo-draft-step"); localStorage.removeItem("deal-memo-draft-labels"); navigate("/deal-memos/new"); }}>
                   <Plus className="size-3.5 mr-1" />
                   Create First Deal Memo
                 </Button>

@@ -470,6 +470,46 @@ export default function DealMemoNew() {
     localStorage.removeItem(DRAFT_KEY + "-labels");
   }, []);
 
+  // Save draft to server (creates deal memo with status: 'draft')
+  const saveDraftToServer = useCallback(() => {
+    const data = getValues();
+    // Build minimal payload — only send fields that have values
+    const payload = {
+      productionId: data.productionId,
+      personId: data.personId,
+      startDate: data.startDate || new Date().toISOString().slice(0, 10),
+      unionId: data.unionId,
+      departmentId: data.departmentId,
+      designationId: data.designationId,
+      budgetTierId: data.budgetTierId,
+      weeklyRate: Number(data.weeklyRate) || 0,
+      dailyRate: Number(data.dailyRate) || 0,
+      hourlyRate: Number(data.hourlyRate) || 0,
+      guaranteedHours: Number(data.guaranteedHours) || 50,
+      // Keep as draft
+      status: 'draft',
+      schemaVersion: 2,
+      territory: productionCountry,
+    };
+
+    // Only send if minimum required fields are present
+    if (!payload.productionId || !payload.personId || !payload.unionId || !payload.departmentId || !payload.designationId || !payload.budgetTierId) {
+      toast.error("Please complete at least Step 1 (Entity & Classification) before saving as draft");
+      return;
+    }
+
+    createDealMemo.mutate(payload, {
+      onSuccess: (result) => {
+        clearDraft();
+        toast.success("Draft saved to server");
+        navigate(`/deal-memos/${result._id || result.id}`);
+      },
+      onError: (err) => {
+        toast.error(err?.response?.data?.message || "Failed to save draft");
+      },
+    });
+  }, [getValues, productionCountry, createDealMemo, navigate, clearDraft]);
+
   // Auto-save every 5 seconds when form is dirty
   useEffect(() => {
     if (!isDirty) return;
@@ -855,6 +895,9 @@ export default function DealMemoNew() {
             watch={watch}
             labels={classificationLabels}
             currencySymbol={cSymbol}
+            onSaveDraft={saveDraftToServer}
+            onIssue={onSubmit}
+            isSubmitting={createDealMemo.isPending}
           />
         );
       default:
