@@ -92,6 +92,22 @@ export default function Step3Rates({
   const dailyRate = watch("dailyRate");
   const hourlyRate = watch("hourlyRate");
   const hpMode = watch("hpMode");
+  const workingDayType = watch("workingDayType");
+
+  // Auto-set standard hours and lunch when working day type changes
+  useEffect(() => {
+    if (!workingDayType) return;
+    const WDT_CONFIG = {
+      SWD: { standardWorkDayHrs: 11, lunchBreakHrs: 1 },
+      CWD: { standardWorkDayHrs: 10, lunchBreakHrs: 0 },
+      SCWD: { standardWorkDayHrs: 10.5, lunchBreakHrs: 0.5 },
+    };
+    const config = WDT_CONFIG[workingDayType];
+    if (config) {
+      setValue("standardWorkDayHrs", config.standardWorkDayHrs, { shouldDirty: true });
+      setValue("lunchBreakHrs", config.lunchBreakHrs, { shouldDirty: true });
+    }
+  }, [workingDayType, setValue]);
 
   // Fetch territory rule for OT table
   const { data: territoryRule } = useTerritoryRule(territory, unionKey);
@@ -341,6 +357,104 @@ export default function Step3Rates({
           </CardContent>
         </Card>
       )}
+
+      {/* Working Day & Hours */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Clock className="size-5 text-primary" />
+            Working Day Configuration
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Controller
+            name="workingDayType"
+            control={control}
+            render={({ field }) => (
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Label>Working Day Type</Label>
+                  <Tooltip>
+                    <TooltipTrigger><Info className="size-3.5 text-muted-foreground" /></TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs text-xs">
+                      <strong>SWD</strong>: Standard (11hrs + 1hr lunch deducted)<br/>
+                      <strong>CWD</strong>: Continuous (10hrs, no lunch deducted — clock keeps running)<br/>
+                      <strong>SCWD</strong>: Semi-Continuous (10.5hrs + 30min lunch deducted)
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                  <SelectTrigger>
+                    {field.value ? (
+                      <span>{{ SWD: "SWD — Standard", CWD: "CWD — Continuous", SCWD: "SCWD — Semi-Continuous" }[field.value] || field.value}</span>
+                    ) : (
+                      <SelectValue placeholder="Select type..." />
+                    )}
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="SWD">SWD — Standard (11+1)</SelectItem>
+                    <SelectItem value="CWD">CWD — Continuous (10)</SelectItem>
+                    <SelectItem value="SCWD">SCWD — Semi-Continuous (10.5+0.5)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          />
+
+          <Controller
+            name="standardWorkDayHrs"
+            control={control}
+            render={({ field }) => (
+              <div className="space-y-1.5">
+                <Label>Standard Day (hrs)</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={24}
+                  step={0.5}
+                  value={field.value ?? ""}
+                  onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                  className="tabular-nums"
+                />
+              </div>
+            )}
+          />
+
+          <Controller
+            name="lunchBreakHrs"
+            control={control}
+            render={({ field }) => (
+              <div className="space-y-1.5">
+                <Label>Lunch Break (hrs)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={2}
+                  step={0.5}
+                  value={field.value ?? ""}
+                  onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                  className="tabular-nums"
+                />
+              </div>
+            )}
+          />
+
+          <Controller
+            name="nightStartTime"
+            control={control}
+            render={({ field }) => (
+              <div className="space-y-1.5">
+                <Label>Night Premium From</Label>
+                <Input
+                  type="time"
+                  value={field.value ?? "23:00"}
+                  onChange={field.onChange}
+                />
+              </div>
+            )}
+          />
+        </CardContent>
+      </Card>
 
       {/* OT Table — from territory rules */}
       <Card>
