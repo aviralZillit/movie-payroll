@@ -373,6 +373,7 @@ export default function DealMemoNew() {
   const createDealMemo = useCreateDealMemo();
 
   // Load draft from localStorage if available
+  const [hasDraft, setHasDraft] = useState(() => !!localStorage.getItem(DRAFT_KEY));
   const savedDraft = useMemo(() => {
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
@@ -891,13 +892,13 @@ export default function DealMemoNew() {
       </div>
 
       {/* Draft resume banner */}
-      {savedDraft && (
+      {hasDraft && (
         <div className="flex items-center justify-between rounded-lg border border-blue-500/30 bg-blue-500/5 px-4 py-3">
           <div className="flex items-center gap-2">
             <Save className="size-4 text-blue-500" />
             <span className="text-sm">Resuming from saved draft (Step {currentStep + 1})</span>
           </div>
-          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => { clearDraft(); reset(DEFAULT_VALUES); setCurrentStep(0); }}>
+          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => { clearDraft(); reset(DEFAULT_VALUES); setCurrentStep(0); setHasDraft(false); setClassificationLabels({ union: "", department: "", designation: "", budgetTier: "" }); }}>
             Discard Draft
           </Button>
         </div>
