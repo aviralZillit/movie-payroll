@@ -40,7 +40,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import DealMemoWizard from "@/components/deal-memo/DealMemoWizard";
 import RateFieldWithInfo from "@/components/deal-memo/RateFieldWithInfo";
 import AIDealMemoChat from "@/components/deal-memo/AIDealMemoChat";
-import DealMemoSummaryPanel from "@/components/deal-memo/DealMemoSummaryPanel";
+// DealMemoSummaryPanel available for DealMemoDetail page later
 
 import {
   useProductions,
@@ -859,7 +859,7 @@ export default function DealMemoNew() {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="p-6 max-w-4xl mx-auto space-y-6"
+      className="p-4 sm:p-6 max-w-3xl mx-auto space-y-5"
     >
       {/* Page header */}
       <div className="flex items-center gap-3">
@@ -903,8 +903,7 @@ export default function DealMemoNew() {
         onApplyFormData={handleAIApply}
       />
 
-      {/* Wizard + Right Panel */}
-      <div className="grid gap-6 xl:grid-cols-[1fr_300px]">
+      {/* Wizard */}
       <Card>
         <CardContent className="pt-6">
           <DealMemoWizard
@@ -922,16 +921,6 @@ export default function DealMemoNew() {
         </CardContent>
       </Card>
 
-      {/* Right summary panel (desktop only) */}
-      <div className="hidden xl:block">
-        <DealMemoSummaryPanel
-          watch={watch}
-          country={productionCountry}
-          currencySymbol={cSymbol}
-          classificationLabels={classificationLabels}
-        />
-      </div>
-      </div>
     </motion.div>
   );
 }

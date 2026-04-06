@@ -38,23 +38,23 @@ function StepIndicator({ stepIndex, currentStep, label }) {
   const isActive = stepIndex === currentStep;
 
   return (
-    <div className="flex flex-col items-center gap-1 min-w-0">
+    <div className="flex flex-col items-center gap-1.5 min-w-0">
       <div
         className={cn(
-          "relative flex size-7 shrink-0 items-center justify-center rounded-full border-2 text-xs font-semibold transition-all duration-300",
+          "relative flex size-8 shrink-0 items-center justify-center rounded-full border-2 text-xs font-semibold transition-all duration-300",
           isCompleted && "border-emerald-500 bg-emerald-500 text-white",
-          isActive && "border-primary bg-primary text-primary-foreground shadow-md shadow-primary/25",
-          !isCompleted && !isActive && "border-muted-foreground/30 text-muted-foreground/50"
+          isActive && "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/25",
+          !isCompleted && !isActive && "border-muted-foreground/25 text-muted-foreground/40"
         )}
       >
         {isCompleted ? <Check className="size-3.5" /> : stepIndex + 1}
       </div>
       <span
         className={cn(
-          "text-[10px] font-medium text-center leading-tight",
+          "text-xs font-medium text-center leading-tight",
           isActive && "text-foreground",
           isCompleted && "text-emerald-600 dark:text-emerald-400",
-          !isActive && !isCompleted && "text-muted-foreground/50"
+          !isActive && !isCompleted && "text-muted-foreground/40"
         )}
       >
         {label}
@@ -65,7 +65,7 @@ function StepIndicator({ stepIndex, currentStep, label }) {
 
 function StepConnector({ isCompleted }) {
   return (
-    <div className="relative flex-1 self-start mt-[14px] mx-0.5 h-0.5">
+    <div className="relative flex-1 self-start mt-[16px] mx-1 h-0.5">
       <div className="absolute inset-0 rounded-full bg-muted-foreground/15" />
       <motion.div
         className="absolute inset-y-0 left-0 rounded-full bg-emerald-500"
@@ -122,7 +122,7 @@ export default function DealMemoWizard({
   const shortLabels = stepLabels === STEP_LABELS ? STEP_SHORT : stepLabels;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       {/* ---- Mobile: simple progress bar ---- */}
       <div className="md:hidden">
         <div className="flex items-center justify-between mb-1">
@@ -138,7 +138,7 @@ export default function DealMemoWizard({
       </div>
 
       {/* ---- Desktop: full stepper ---- */}
-      <div className="hidden md:flex items-start justify-between px-1">
+      <div className="hidden md:flex items-start justify-between px-2">
         {shortLabels.map((label, i) => (
           <div key={label} className="flex items-start flex-1 last:flex-none min-w-0">
             <StepIndicator
@@ -152,7 +152,7 @@ export default function DealMemoWizard({
       </div>
 
       {/* ---- Step content with animation ---- */}
-      <div className="relative overflow-hidden min-h-[360px]">
+      <div className="relative overflow-hidden">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={currentStep}
@@ -169,7 +169,7 @@ export default function DealMemoWizard({
       </div>
 
       {/* ---- Navigation ---- */}
-      <div className="flex items-center justify-between border-t pt-4">
+      <div className="flex items-center justify-between border-t pt-5 px-1">
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
