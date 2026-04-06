@@ -341,7 +341,7 @@ export default function DealMemos() {
                     <TableCell>{dm.departmentId?.name || "--"}</TableCell>
                     <TableCell>{dm.designationId?.name || "--"}</TableCell>
                     <TableCell className="text-right tabular-nums font-medium">
-                      {formatCurrency(dm.weeklyRate, dm.country || dm.unionId?.country)}
+                      {formatCurrency(dm.weeklyRate, dm.territory || dm.country || dm.productionId?.country)}
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={dm.status} />

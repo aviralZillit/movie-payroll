@@ -294,6 +294,8 @@ export default function DealMemoDetail() {
   const user = useAuthStore((s) => s.user);
   const isAdmin = ADMIN_ROLES.includes(user?.role);
   const { data: memo, isLoading, isError } = useDealMemo(id);
+  const memoCountry = memo?.territory || memo?.country || memo?.productionId?.country || "UK";
+  const fmt = (amount) => formatCurrency(amount || 0, memoCountry);
   const transitionMutation = useTransitionDealMemo();
   const updateMutation = useUpdateDealMemo();
   const [signDialogOpen, setSignDialogOpen] = useState(false);
@@ -567,19 +569,19 @@ export default function DealMemoDetail() {
           <Section icon={Banknote} title="Rates">
             <DetailField
               label="Weekly Rate"
-              value={formatCurrency(memo.weeklyRate)}
+              value={fmt(memo.weeklyRate)}
               sourceLabel={rateSource?.label || "Rate Engine"}
               sourceUrl={rateSource?.url}
             />
             <DetailField
               label="Daily Rate"
-              value={memo.dailyRate ? formatCurrency(memo.dailyRate) : "--"}
+              value={memo.dailyRate ? fmt(memo.dailyRate) : "--"}
               sourceLabel={rateSource?.label}
               sourceUrl={rateSource?.url}
             />
             <DetailField
               label="Hourly Rate"
-              value={memo.hourlyRate ? formatCurrency(memo.hourlyRate) : "--"}
+              value={memo.hourlyRate ? fmt(memo.hourlyRate) : "--"}
               sourceLabel={rateSource?.label}
               sourceUrl={rateSource?.url}
             />
@@ -619,7 +621,7 @@ export default function DealMemoDetail() {
               label="Meal Penalty"
               value={
                 (memo.mealPenaltyRate > 0 || memo.mealPenaltyEnabled)
-                  ? `${formatCurrency(memo.mealPenaltyRate || memo.mealPenaltyAmount || 0)} after ${memo.mealPenaltyAfterHrs || 6} hrs`
+                  ? `${fmt(memo.mealPenaltyRate || memo.mealPenaltyAmount || 0)} after ${memo.mealPenaltyAfterHrs || 6} hrs`
                   : "Disabled"
               }
             />
@@ -632,32 +634,32 @@ export default function DealMemoDetail() {
             {memo.productionFee > 0 && (
               <DetailField
                 label="Production Fee"
-                value={`${formatCurrency(memo.productionFee)}${memo.productionFeeBasis ? ` (${memo.productionFeeBasis.replace("_", " ")})` : ""}`}
+                value={`${fmt(memo.productionFee)}${memo.productionFeeBasis ? ` (${memo.productionFeeBasis.replace("_", " ")})` : ""}`}
               />
             )}
             {memo.idleDays > 0 && (
               <DetailField
                 label="Idle Days"
-                value={`${memo.idleDays} days @ ${formatCurrency(memo.idleDayRate)}/day`}
+                value={`${memo.idleDays} days @ ${fmt(memo.idleDayRate)}/day`}
               />
             )}
-            <DetailField label="Kit" value={formatCurrency(memo.kitAllowance)} />
-            <DetailField label="Travel" value={formatCurrency(memo.travelAllowance)} />
-            <DetailField label="Per Diem" value={formatCurrency(memo.perDiem)} />
-            <DetailField label="Phone" value={formatCurrency(memo.phoneAllowance)} />
-            <DetailField label="Computer" value={formatCurrency(memo.computerAllowance)} />
-            <DetailField label="Car" value={formatCurrency(memo.carAllowance)} />
-            <DetailField label="Housing" value={formatCurrency(memo.housingAllowance)} />
+            <DetailField label="Kit" value={fmt(memo.kitAllowance)} />
+            <DetailField label="Travel" value={fmt(memo.travelAllowance)} />
+            <DetailField label="Per Diem" value={fmt(memo.perDiem)} />
+            <DetailField label="Phone" value={fmt(memo.phoneAllowance)} />
+            <DetailField label="Computer" value={fmt(memo.computerAllowance)} />
+            <DetailField label="Car" value={fmt(memo.carAllowance)} />
+            <DetailField label="Housing" value={fmt(memo.housingAllowance)} />
             {memo.customAllowances?.length > 0 && memo.customAllowances.map((ca, i) => (
               <DetailField
                 key={i}
                 label={ca.name || `Custom #${i + 1}`}
-                value={`${formatCurrency(ca.amount)} (${(ca.period || "weekly").replace("_", " ")})`}
+                value={`${fmt(ca.amount)} (${(ca.period || "weekly").replace("_", " ")})`}
               />
             ))}
             <DetailField
               label="Total Weekly Allowances"
-              value={formatCurrency(
+              value={fmt(
                 (memo.kitAllowance || 0) +
                 (memo.travelAllowance || 0) +
                 (memo.perDiem || 0) +
