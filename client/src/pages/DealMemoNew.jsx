@@ -358,11 +358,11 @@ export default function DealMemoNew() {
   const autoSaveTimerRef = useRef(null);
 
   // Store display labels for the review step
-  const [classificationLabels, setClassificationLabels] = useState({
-    union: "",
-    department: "",
-    designation: "",
-    budgetTier: "",
+  const [classificationLabels, setClassificationLabels] = useState(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY + "-labels");
+      return saved ? JSON.parse(saved) : { union: "", department: "", designation: "", budgetTier: "" };
+    } catch { return { union: "", department: "", designation: "", budgetTier: "" }; }
   });
 
   // Nominal lines (auto-generated from deal structure)
@@ -455,16 +455,18 @@ export default function DealMemoNew() {
       const vals = getValues();
       localStorage.setItem(DRAFT_KEY, JSON.stringify(vals));
       localStorage.setItem(DRAFT_KEY + "-step", JSON.stringify(currentStep));
+      localStorage.setItem(DRAFT_KEY + "-labels", JSON.stringify(classificationLabels));
       setDraftSaved(true);
       setTimeout(() => setDraftSaved(false), 2000);
     } catch (e) {
       console.warn("Failed to save draft:", e);
     }
-  }, [getValues, currentStep]);
+  }, [getValues, currentStep, classificationLabels]);
 
   const clearDraft = useCallback(() => {
     localStorage.removeItem(DRAFT_KEY);
     localStorage.removeItem(DRAFT_KEY + "-step");
+    localStorage.removeItem(DRAFT_KEY + "-labels");
   }, []);
 
   // Auto-save every 5 seconds when form is dirty
@@ -476,10 +478,11 @@ export default function DealMemoNew() {
         const vals = getValues();
         localStorage.setItem(DRAFT_KEY, JSON.stringify(vals));
         localStorage.setItem(DRAFT_KEY + "-step", JSON.stringify(currentStep));
+        localStorage.setItem(DRAFT_KEY + "-labels", JSON.stringify(classificationLabels));
       } catch (e) { /* ignore */ }
     }, 5000);
     return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
-  }, [isDirty, getValues, currentStep]);
+  }, [isDirty, getValues, currentStep, classificationLabels]);
 
   const personOptions = useMemo(() => {
     if (!selectedProduction?.members) return [];
@@ -498,7 +501,13 @@ export default function DealMemoNew() {
   }, [selectedProduction]);
 
   // Reset classification when production (country) changes
+  // Skip on initial mount if resuming from draft (savedDraft exists)
+  const isInitialMountRef = useRef(!!savedDraft);
   useEffect(() => {
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return; // Skip reset on initial mount with draft
+    }
     if (watchedProductionId) {
       setValue("unionId", "");
       setValue("departmentId", "");
@@ -507,14 +516,12 @@ export default function DealMemoNew() {
       // Set country-appropriate fringe defaults
       if (productionCountry === "US") {
         Object.entries(US_FRINGE_DEFAULTS).forEach(([k, v]) => setValue(k, v));
-        // Reset UK fringes to 0
         setValue("holidayPayPct", 0);
         setValue("employerNiPct", 0);
         setValue("pensionPct", 0);
         setValue("apprenticeLevyPct", 0);
       } else {
         Object.entries(UK_FRINGE_DEFAULTS).forEach(([k, v]) => setValue(k, v));
-        // Reset US fringes to 0
         setValue("phPct", 0);
         setValue("vacationPct", 0);
         setValue("ficaPct", 0);
