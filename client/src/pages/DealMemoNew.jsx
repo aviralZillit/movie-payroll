@@ -414,6 +414,29 @@ export default function DealMemoNew() {
   const watchedDesignationId = watch("designationId");
   const watchedBudgetTierId = watch("budgetTierId");
   const watchedProductionId = watch("productionId");
+  const watchedPersonId = watch("personId");
+
+  // Auto-fill crew fields from user's previous deal memo when person is selected
+  useEffect(() => {
+    if (!watchedPersonId || isEditMode) return;
+    // Fetch latest deal memo for this person to get their crew fields
+    api.get(`/deal-memos?personId=${watchedPersonId}&limit=1`).then(({ data: resp }) => {
+      const prevDeal = resp.data?.[0] || resp.data?.dealMemos?.[0];
+      if (!prevDeal) return;
+      // Auto-fill crew fields that exist on the previous deal
+      const crewFields = ['niNumber', 'taxCode', 'bankSortCode', 'bankAccountNumber', 'ssn', 'w4FilingStatus', 'stateWithholding', 'achRoutingNumber', 'achAccountNumber', 'tfn', 'superFund', 'superMemberNumber', 'bsb', 'sin', 'province', 'dateOfBirth', 'address', 'emergencyContact', 'employmentStatus'];
+      let filled = 0;
+      crewFields.forEach((f) => {
+        if (prevDeal[f]) {
+          setValue(f, prevDeal[f], { shouldDirty: false });
+          filled++;
+        }
+      });
+      if (filled > 0) {
+        toast.success(`Auto-filled ${filled} crew fields from previous deal memo`, { duration: 3000 });
+      }
+    }).catch(() => {}); // Silently ignore if no previous deal
+  }, [watchedPersonId, isEditMode, setValue]);
 
   // Build person list from the selected production's members
   const selectedProduction = useMemo(
@@ -832,7 +855,7 @@ export default function DealMemoNew() {
       api.put(`/deal-memos/${editId}`, payload)
         .then(({ data: resp }) => {
           clearDraft();
-          toast.success("Deal memo updated successfully");
+          toast.success("Deal memo updated successfully", { duration: 3000 });
           navigate(`/deal-memos/${editId}`);
         })
         .catch((err) => {
@@ -842,7 +865,7 @@ export default function DealMemoNew() {
       createDealMemo.mutate(payload, {
         onSuccess: (result) => {
           clearDraft();
-          toast.success("Deal memo created successfully");
+          toast.success("Deal memo created successfully", { duration: 3000 });
           navigate(`/deal-memos/${result._id || result.id}`);
         },
         onError: (err) => {

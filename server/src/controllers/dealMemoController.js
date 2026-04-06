@@ -202,6 +202,7 @@ export const getAll = asyncHandler(async (req, res) => {
   const filter = {};
   if (req.query.status) filter.status = req.query.status;
   if (req.query.productionId) filter.productionId = req.query.productionId;
+  if (req.query.personId) filter.personId = req.query.personId;
 
   // Crew members only see their own deal memos
   if (req.user.role === 'crew_member') {
