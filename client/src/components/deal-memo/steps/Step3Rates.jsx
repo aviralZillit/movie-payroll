@@ -366,7 +366,7 @@ export default function Step3Rates({
             Working Day Configuration
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <CardContent className="grid gap-4 grid-cols-2 lg:grid-cols-4">
           <Controller
             name="workingDayType"
             control={control}
@@ -386,7 +386,7 @@ export default function Step3Rates({
                 <Select value={field.value ?? ""} onValueChange={field.onChange}>
                   <SelectTrigger>
                     {field.value ? (
-                      <span>{{ SWD: "SWD — Standard", CWD: "CWD — Continuous", SCWD: "SCWD — Semi-Continuous" }[field.value] || field.value}</span>
+                      <span className="truncate">{{ SWD: "SWD — Standard", CWD: "CWD — Continuous", SCWD: "SCWD — Semi-Cont." }[field.value] || field.value}</span>
                     ) : (
                       <SelectValue placeholder="Select type..." />
                     )}
