@@ -66,6 +66,7 @@ export default function App() {
                 <Route path="/productions/:id" element={<ProductionDetail />} />
                 <Route path="/deal-memos" element={<DealMemos />} />
                 <Route path="/deal-memos/new" element={<DealMemoNew />} />
+                <Route path="/deal-memos/:id/edit" element={<DealMemoNew />} />
                 <Route path="/deal-memos/:id" element={<DealMemoDetail />} />
                 <Route path="/timecards" element={<Timecards />} />
                 <Route path="/timecards/:id" element={<TimecardDetail />} />

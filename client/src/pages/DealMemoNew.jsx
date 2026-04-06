@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -338,6 +339,8 @@ function buildComplianceChecklist(territory) {
 
 export default function DealMemoNew() {
   const navigate = useNavigate();
+  const { id: editId } = useParams(); // If present, we're editing an existing deal memo
+  const isEditMode = !!editId;
   const user = useAuthStore((s) => s.user);
 
   // Redirect crew members and department heads away from this page
@@ -346,6 +349,16 @@ export default function DealMemoNew() {
       navigate('/deal-memos', { replace: true });
     }
   }, [user, navigate]);
+
+  // Load existing deal memo for edit mode
+  const { data: existingDealMemo, isLoading: editLoading } = useQuery({
+    queryKey: ["deal-memos", "detail", editId],
+    queryFn: async () => {
+      const { data } = await api.get(`/deal-memos/${editId}`);
+      return data.data;
+    },
+    enabled: isEditMode,
+  });
 
   const DRAFT_KEY = "deal-memo-draft";
   const [currentStep, setCurrentStep] = useState(() => {
@@ -510,6 +523,64 @@ export default function DealMemoNew() {
     });
   }, [getValues, productionCountry, createDealMemo, navigate, clearDraft]);
 
+  // Populate form when editing an existing deal memo
+  useEffect(() => {
+    if (!isEditMode || !existingDealMemo) return;
+    const dm = existingDealMemo;
+    // Map deal memo fields to form fields
+    const formValues = {
+      productionId: dm.productionId?._id || dm.productionId,
+      personId: dm.personId?._id || dm.personId,
+      startDate: dm.startDate ? new Date(dm.startDate).toISOString().slice(0, 10) : "",
+      endDate: dm.endDate ? new Date(dm.endDate).toISOString().slice(0, 10) : "",
+      unionId: dm.unionId?._id || dm.unionId,
+      departmentId: dm.departmentId?._id || dm.departmentId,
+      designationId: dm.designationId?._id || dm.designationId,
+      budgetTierId: dm.budgetTierId?._id || dm.budgetTierId,
+      contractingEntityId: dm.contractingEntityId,
+      weeklyRate: dm.weeklyRate || 0,
+      dailyRate: dm.dailyRate || 0,
+      hourlyRate: dm.hourlyRate || 0,
+      guaranteedHours: dm.guaranteedHoursPerWeek || 50,
+      dealType: dm.dealType || "weekly",
+      rateBasis: dm.rateBasis || "weekly",
+      rateAmount: dm.weeklyRate || 0,
+      hpMode: dm.hpMode || "excl",
+      standardWorkDayHrs: dm.standardWorkDayHrs || 10,
+      lunchBreakHrs: dm.lunchBreakHrs || 1,
+      sixthDayMultiplier: dm.sixthDayMultiplier || 1.5,
+      seventhDayMultiplier: dm.seventhDayMultiplier || 2.0,
+      nightPremiumPct: dm.nightPremiumPct || 25,
+      turnaroundMinHrs: dm.turnaroundMinHrs || 11,
+      mealPenaltyEnabled: !!dm.mealPenaltyRate,
+      mealPenaltyAmount: dm.mealPenaltyRate || 35,
+      mealPenaltyAfterHrs: dm.mealPenaltyAfterHrs || 6,
+      kitAllowance: dm.kitAllowance || 0,
+      carAllowance: dm.carAllowance || 0,
+      phoneAllowance: dm.phoneAllowance || 0,
+      computerAllowance: dm.computerAllowance || 0,
+      travelAllowance: dm.travelAllowance || 0,
+      perDiem: dm.perDiemRate || 0,
+      housingAllowance: dm.housingAllowance || 0,
+      payFrequency: dm.payFrequency || "weekly",
+      taxCreditScheme: dm.taxCreditScheme || "",
+      exclusivity: dm.exclusivity || "",
+      payOrPlay: dm.payOrPlay || false,
+      employmentStatus: dm.employmentStatus || "",
+      screenCredit: dm.screenCredit || "",
+    };
+    reset(formValues);
+    // Set classification labels from populated data
+    setClassificationLabels({
+      union: dm.unionId?.name || "",
+      unionCode: dm.unionId?.code || dm.unionKey || "",
+      department: dm.departmentId?.name || "",
+      designation: dm.designationId?.name || "",
+      budgetTier: dm.budgetTierId?.name || "",
+    });
+    setHasDraft(false); // Don't show "Resuming from draft" banner in edit mode
+  }, [isEditMode, existingDealMemo, reset]);
+
   // Auto-save every 5 seconds when form is dirty
   useEffect(() => {
     if (!isDirty) return;
@@ -592,12 +663,15 @@ export default function DealMemoNew() {
       const vals = getValues();
 
       // Store display labels for review
-      const unionName = (unions ?? []).find((u) => u._id === vals.unionId)?.name ?? "";
+      const unionObj = (unions ?? []).find((u) => u._id === vals.unionId);
+      const unionName = unionObj?.name ?? "";
+      const unionCode = unionObj?.code ?? "";
       const deptName = (departments ?? []).find((d) => d._id === vals.departmentId)?.name ?? "";
       const desigName = (designations ?? []).find((d) => d._id === vals.designationId)?.name ?? "";
       const tierName = (budgetTiers ?? []).find((t) => t._id === vals.budgetTierId)?.name ?? "";
       setClassificationLabels({
         union: unionName,
+        unionCode,
         department: deptName,
         designation: desigName,
         budgetTier: tierName,
@@ -754,16 +828,29 @@ export default function DealMemoNew() {
       complianceChecklist: buildComplianceChecklist(productionCountry),
     };
 
-    createDealMemo.mutate(payload, {
-      onSuccess: (result) => {
-        clearDraft(); // Clear saved draft on successful creation
-        toast.success("Deal memo created successfully");
-        navigate(`/deal-memos/${result._id || result.id}`);
-      },
-      onError: (err) => {
-        toast.error(err?.response?.data?.message || "Failed to create deal memo");
-      },
-    });
+    if (isEditMode) {
+      // Update existing deal memo
+      api.put(`/deal-memos/${editId}`, payload)
+        .then(({ data: resp }) => {
+          clearDraft();
+          toast.success("Deal memo updated successfully");
+          navigate(`/deal-memos/${editId}`);
+        })
+        .catch((err) => {
+          toast.error(err?.response?.data?.message || "Failed to update deal memo");
+        });
+    } else {
+      createDealMemo.mutate(payload, {
+        onSuccess: (result) => {
+          clearDraft();
+          toast.success("Deal memo created successfully");
+          navigate(`/deal-memos/${result._id || result.id}`);
+        },
+        onError: (err) => {
+          toast.error(err?.response?.data?.message || "Failed to create deal memo");
+        },
+      });
+    }
   });
 
   // ---- AI Auto-Fill ----
@@ -873,7 +960,7 @@ export default function DealMemoNew() {
             {...commonProps}
             currencySymbol={cSymbol}
             territory={productionCountry}
-            unionKey={(unions ?? []).find(u => u._id === watchedUnionId)?.code}
+            unionKey={classificationLabels?.unionCode || (unions ?? []).find(u => u._id === watchedUnionId)?.code}
             designationName={classificationLabels?.designation}
             budgetTierName={classificationLabels?.budgetTier}
             rateSource={rateSource}
@@ -918,7 +1005,7 @@ export default function DealMemoNew() {
           <ChevronLeft className="size-5" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold tracking-tight">New Deal Memo</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{isEditMode ? "Edit Deal Memo" : "New Deal Memo"}</h1>
           <p className="text-sm text-muted-foreground">
             Set up compensation terms for a crew member
           </p>

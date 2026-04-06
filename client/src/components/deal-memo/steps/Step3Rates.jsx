@@ -131,7 +131,7 @@ export default function Step3Rates({
     if (isNaN(amount) || amount <= 0) return;
 
     // Use precise rounding to avoid floating point drift (e.g., 34999.98 instead of 35000)
-    const r2 = (n) => Number(n.toFixed(2));
+    const r2 = (n) => Math.round(n * 100) / 100;
 
     if (rateBasis === "weekly") {
       setValue("weeklyRate", amount, { shouldDirty: true });

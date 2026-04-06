@@ -92,6 +92,7 @@ function getStatusActions(status, user, memo) {
   const actions = [];
 
   if (status === 'draft' && isAdmin) {
+    actions.push({ action: 'edit', label: 'Edit', icon: PenLine, variant: 'outline', isLink: true });
     actions.push({ action: 'send', label: 'Send', icon: Send, variant: 'default' });
     actions.push({ action: 'cancel', label: 'Cancel', icon: XCircle, variant: 'destructive', confirm: true });
   } else if (status === 'sent') {
@@ -363,6 +364,11 @@ export default function DealMemoDetail() {
   };
 
   const handleAction = (action) => {
+    // Edit: navigate to wizard in edit mode
+    if (action === "edit") {
+      navigate(`/deal-memos/${id}/edit`);
+      return;
+    }
     // Redirect negotiate / resend through the note dialog
     if (action === "negotiate" || action === "resend") {
       openNoteDialog(action);
