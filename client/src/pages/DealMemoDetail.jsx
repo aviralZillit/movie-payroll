@@ -1,6 +1,8 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import api from "@/lib/axios";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -293,6 +295,7 @@ export default function DealMemoDetail() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const isAdmin = ADMIN_ROLES.includes(user?.role);
+  const queryClient = useQueryClient();
   const { data: memo, isLoading, isError } = useDealMemo(id);
   const memoCountry = memo?.territory || memo?.country || memo?.productionId?.country || "UK";
   const fmt = (amount) => formatCurrency(amount || 0, memoCountry);
@@ -691,14 +694,35 @@ export default function DealMemoDetail() {
           <CardContent>
             <div className="space-y-2">
               {memo.complianceChecklist.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between rounded-md border px-3 py-2">
+                <div
+                  key={idx}
+                  className={cn(
+                    "flex items-center justify-between rounded-md border px-3 py-2",
+                    item.responsibility === "PRODUCTION" && isAdmin && "cursor-pointer hover:bg-muted/30 transition-colors",
+                  )}
+                  onClick={() => {
+                    if (item.responsibility === "PRODUCTION" && isAdmin) {
+                      api.patch(`/deal-memos/${id}/compliance/${idx}/toggle`)
+                        .then(() => {
+                          toast.success(item.isChecked ? `"${item.name}" unchecked` : `"${item.name}" marked complete`);
+                          queryClient.invalidateQueries({ queryKey: ["deal-memos", "detail", id] });
+                        })
+                        .catch((err) => toast.error(err?.response?.data?.message || "Failed to update"));
+                    }
+                  }}
+                >
                   <div className="flex items-center gap-2">
                     {item.isChecked ? (
                       <CheckCircle2 className="size-4 text-emerald-500" />
+                    ) : item.responsibility === "PRODUCTION" && isAdmin ? (
+                      <div className="size-4 rounded-full border-2 border-primary/50 hover:border-primary" />
                     ) : (
                       <div className="size-4 rounded-full border-2 border-muted-foreground/30" />
                     )}
                     <span className={cn("text-sm", item.isChecked && "text-muted-foreground line-through")}>{item.name}</span>
+                    {item.responsibility === "PRODUCTION" && isAdmin && !item.isChecked && (
+                      <span className="text-[10px] text-muted-foreground">(click to complete)</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary" className="text-[10px]">{item.responsibility}</Badge>

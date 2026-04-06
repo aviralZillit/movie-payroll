@@ -14,6 +14,7 @@ import {
   getPendingApprovals,
   approveDealMemo,
   rejectApproval,
+  toggleComplianceItem,
 } from '../controllers/dealMemoController.js';
 import { upload } from '../middleware/upload.js';
 import auth from '../middleware/auth.js';
@@ -45,6 +46,7 @@ router.put(
 router.patch('/:id/crew-complete', crewComplete);
 router.patch('/:id/approve', approveDealMemo);
 router.patch('/:id/reject-approval', rejectApproval);
+router.patch('/:id/compliance/:itemIndex/toggle', toggleComplianceItem);
 router.patch(
   '/:id/transition',
   authorize('super_admin', 'payroll_admin', 'production_accountant', 'department_head', 'crew_member'),

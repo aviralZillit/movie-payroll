@@ -690,3 +690,38 @@ export const rejectApproval = asyncHandler(async (req, res) => {
 
   res.json({ success: true, data: deal });
 });
+
+/**
+ * PATCH /api/deal-memos/:id/compliance/:itemIndex/toggle
+ * Toggle a compliance checklist item (PRODUCTION items only).
+ */
+export const toggleComplianceItem = asyncHandler(async (req, res) => {
+  const deal = await DealMemo.findById(req.params.id);
+  if (!deal) throw new AppError('Deal memo not found.', 404);
+
+  const itemIndex = parseInt(req.params.itemIndex);
+  if (!deal.complianceChecklist || itemIndex >= deal.complianceChecklist.length) {
+    throw new AppError('Compliance item not found.', 400);
+  }
+
+  const item = deal.complianceChecklist[itemIndex];
+
+  // Only PRODUCTION items can be toggled by admins
+  if (item.responsibility !== 'PRODUCTION') {
+    throw new AppError('Only PRODUCTION items can be toggled manually. CREW items auto-complete via Crew Portal.', 403);
+  }
+
+  item.isChecked = !item.isChecked;
+  item.checkedAt = item.isChecked ? new Date() : null;
+  item.checkedBy = item.isChecked ? req.user._id : null;
+
+  await deal.save();
+
+  const populated = await DealMemo.findById(deal._id)
+    .populate('productionId', 'name code country currency')
+    .populate('unionId', 'code name')
+    .populate('departmentId', 'code name')
+    .populate('designationId', 'code name');
+
+  res.json({ success: true, data: populated });
+});
