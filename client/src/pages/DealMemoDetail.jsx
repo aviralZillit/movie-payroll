@@ -703,9 +703,10 @@ export default function DealMemoDetail() {
                   onClick={() => {
                     if (item.responsibility === "PRODUCTION" && isAdmin) {
                       api.patch(`/deal-memos/${id}/compliance/${idx}/toggle`)
-                        .then(() => {
-                          toast.success(item.isChecked ? `"${item.name}" unchecked` : `"${item.name}" marked complete`);
-                          queryClient.invalidateQueries({ queryKey: ["deal-memos", "detail", id] });
+                        .then(({ data: resp }) => {
+                          toast.success(item.isChecked ? `"${item.name}" unchecked` : `"${item.name}" marked complete`, { duration: 2000 });
+                          // Instantly update the cache with the server response
+                          queryClient.setQueryData(["deal-memos", "detail", id], resp.data);
                         })
                         .catch((err) => toast.error(err?.response?.data?.message || "Failed to update"));
                     }
