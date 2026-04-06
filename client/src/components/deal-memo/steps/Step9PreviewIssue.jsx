@@ -1,4 +1,4 @@
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,12 @@ import {
   Send,
   Save,
   Download,
+  Clock,
+  DollarSign,
+  Receipt,
+  TrendingDown,
+  Landmark,
+  Calculator,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -69,6 +75,28 @@ export default function Step9PreviewIssue({
   const allowances = data.allowances || [];
   const documents = data.documents || [];
   const totalAllowances = allowances.reduce((sum, a) => sum + (Number(a?.amount) || 0), 0);
+  const cs = currencySymbol;
+
+  // Weekly cost estimate
+  const costEstimate = useMemo(() => {
+    const weekly = Number(data.weeklyRate) || Number(data.dailyRate) * 5 || Number(data.hourlyRate) * 50 || 0;
+    const isUS = labels.territory === "US" || data.territory === "US";
+    const hp = (!isUS && data.hpMode !== "incl" && data.hpMode !== "na") ? weekly * 0.1207 : 0;
+    const kit = Number(data.kitAllowance) || 0;
+    const car = Number(data.carAllowance) || 0;
+    const phone = Number(data.phoneAllowance) || 0;
+    const computer = Number(data.computerAllowance) || 0;
+    const travel = Number(data.travelAllowance) || 0;
+    const perDiem = (Number(data.perDiem) || 0) * 5;
+    const housing = Number(data.housingAllowance) || 0;
+    const custom = (data.customAllowances || []).reduce((s, c) => s + (Number(c?.amount) || 0), 0);
+    const allowTotal = kit + car + phone + computer + travel + perDiem + housing + custom + totalAllowances;
+    const nicPct = isUS ? 0.0765 : 0.138;
+    const penPct = isUS ? 0.20 : 0.03;
+    const onCosts = weekly * (nicPct + penPct);
+    const total = weekly + hp + allowTotal + onCosts;
+    return { weekly, hp, allowances: allowTotal, onCosts, total };
+  }, [data, totalAllowances, labels]);
 
   const handleDownloadPDF = useCallback(async () => {
     if (!previewRef.current) return;
@@ -258,6 +286,113 @@ export default function Step9PreviewIssue({
           </SummarySection>
         </CardContent>
       </Card>
+
+      {/* Cost Estimate + Timecard Preview side-by-side */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {/* Weekly Cost Estimate */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Calculator className="size-4 text-primary" />
+              Weekly Cost to Production
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground flex items-center gap-1.5"><DollarSign className="size-3" />Basic Pay</span>
+              <span className="font-medium tabular-nums">{cs}{costEstimate.weekly.toLocaleString()}</span>
+            </div>
+            {costEstimate.hp > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground flex items-center gap-1.5"><Receipt className="size-3" />Holiday Pay</span>
+                <span className="font-medium tabular-nums text-amber-500">{cs}{costEstimate.hp.toFixed(0)}</span>
+              </div>
+            )}
+            {costEstimate.allowances > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground flex items-center gap-1.5"><Wallet className="size-3" />Allowances</span>
+                <span className="font-medium tabular-nums">{cs}{costEstimate.allowances.toFixed(0)}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground flex items-center gap-1.5"><TrendingDown className="size-3" />Employer On-costs</span>
+              <span className="font-medium tabular-nums text-red-500">{cs}{costEstimate.onCosts.toFixed(0)}</span>
+            </div>
+            <Separator />
+            <div className="flex justify-between">
+              <span className="text-sm font-semibold flex items-center gap-1.5">
+                <Landmark className="size-4 text-primary" />Total Weekly
+              </span>
+              <span className="font-bold tabular-nums text-lg">{cs}{costEstimate.total.toFixed(0)}</span>
+            </div>
+            {/* Color bar */}
+            <div className="h-2 rounded-full bg-muted overflow-hidden flex">
+              <div className="bg-primary" style={{ width: `${costEstimate.total > 0 ? (costEstimate.weekly / costEstimate.total * 100) : 0}%` }} />
+              <div className="bg-amber-500" style={{ width: `${costEstimate.total > 0 ? (costEstimate.hp / costEstimate.total * 100) : 0}%` }} />
+              <div className="bg-blue-500" style={{ width: `${costEstimate.total > 0 ? (costEstimate.allowances / costEstimate.total * 100) : 0}%` }} />
+              <div className="bg-red-500" style={{ width: `${costEstimate.total > 0 ? (costEstimate.onCosts / costEstimate.total * 100) : 0}%` }} />
+            </div>
+            <div className="flex gap-3 flex-wrap">
+              <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><span className="size-2 rounded-full bg-primary" />Basic</span>
+              <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><span className="size-2 rounded-full bg-amber-500" />HP</span>
+              <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><span className="size-2 rounded-full bg-blue-500" />Allow.</span>
+              <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><span className="size-2 rounded-full bg-red-500" />On-costs</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Timecard Preview */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Clock className="size-4 text-primary" />
+              Weekly Timecard Template
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1.5">
+            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, i) => (
+              <div key={day} className="flex items-center justify-between rounded-md bg-muted/30 px-3 py-1.5">
+                <span className="text-xs font-medium w-8">{day}</span>
+                {i < 5 ? (
+                  <>
+                    <span className="text-[11px] text-muted-foreground">
+                      {data.standardWorkDayHrs || 10}hrs + {data.lunchBreakHrs || 1}hr lunch
+                    </span>
+                    <Badge variant="secondary" className="text-[10px] h-5">Work</Badge>
+                  </>
+                ) : i === 5 ? (
+                  <>
+                    <span className="text-[11px] text-muted-foreground">
+                      {data.sixthDayMultiplier ? `×${data.sixthDayMultiplier}` : "×1.5"} premium
+                    </span>
+                    <Badge variant="outline" className="text-[10px] h-5 text-amber-500 border-amber-500/30">6th Day</Badge>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-[11px] text-muted-foreground">Rest day</span>
+                    <Badge variant="outline" className="text-[10px] h-5 text-emerald-500 border-emerald-500/30">Rest</Badge>
+                  </>
+                )}
+              </div>
+            ))}
+            <Separator className="my-2" />
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Standard Day</span>
+              <span className="font-medium">{data.standardWorkDayHrs || 10} hrs</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Turnaround</span>
+              <span className="font-medium">{data.turnaroundMinHrs || 11} hrs min</span>
+            </div>
+            {data.mealPenaltyAmount > 0 && (
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Meal Penalty</span>
+                <span className="font-medium">{cs}{data.mealPenaltyAmount} after {data.mealPenaltyAfterHrs || 6}hrs</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Action buttons */}
       <div className="flex items-center justify-end gap-3">
