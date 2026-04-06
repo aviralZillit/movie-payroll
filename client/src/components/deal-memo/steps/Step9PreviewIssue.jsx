@@ -79,7 +79,7 @@ export default function Step9PreviewIssue({
 
   // Weekly cost estimate
   const costEstimate = useMemo(() => {
-    const weekly = Number(data.weeklyRate) || Number(data.dailyRate) * 5 || Number(data.hourlyRate) * 50 || 0;
+    const weekly = Math.round((Number(data.weeklyRate) || Number(data.dailyRate) * 5 || Number(data.hourlyRate) * 50 || 0) * 100) / 100;
     const isUS = labels.territory === "US" || data.territory === "US";
     const hp = (!isUS && data.hpMode !== "incl" && data.hpMode !== "na") ? weekly * 0.1207 : 0;
     const kit = Number(data.kitAllowance) || 0;
@@ -312,7 +312,7 @@ export default function Step9PreviewIssue({
           <CardContent className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground flex items-center gap-1.5"><DollarSign className="size-3" />Basic Pay</span>
-              <span className="font-medium tabular-nums">{cs}{costEstimate.weekly.toLocaleString()}</span>
+              <span className="font-medium tabular-nums">{cs}{costEstimate.weekly.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
             </div>
             {costEstimate.hp > 0 && (
               <div className="flex justify-between text-sm">
