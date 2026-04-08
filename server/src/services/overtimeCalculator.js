@@ -20,9 +20,11 @@ const minutesToHours = (minutes) => {
  * @param {Object} entry - timecard entry { callTime, wrapTime, lunchStart, lunchEnd, secondMealStart, secondMealEnd, isSixthDay, isSeventhDay }
  * @param {Object} dealMemo - deal memo { standardWorkDayHrs, nightStartTime, lunchBreakHrs }
  * @param {Array} overtimeRules - sorted OT rules from rateEngine
+ * @param {Object} [options] - optional overrides
+ * @param {number} [options.standardHoursOverride] - override for standardWorkDayHrs (from dayTypeConfig.standardHours)
  * @returns {Object} { totalWorkedHrs, straightHrs, ot1x5Hrs, ot2xHrs, nightHrs }
  */
-export const calculateDayHours = (entry, dealMemo, overtimeRules = []) => {
+export const calculateDayHours = (entry, dealMemo, overtimeRules = [], options = {}) => {
   const result = {
     totalWorkedHrs: 0,
     straightHrs: 0,
@@ -73,7 +75,7 @@ export const calculateDayHours = (entry, dealMemo, overtimeRules = []) => {
   const totalWorkedHrs = minutesToHours(Math.max(0, totalWorkedMin));
   result.totalWorkedHrs = totalWorkedHrs;
 
-  const standardHrs = dealMemo.standardWorkDayHrs || 11;
+  const standardHrs = options.standardHoursOverride || dealMemo.standardWorkDayHrs || 11;
   const nightStartTime = dealMemo.nightStartTime || '23:00';
   const nightStartMin = parseTimeToMinutes(nightStartTime);
 

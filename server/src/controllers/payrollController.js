@@ -87,7 +87,9 @@ export const calculateRun = asyncHandler(async (req, res) => {
       .populate('departmentId', 'code name')
       .populate('designationId', 'code name');
 
-    // Compliance gate: skip crew members with incomplete required compliance
+    if (!dealMemo) continue;
+
+    // Compliance warning (informational only — does not block payroll)
     if (dealMemo?.complianceChecklist?.length > 0) {
       const requiredItems = dealMemo.complianceChecklist.filter(c => c.isRequired);
       const incompleteItems = requiredItems.filter(c => !c.isChecked);
@@ -98,11 +100,8 @@ export const calculateRun = asyncHandler(async (req, res) => {
           reason: 'Compliance incomplete',
           missing: incompleteItems.map(c => c.name),
         });
-        continue; // Skip this crew member
       }
     }
-
-    if (!dealMemo) continue;
 
     const payItem = await calculatePayrollItem(tc, dealMemo);
 
@@ -113,6 +112,11 @@ export const calculateRun = asyncHandler(async (req, res) => {
       unionCode: dealMemo.unionId?.code || '',
       departmentName: dealMemo.departmentId?.name || '',
       designationName: dealMemo.designationId?.name || '',
+      // Timecard summary fields
+      daysWorked: tc.daysWorked || 0,
+      totalHours: (tc.totalStraightHrs || 0) + (tc.totalOt1x5Hrs || 0) + (tc.totalOt2xHrs || 0),
+      otHours: (tc.totalOt1x5Hrs || 0) + (tc.totalOt2xHrs || 0),
+      penalties: payItem.mealPenaltyPay + (payItem.turnaroundPenaltyPay || 0),
       basePay: payItem.basePay,
       overtime1x5Pay: payItem.overtime1x5Pay,
       overtime2xPay: payItem.overtime2xPay,

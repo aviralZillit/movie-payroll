@@ -1,263 +1,213 @@
-import { Controller } from "react-hook-form";
+import { useMemo, useState } from "react";
+import { Controller, useFieldArray } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { ShieldCheck, CheckCircle2, AlertTriangle, Clock, XCircle } from "lucide-react";
+import { ShieldCheck, CheckCircle2, Clock, FileText, Plus, X, Info } from "lucide-react";
+import { getRightToWorkConfig } from "@/lib/countryFieldConfig";
 
 // ---------------------------------------------------------------------------
-// Status badge helper
+// Step 6 — Right to Work (Admin: select which docs to request from crew)
+//
+// The admin's ONLY job here is to:
+//   1. Pick which documents the crew member needs to provide
+//   2. Optionally add a note
+//   3. Set the overall verification status
+//
+// The crew member fills in references, uploads scans, and enters expiry
+// dates via the Crew Portal — NOT here.
 // ---------------------------------------------------------------------------
-const STATUS_CONFIG = {
-  ok: {
-    label: "OK",
-    icon: CheckCircle2,
-    className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 dark:text-emerald-400",
-  },
-  pending: {
-    label: "Pending",
-    icon: Clock,
-    className: "bg-amber-500/10 text-amber-600 border-amber-500/30 dark:text-amber-400",
-  },
-  warn: {
-    label: "Warning",
-    icon: AlertTriangle,
-    className: "bg-orange-500/10 text-orange-600 border-orange-500/30 dark:text-orange-400",
-  },
-  required: {
-    label: "Required",
-    icon: XCircle,
-    className: "bg-red-500/10 text-red-600 border-red-500/30 dark:text-red-400",
-  },
-};
-
-function StatusBadge({ status }) {
-  const config = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
-  const Icon = config.icon;
-  return (
-    <Badge variant="outline" className={cn("gap-1 text-xs", config.className)}>
-      <Icon className="size-3" />
-      {config.label}
-    </Badge>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Responsibility badge
-// ---------------------------------------------------------------------------
-function ResponsibilityBadge({ owner }) {
-  if (owner === "production") {
-    return (
-      <Badge variant="secondary" className="bg-muted text-muted-foreground text-[10px] px-1.5">
-        PRODUCTION
-      </Badge>
-    );
-  }
-  return (
-    <Badge variant="outline" className="border-amber-500/50 text-amber-600 dark:text-amber-400 text-[10px] px-1.5">
-      CREW
-    </Badge>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Step 6 - Compliance
-// ---------------------------------------------------------------------------
-// Territory-based compliance data (mirrors server complianceService.js)
-const COMPLIANCE_DATA = {
-  UK: {
-    checks: [
-      { id: 'ir35', label: 'IR35 Status', status: 'pending', description: 'IR35 determination required for Ltd/PSC contractors' },
-      { id: 'rtw', label: 'Right to Work', status: 'required', description: 'RTW check must be completed before first day of work' },
-      { id: 'wtr', label: 'Working Time Regs', status: 'ok', description: 'WTR opt-out signed, 48-hour week limit waived' },
-      { id: 'gdpr', label: 'GDPR & Data', status: 'ok', description: 'Privacy notice issued, data processing agreement in place' },
-    ],
-    onboarding: [
-      { label: 'Right to Work check completed', owner: 'production', required: true },
-      { label: 'P45 from previous employer received', owner: 'crew', required: false },
-      { label: 'NI Number provided', owner: 'crew', required: true },
-      { label: 'Tax code provided or starter declaration', owner: 'crew', required: true },
-      { label: 'Bank details provided (sort code + account)', owner: 'crew', required: true },
-      { label: 'Emergency contact details', owner: 'crew', required: false },
-      { label: 'NDA signed', owner: 'production', required: true },
-      { label: 'Anti-Harassment & Bullying policy signed', owner: 'production', required: true },
-      { label: 'Health & Safety policy signed', owner: 'production', required: true },
-      { label: 'GDPR Data Protection notice issued', owner: 'production', required: false },
-    ],
-  },
-  US: {
-    checks: [
-      { id: 'i9', label: 'Work Authorization (I-9)', status: 'required', description: 'I-9 must be completed within 3 days of hire' },
-      { id: 'union', label: 'Union Membership', status: 'pending', description: 'Union card number verified. Taft-Hartley waiver if non-member.' },
-      { id: 'tax', label: 'Federal & State Tax', status: 'pending', description: 'W-4 federal withholding form and state withholding required' },
-      { id: 'hw', label: 'Health & Welfare', status: 'ok', description: 'H&W qualifying hours tracking enabled' },
-    ],
-    onboarding: [
-      { label: 'I-9 Work Authorization completed', owner: 'production', required: true },
-      { label: 'W-4 Federal Withholding form', owner: 'crew', required: true },
-      { label: 'State withholding form', owner: 'crew', required: true },
-      { label: 'SSN provided', owner: 'crew', required: true },
-      { label: 'Union card number verified', owner: 'production', required: true },
-      { label: 'ACH routing + account number', owner: 'crew', required: true },
-      { label: 'NDA signed', owner: 'production', required: true },
-    ],
-  },
-  CA: {
-    checks: [
-      { id: 'sin', label: 'Work Authorization / SIN', status: 'required', description: 'SIN required for all Canadian workers' },
-      { id: 'union', label: 'Union Membership', status: 'pending', description: 'Union card required for covered positions' },
-      { id: 'tax', label: 'Canadian Tax / TD1', status: 'pending', description: 'TD1 Federal and Provincial forms required' },
-      { id: 'pipeda', label: 'PIPEDA Compliance', status: 'ok', description: 'Privacy policy compliant' },
-    ],
-    onboarding: [
-      { label: 'SIN provided', owner: 'crew', required: true },
-      { label: 'TD1 Federal form', owner: 'crew', required: true },
-      { label: 'TD1 Provincial form', owner: 'crew', required: true },
-      { label: 'Bank transit/institution/account', owner: 'crew', required: true },
-      { label: 'Union card number', owner: 'production', required: true },
-    ],
-  },
-  AU: {
-    checks: [
-      { id: 'tfn', label: 'Tax File Number', status: 'required', description: 'TFN must be provided within 28 days' },
-      { id: 'fairwork', label: 'Fair Work Act', status: 'ok', description: 'Modern Award compliance confirmed' },
-      { id: 'super', label: 'Superannuation', status: 'required', description: 'Super fund choice form required. Quarterly contributions due.' },
-      { id: 'privacy', label: 'Privacy Act', status: 'ok', description: 'Privacy policy compliant' },
-    ],
-    onboarding: [
-      { label: 'Tax File Number provided', owner: 'crew', required: true },
-      { label: 'Super fund choice form completed', owner: 'crew', required: true },
-      { label: 'BSB + Account number', owner: 'crew', required: true },
-    ],
-  },
-};
-
-export default function Step6Compliance({
+export default function Step6RightToWork({
   control,
   errors,
   watch,
-  territory = 'UK',
-  complianceChecks: propChecks,
-  onboardingItems: propItems,
+  territory = "UK",
 }) {
-  // Use props if provided, otherwise generate from territory
-  const data = COMPLIANCE_DATA[territory] || COMPLIANCE_DATA.UK;
-  const complianceChecks = propChecks?.length > 0 ? propChecks : data.checks;
-  const onboardingItems = propItems?.length > 0 ? propItems : data.onboarding;
+  const rtwConfig = useMemo(() => getRightToWorkConfig(territory), [territory]);
+  const rtwStatus = watch("rightToWork.status") || "pending";
+  const [customDocName, setCustomDocName] = useState("");
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "rightToWork.documents",
+  });
+
+  // Quick-add from the predefined list
+  const handleToggleDoc = (docName, checked) => {
+    if (checked) {
+      append({ docType: docName, required: true, status: "requested" });
+    } else {
+      const idx = fields.findIndex(f => f.docType === docName);
+      if (idx >= 0) remove(idx);
+    }
+  };
+
+  const requestedDocNames = fields.map(f => f.docType);
+  const availableDocs = rtwConfig.requestableDocuments || [];
+
   return (
     <div className="space-y-6">
-      {/* Compliance cards */}
+      {/* What to request */}
       <Card>
         <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <ShieldCheck className="size-5 text-primary" />
-            Compliance Checks
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <ShieldCheck className="size-5 text-primary" />
+              {rtwConfig.label}
+            </CardTitle>
+            <Badge variant="outline" className={cn("gap-1 text-xs",
+              rtwStatus === "verified" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" : "bg-amber-500/10 text-amber-600 border-amber-500/30"
+            )}>
+              {rtwStatus === "verified" ? <CheckCircle2 className="size-3" /> : <Clock className="size-3" />}
+              {rtwStatus === "verified" ? "Verified" : "Pending"}
+            </Badge>
+          </div>
         </CardHeader>
-        <CardContent>
-          {complianceChecks.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">
-              Compliance checks will be generated based on territory and employment type.
-            </p>
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {complianceChecks.map((check) => (
-                <div
-                  key={check.id}
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Select which documents this crew member needs to provide. They will upload them via the Crew Portal.
+          </p>
+
+          {/* Checkbox list of standard documents */}
+          <div className="space-y-2">
+            {availableDocs.map((docName) => {
+              const isChecked = requestedDocNames.includes(docName);
+              return (
+                <label
+                  key={docName}
                   className={cn(
-                    "flex items-start gap-3 rounded-lg border p-3",
-                    check.status === "required" && "border-red-500/30 bg-red-500/5",
-                    check.status === "warn" && "border-orange-500/30 bg-orange-500/5"
+                    "flex items-center gap-3 rounded-md border px-3 py-2.5 cursor-pointer transition-colors",
+                    isChecked ? "border-primary/50 bg-primary/5" : "hover:bg-muted/50"
                   )}
                 >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium truncate">{check.label}</span>
-                      <StatusBadge status={check.status} />
-                    </div>
-                    {check.description && (
-                      <p className="text-xs text-muted-foreground">{check.description}</p>
-                    )}
+                  <Checkbox
+                    checked={isChecked}
+                    onCheckedChange={(checked) => handleToggleDoc(docName, checked)}
+                  />
+                  <FileText className="size-4 text-muted-foreground shrink-0" />
+                  <span className="text-sm">{docName}</span>
+                  {isChecked && (
+                    <Badge variant="outline" className="ml-auto text-[10px] bg-primary/10 text-primary border-primary/30">
+                      Requested
+                    </Badge>
+                  )}
+                </label>
+              );
+            })}
+          </div>
+
+          {/* Custom document request */}
+          <div className="flex items-center gap-2 pt-2 border-t">
+            <Input
+              placeholder="Other document (e.g. P45, Tax Return)..."
+              value={customDocName}
+              onChange={(e) => setCustomDocName(e.target.value)}
+              className="h-8 text-sm flex-1"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8"
+              disabled={!customDocName.trim()}
+              onClick={() => {
+                if (customDocName.trim()) {
+                  append({ docType: customDocName.trim(), required: true, status: "requested" });
+                  setCustomDocName("");
+                }
+              }}
+            >
+              <Plus className="size-3 mr-1" />
+              Add
+            </Button>
+          </div>
+
+          {/* Custom docs that aren't in the predefined list */}
+          {fields.filter(f => f.docType && !availableDocs.includes(f.docType)).length > 0 && (
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Custom requests:</Label>
+              {fields.map((field, idx) => {
+                if (!field.docType || availableDocs.includes(field.docType)) return null;
+                return (
+                  <div key={field.id} className="flex items-center gap-2 rounded-md border px-3 py-2">
+                    <FileText className="size-4 text-muted-foreground" />
+                    <span className="text-sm flex-1">{field.docType}</span>
+                    <Badge variant="outline" className="text-[10px]">Requested</Badge>
+                    <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => remove(idx)}>
+                      <X className="size-3" />
+                    </Button>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Onboarding checklist */}
+      {/* Summary + Notes */}
       <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <CheckCircle2 className="size-5 text-primary" />
-            Onboarding Checklist
-          </CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium text-muted-foreground">Summary & Notes</CardTitle>
         </CardHeader>
-        <CardContent>
-          {onboardingItems.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">
-              Onboarding items will be generated based on territory and deal type.
+        <CardContent className="space-y-3">
+          <div className="flex items-center gap-4 text-sm">
+            <span className="text-muted-foreground">Documents requested:</span>
+            <Badge variant="secondary">{fields.length}</Badge>
+          </div>
+
+          <Controller
+            name="rightToWork.notes"
+            control={control}
+            render={({ field }) => (
+              <div className="space-y-1.5">
+                <Label>Notes for crew member</Label>
+                <Input
+                  placeholder="e.g. Please provide within 48 hours of start date..."
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                />
+              </div>
+            )}
+          />
+
+          <Controller
+            name="rightToWork.status"
+            control={control}
+            render={({ field }) => (
+              <div className="space-y-1.5">
+                <Label>Verification Status</Label>
+                <Select value={field.value ?? "pending"} onValueChange={field.onChange}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="verified">Verified</SelectItem>
+                    <SelectItem value="expired">Expired</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          />
+
+          <div className="flex items-start gap-2 rounded-md bg-blue-500/10 border border-blue-500/20 px-3 py-2">
+            <Info className="size-4 text-blue-500 mt-0.5 shrink-0" />
+            <p className="text-xs text-blue-600 dark:text-blue-400">
+              Once the deal memo is issued, the crew member will see these document requests in their Crew Portal
+              and can upload scans, enter reference numbers, and expiry dates. You'll be able to verify or reject each document.
             </p>
-          ) : (
-            <div className="rounded-md border overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-10">Done</TableHead>
-                    <TableHead>Item</TableHead>
-                    <TableHead className="w-28">Responsibility</TableHead>
-                    <TableHead className="w-24">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {onboardingItems.map((item, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell>
-                        {item.owner === "production" ? (
-                          <Controller
-                            name={`onboarding.${idx}.completed`}
-                            control={control}
-                            render={({ field }) => (
-                              <input
-                                type="checkbox"
-                                checked={field.value ?? false}
-                                onChange={(e) => field.onChange(e.target.checked)}
-                                className="size-4 rounded border-muted-foreground/30 accent-primary"
-                              />
-                            )}
-                          />
-                        ) : (
-                          <input
-                            type="checkbox"
-                            checked={item.completed ?? false}
-                            disabled
-                            className="size-4 rounded opacity-50"
-                          />
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm">{item.label}</TableCell>
-                      <TableCell>
-                        <ResponsibilityBadge owner={item.owner} />
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={item.completed ? "ok" : "pending"} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+          </div>
         </CardContent>
       </Card>
     </div>

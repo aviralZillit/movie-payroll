@@ -22,25 +22,29 @@ export function calculateTerritoryFringes(grossPay, totalWorkedHrs, dealMemo) {
 
 // ─── UK ──────────────────────────────────────────────────────────────
 function calculateUKFringesV2(gross, dm) {
+  // DB stores percentages as whole numbers (12.07 = 12.07%, 0.5 = 0.5%)
+  // Always divide DB values by 100; fallbacks are already decimals
+  const pct = (dbVal, fallback) => dbVal != null ? dbVal / 100 : fallback;
+
   const hpMode = dm.hpMode || 'excl';
   let holidayPay = new Decimal(0);
 
   if (hpMode === 'excl') {
-    const hpPct = dm.holidayPayPct ?? dm.rfHolidayPayPct ?? 0.1207;
+    const hpPct = pct(dm.holidayPayPct ?? dm.rfHolidayPayPct, 0.1207);
     holidayPay = gross.times(hpPct);
   }
   // 'incl': HP already embedded in rate (basic = quoted/1.1207)
   // 'na': no HP
 
-  const niPct = dm.employerNiPct ?? dm.rfNicPct ?? 0.138;
+  const niPct = pct(dm.employerNiPct ?? dm.rfNicPct, 0.138);
   const niThreshold = new Decimal(dm.employerNiThresholdWeekly ?? dm.rfNicThreshold ?? 967);
   const niable = Decimal.max(gross.minus(niThreshold), 0);
   const employerNi = niable.times(niPct);
 
-  const pensionPct = dm.unionPensionPct ?? dm.pensionPct ?? 0.03;
+  const pensionPct = pct(dm.unionPensionPct ?? dm.pensionPct, 0.03);
   const employerPension = gross.times(pensionPct);
 
-  const levyPct = dm.apprenticeshipLevyPct ?? 0;
+  const levyPct = pct(dm.apprenticeshipLevyPct, 0);
   const apprenticeshipLevy = gross.times(levyPct);
 
   const totalFringes = holidayPay.plus(employerNi).plus(employerPension).plus(apprenticeshipLevy);

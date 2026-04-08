@@ -60,6 +60,38 @@ const productionSettingsSchema = new mongoose.Schema(
       requiresSignature: { type: Boolean, default: true },
     }],
 
+    // Working day type — same for all crew on this production
+    workingDayType: { type: String, enum: ['SWD', 'CWD', 'SCWD'], default: 'SWD' },
+
+    // Configurable day types — crew picks from these in timecards
+    // Each maps to a rate key (prep/shoot/wrap/travel) from deal memo
+    dayTypes: [{
+      name: { type: String, required: true },       // "Prep", "Shoot", "Travel", "Turnaround", etc.
+      rateKey: { type: String, default: 'shoot' },  // "prep", "shoot", "wrap", "travel"
+      isWorkDay: { type: Boolean, default: true },   // false = flat rate, no OT
+      isDefault: { type: Boolean, default: true },   // show in quick-select dropdown
+      color: String,                                 // UI color hint
+    }],
+
+    // Bureau contacts — which person at the payroll bureau manages which departments
+    bureauContacts: [{
+      contactName: { type: String, required: true },
+      email: String,
+      phone: String,
+      departments: [String],  // ["Wardrobe", "Costume", "HMU"]
+    }],
+
+    // Onboarding requirements (overrides country defaults)
+    // When empty → use country defaults from client/src/lib/onboardingRequirements.js
+    // When populated → use these instead (admin customized)
+    onboardingRequirements: [{
+      key: String,
+      label: String,
+      category: { type: String, enum: ['tax', 'id', 'bank', 'pension', 'compliance', 'personal', 'custom'], default: 'custom' },
+      required: { type: Boolean, default: true },
+      isCustom: { type: Boolean, default: false },
+    }],
+
     // Flexible approval chain (configurable per production)
     approvalChain: [{
       step: { type: Number, required: true },

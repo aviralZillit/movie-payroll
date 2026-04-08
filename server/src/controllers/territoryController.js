@@ -59,11 +59,24 @@ export const getRules = asyncHandler(async (req, res) => {
  * Get a specific agreement's rules
  */
 export const getRule = asyncHandler(async (req, res) => {
-  const rule = await TerritoryRule.findOne({
-    territoryCode: req.params.code.toUpperCase(),
-    unionKey: req.params.unionKey,
+  const territory = req.params.code.toUpperCase();
+  const unionKey = req.params.unionKey;
+
+  // Try exact match first
+  let rule = await TerritoryRule.findOne({
+    territoryCode: territory,
+    unionKey: unionKey,
     isActive: true,
   }).lean();
+
+  // Fuzzy match: BECTU → PACT-BECTU, SAG_AFTRA → SAG-THEATRICAL, etc.
+  if (!rule) {
+    const allRules = await TerritoryRule.find({ territoryCode: territory, isActive: true }).lean();
+    rule = allRules.find(r =>
+      r.unionKey.toUpperCase().includes(unionKey.toUpperCase()) ||
+      unionKey.toUpperCase().includes(r.unionKey.replace('PACT-', '').replace('-BASIC', '').replace('-THEATRICAL', '').toUpperCase())
+    );
+  }
 
   if (!rule) throw new AppError('Territory rule not found', 404);
 

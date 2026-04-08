@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+// useMemo needed for lowestDailyRate calculation
 import { Controller } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { Banknote, Calculator, Clock, Info, CheckCircle2, AlertTriangle, ExternalLink, Shield } from "lucide-react";
+import { Banknote, Clock, Info, CheckCircle2, AlertTriangle, ExternalLink } from "lucide-react";
 import {
   Tooltip,
   TooltipTrigger,
@@ -20,6 +21,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useTerritoryRule } from "@/hooks/useTerritories";
 import { useVerifyRate } from "@/hooks/useRatesBible";
+import UnionField from "@/components/deal-memo/UnionField";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -31,11 +33,19 @@ const RATE_BASIS_OPTIONS = [
   { value: "flat", label: "Flat" },
 ];
 
-const RATE_TYPE_OPTIONS = [
-  { value: "standard", label: "Standard" },
+// UK rate types (BECTU/PACT/Equity terminology)
+const UK_RATE_TYPE_OPTIONS = [
+  { value: "basic", label: "Basic Rate" },
   { value: "all_in", label: "All-In" },
+  { value: "buyout", label: "Buyout" },
+  { value: "negotiated", label: "Negotiated" },
+];
+
+// US rate types (SAG-AFTRA/DGA/IATSE terminology)
+const US_RATE_TYPE_OPTIONS = [
   { value: "scale", label: "Scale" },
-  { value: "above_scale", label: "Above Scale" },
+  { value: "scale_plus_10", label: "Scale + 10%" },
+  { value: "scale_plus_15", label: "Scale + 15%" },
   { value: "negotiated", label: "Negotiated" },
 ];
 
@@ -48,7 +58,7 @@ const HP_MODE_OPTIONS = [
 // ---------------------------------------------------------------------------
 // Currency input helper
 // ---------------------------------------------------------------------------
-function CurrencyInput({ label, value, onChange, currencySymbol = "\u00A3", error, disabled, className }) {
+function CurrencyInput({ label, value, onChange, currencySymbol = "£", error, disabled, className }) {
   return (
     <div className={cn("space-y-1.5", className)}>
       <Label>{label}</Label>
@@ -72,50 +82,38 @@ function CurrencyInput({ label, value, onChange, currencySymbol = "\u00A3", erro
 }
 
 // ---------------------------------------------------------------------------
-// Step 3 - Rates
+// Step 3 - Rates (Simplified)
 // ---------------------------------------------------------------------------
 export default function Step3Rates({
   control,
   errors,
   setValue,
   watch,
-  currencySymbol = "\u00A3",
+  currencySymbol = "£",
   territory = "UK",
   unionKey,
   designationName,
   budgetTierName,
   fringeSummary,
+  unionFields,
 }) {
+  const rateTypeOptions = territory === 'US' ? US_RATE_TYPE_OPTIONS : UK_RATE_TYPE_OPTIONS;
   const rateBasis = watch("rateBasis");
   const rateAmount = watch("rateAmount");
   const weeklyRate = watch("weeklyRate");
   const dailyRate = watch("dailyRate");
-  const hourlyRate = watch("hourlyRate");
-  const hpMode = watch("hpMode");
-  const workingDayType = watch("workingDayType");
+  const separateRates = watch("separateRates");
+  const prepRate = watch("prepRate");
+  const shootRate = watch("shootRate");
+  const wrapRate = watch("wrapRate");
 
-  // Auto-set standard hours and lunch when working day type changes
-  useEffect(() => {
-    if (!workingDayType) return;
-    const WDT_CONFIG = {
-      SWD: { standardWorkDayHrs: 11, lunchBreakHrs: 1 },
-      CWD: { standardWorkDayHrs: 10, lunchBreakHrs: 0 },
-      SCWD: { standardWorkDayHrs: 10.5, lunchBreakHrs: 0.5 },
-    };
-    const config = WDT_CONFIG[workingDayType];
-    if (config) {
-      setValue("standardWorkDayHrs", config.standardWorkDayHrs, { shouldDirty: true });
-      setValue("lunchBreakHrs", config.lunchBreakHrs, { shouldDirty: true });
-    }
-  }, [workingDayType, setValue]);
-
-  // Fetch territory rule for OT table
+  // Fetch territory rule (still used internally for fringes)
   const { data: territoryRule } = useTerritoryRule(territory, unionKey);
 
-  // Rate verification
+  // Rate verification — single rate mode
   const verifyRate = useVerifyRate();
   useEffect(() => {
-    if (weeklyRate && weeklyRate > 0 && territory && designationName) {
+    if (!separateRates && weeklyRate && weeklyRate > 0 && territory) {
       verifyRate.mutate({
         territoryCode: territory,
         grade: designationName,
@@ -123,30 +121,33 @@ export default function Step3Rates({
         proposedWeeklyRate: weeklyRate,
       });
     }
-  }, [weeklyRate, territory, designationName, budgetTierName]);
+  }, [weeklyRate, territory, designationName, budgetTierName, separateRates]);
 
-  // Build OT rows from territory rule
-  const otRows = useMemo(() => {
-    if (!territoryRule) return [];
-    const rows = [];
-    const hr = hourlyRate || 0;
-    rows.push({ code: 'BASIC', desc: territoryRule.basicDescription || `${territoryRule.basicHrs}hrs`, trigger: 'Standard day', mult: '×1.0', rate: `${currencySymbol}${hr.toFixed(2)}/hr` });
-    if (territoryRule.ot1Multiplier) rows.push({ code: 'OT1', desc: territoryRule.ot1Description || `×${territoryRule.ot1Multiplier}`, trigger: territoryRule.ot1Trigger || 'After standard day', mult: `×${territoryRule.ot1Multiplier}`, rate: `${currencySymbol}${(hr * territoryRule.ot1Multiplier).toFixed(2)}/hr` });
-    if (territoryRule.ot2Multiplier) rows.push({ code: 'OT2', desc: territoryRule.ot2Description || `×${territoryRule.ot2Multiplier}`, trigger: territoryRule.ot2Trigger || 'After OT1', mult: `×${territoryRule.ot2Multiplier}`, rate: `${currencySymbol}${(hr * territoryRule.ot2Multiplier).toFixed(2)}/hr` });
-    if (territoryRule.goldenTimeMultiplier) rows.push({ code: 'GOLDEN', desc: territoryRule.goldenTimeDescription || 'Golden Time', trigger: `After ${territoryRule.goldenTimeAfterHours}hrs`, mult: `×${territoryRule.goldenTimeMultiplier}`, rate: `${currencySymbol}${(hr * territoryRule.goldenTimeMultiplier).toFixed(2)}/hr`, highlight: true });
-    if (territoryRule.sixthDayMultiplier) rows.push({ code: '6TH', desc: territoryRule.sixthDayDescription || '6th Day', trigger: '6th consecutive day', mult: `×${territoryRule.sixthDayMultiplier}`, rate: `${currencySymbol}${(hr * territoryRule.sixthDayMultiplier).toFixed(2)}/hr` });
-    if (territoryRule.seventhDayMultiplier) rows.push({ code: '7TH', desc: territoryRule.seventhDayDescription || '7th Day', trigger: '7th consecutive day', mult: `×${territoryRule.seventhDayMultiplier}`, rate: `${currencySymbol}${(hr * territoryRule.seventhDayMultiplier).toFixed(2)}/hr` });
-    if (territoryRule.otRateCap) rows.push({ code: 'CAP', desc: `OT Rate Cap`, trigger: 'Maximum OT hourly rate', mult: 'MAX', rate: `${currencySymbol}${territoryRule.otRateCap.toFixed(2)}/hr`, highlight: true });
-    return rows;
-  }, [territoryRule, hourlyRate, currencySymbol]);
+  // Rate verification — separate rates mode: check the LOWEST rate (worst case)
+  const verifySeparateRate = useVerifyRate();
+  const lowestDailyRate = useMemo(() => {
+    if (!separateRates) return 0;
+    const rates = [prepRate, shootRate, wrapRate].filter(r => r > 0);
+    return rates.length > 0 ? Math.min(...rates) : 0;
+  }, [separateRates, prepRate, shootRate, wrapRate]);
 
-  // Auto-derive rates from primary rate
+  useEffect(() => {
+    if (separateRates && lowestDailyRate > 0 && territory && designationName) {
+      verifySeparateRate.mutate({
+        territoryCode: territory,
+        grade: designationName,
+        budgetTier: budgetTierName,
+        proposedWeeklyRate: lowestDailyRate * 5,
+      });
+    }
+  }, [lowestDailyRate, territory, designationName, budgetTierName, separateRates]);
+
+  // Auto-derive rates from primary rate (keep internal calc for payroll engine)
   useEffect(() => {
     if (!rateAmount || !rateBasis) return;
     const amount = Number(rateAmount);
     if (isNaN(amount) || amount <= 0) return;
 
-    // Use precise rounding to avoid floating point drift (e.g., 34999.98 instead of 35000)
     const r2 = (n) => Math.round(n * 100) / 100;
 
     if (rateBasis === "weekly") {
@@ -164,8 +165,21 @@ export default function Step3Rates({
     }
   }, [rateAmount, rateBasis, setValue]);
 
+  // Auto-set union-specific rate fields from derived rates
+  const hourlyRate = watch("hourlyRate");
+  useEffect(() => {
+    if (hourlyRate > 0) setValue("unionFields.overtimeRateHourly", hourlyRate, { shouldDirty: true });
+    if (hourlyRate > 0) setValue("unionFields.hourlyRate", hourlyRate, { shouldDirty: true });
+    if (dailyRate > 0) setValue("unionFields.dailyRate", dailyRate, { shouldDirty: true });
+    if (weeklyRate > 0) setValue("unionFields.weeklyRate", weeklyRate, { shouldDirty: true });
+  }, [hourlyRate, dailyRate, weeklyRate, setValue]);
+
+  // Get OT cap from territory rule (read-only, not editable)
+  const otRateCap = territoryRule?.otRateCap || null;
+
   return (
     <div className="space-y-6">
+      {/* Rate Configuration */}
       <Card>
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-lg">
@@ -173,104 +187,69 @@ export default function Step3Rates({
             Rate Configuration
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Controller
-            name="rateBasis"
-            control={control}
-            render={({ field }) => (
-              <div className="space-y-1.5">
-                <Label>Rate Basis</Label>
-                <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                  <SelectTrigger className={cn(errors.rateBasis && "border-destructive")}>
-                    {field.value ? (
-                      <span>{RATE_BASIS_OPTIONS.find(o => o.value === field.value)?.label || field.value}</span>
-                    ) : (
-                      <SelectValue placeholder="Select basis..." />
-                    )}
-                  </SelectTrigger>
-                  <SelectContent>
-                    {RATE_BASIS_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.rateBasis && (
-                  <p className="text-xs text-destructive">{errors.rateBasis.message}</p>
-                )}
-              </div>
-            )}
-          />
-
-          <Controller
-            name="rateAmount"
-            control={control}
-            render={({ field }) => (
-              <CurrencyInput
-                label="Rate Amount"
-                value={field.value}
-                onChange={field.onChange}
-                currencySymbol={currencySymbol}
-                error={errors.rateAmount?.message}
-              />
-            )}
-          />
-
-          <Controller
-            name="rateType"
-            control={control}
-            render={({ field }) => (
-              <div className="space-y-1.5">
-                <Label>Rate Type</Label>
-                <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                  <SelectTrigger>
-                    {field.value ? (
-                      <span>{RATE_TYPE_OPTIONS.find(o => o.value === field.value)?.label || field.value}</span>
-                    ) : (
-                      <SelectValue placeholder="Select type..." />
-                    )}
-                  </SelectTrigger>
-                  <SelectContent>
-                    {RATE_TYPE_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          />
-
-          {/* Holiday Pay mode - UK only */}
-          {territory === "UK" && (
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Controller
-              name="hpMode"
+              name="rateBasis"
               control={control}
               render={({ field }) => (
                 <div className="space-y-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <Label>Holiday Pay Mode</Label>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Info className="size-3.5 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs">
-                        Whether holiday pay is included in or excluded from the quoted rate
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
+                  <Label>Rate Basis</Label>
                   <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                    <SelectTrigger>
+                    <SelectTrigger className={cn(errors.rateBasis && "border-destructive")}>
                       {field.value ? (
-                        <span>{HP_MODE_OPTIONS.find(o => o.value === field.value)?.label || field.value}</span>
+                        <span>{RATE_BASIS_OPTIONS.find(o => o.value === field.value)?.label || field.value}</span>
                       ) : (
-                        <SelectValue placeholder="Select HP mode..." />
+                        <SelectValue placeholder="Select basis..." />
                       )}
                     </SelectTrigger>
                     <SelectContent>
-                      {HP_MODE_OPTIONS.map((opt) => (
+                      {RATE_BASIS_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.rateBasis && (
+                    <p className="text-xs text-destructive">{errors.rateBasis.message}</p>
+                  )}
+                </div>
+              )}
+            />
+
+            {!separateRates && (
+              <Controller
+                name="rateAmount"
+                control={control}
+                render={({ field }) => (
+                  <CurrencyInput
+                    label="Rate Amount"
+                    value={field.value}
+                    onChange={field.onChange}
+                    currencySymbol={currencySymbol}
+                    error={errors.rateAmount?.message}
+                  />
+                )}
+              />
+            )}
+
+            <Controller
+              name="rateType"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-1.5">
+                  <Label>Rate Type</Label>
+                  <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      {field.value ? (
+                        <span>{rateTypeOptions.find(o => o.value === field.value)?.label || field.value}</span>
+                      ) : (
+                        <SelectValue placeholder="Select type..." />
+                      )}
+                    </SelectTrigger>
+                    <SelectContent>
+                      {rateTypeOptions.map((opt) => (
                         <SelectItem key={opt.value} value={opt.value}>
                           {opt.label}
                         </SelectItem>
@@ -280,59 +259,100 @@ export default function Step3Rates({
                 </div>
               )}
             />
-          )}
-        </CardContent>
-      </Card>
 
-      {/* Derived rates */}
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Calculator className="size-5 text-primary" />
-            Derived Rates
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-3">
-          <Controller
-            name="weeklyRate"
-            control={control}
-            render={({ field }) => (
-              <CurrencyInput
-                label="Weekly Rate"
-                value={field.value}
-                onChange={field.onChange}
-                currencySymbol={currencySymbol}
-                error={errors.weeklyRate?.message}
-                disabled={rateBasis === "weekly"}
+            {/* Holiday Pay mode - UK only */}
+            {territory === "UK" && (
+              <Controller
+                name="hpMode"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Label>Holiday Pay Mode</Label>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="size-3.5 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          Whether holiday pay is included in or excluded from the quoted rate
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        {field.value ? (
+                          <span>{HP_MODE_OPTIONS.find(o => o.value === field.value)?.label || field.value}</span>
+                        ) : (
+                          <SelectValue placeholder="Select HP mode..." />
+                        )}
+                      </SelectTrigger>
+                      <SelectContent>
+                        {HP_MODE_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               />
             )}
-          />
-          <Controller
-            name="dailyRate"
-            control={control}
-            render={({ field }) => (
-              <CurrencyInput
-                label="Daily Rate"
-                value={field.value}
-                onChange={field.onChange}
-                currencySymbol={currencySymbol}
-                disabled={rateBasis === "daily"}
+          </div>
+
+          {/* Derived rates — compact read-only line (no hourly shown) */}
+          {rateAmount > 0 && rateBasis && !separateRates && (
+            <div className="flex items-center gap-4 pt-2 text-xs text-muted-foreground border-t">
+              {rateBasis !== "weekly" && weeklyRate > 0 && (
+                <span>Weekly: <strong className="text-foreground">{currencySymbol}{Number(weeklyRate).toLocaleString()}</strong></span>
+              )}
+              {rateBasis !== "daily" && dailyRate > 0 && (
+                <span>Daily: <strong className="text-foreground">{currencySymbol}{Number(dailyRate).toLocaleString()}</strong></span>
+              )}
+            </div>
+          )}
+
+          {/* Separate prep/shoot/wrap rates (from Step 2 toggle) */}
+          {separateRates && (
+            <div className="grid gap-4 sm:grid-cols-3 pt-2 border-t">
+              <Controller
+                name="prepRate"
+                control={control}
+                render={({ field }) => (
+                  <CurrencyInput
+                    label="Prep Rate"
+                    value={field.value}
+                    onChange={field.onChange}
+                    currencySymbol={currencySymbol}
+                  />
+                )}
               />
-            )}
-          />
-          <Controller
-            name="hourlyRate"
-            control={control}
-            render={({ field }) => (
-              <CurrencyInput
-                label="Hourly Rate"
-                value={field.value}
-                onChange={field.onChange}
-                currencySymbol={currencySymbol}
-                disabled={rateBasis === "hourly"}
+              <Controller
+                name="shootRate"
+                control={control}
+                render={({ field }) => (
+                  <CurrencyInput
+                    label="Shoot Rate"
+                    value={field.value}
+                    onChange={field.onChange}
+                    currencySymbol={currencySymbol}
+                  />
+                )}
               />
-            )}
-          />
+              <Controller
+                name="wrapRate"
+                control={control}
+                render={({ field }) => (
+                  <CurrencyInput
+                    label="Wrap Rate"
+                    value={field.value}
+                    onChange={field.onChange}
+                    currencySymbol={currencySymbol}
+                  />
+                )}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -358,168 +378,7 @@ export default function Step3Rates({
         </Card>
       )}
 
-      {/* Working Day & Hours */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Clock className="size-5 text-primary" />
-            Working Day Configuration
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-          <Controller
-            name="workingDayType"
-            control={control}
-            render={({ field }) => (
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1.5">
-                  <Label>Working Day Type</Label>
-                  <Tooltip>
-                    <TooltipTrigger><Info className="size-3.5 text-muted-foreground" /></TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs text-xs">
-                      <strong>SWD</strong>: Standard (11hrs + 1hr lunch deducted)<br/>
-                      <strong>CWD</strong>: Continuous (10hrs, no lunch deducted — clock keeps running)<br/>
-                      <strong>SCWD</strong>: Semi-Continuous (10.5hrs + 30min lunch deducted)
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                  <SelectTrigger>
-                    {field.value ? (
-                      <span className="truncate">{{ SWD: "SWD — Standard", CWD: "CWD — Continuous", SCWD: "SCWD — Semi-Cont." }[field.value] || field.value}</span>
-                    ) : (
-                      <SelectValue placeholder="Select type..." />
-                    )}
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="SWD">SWD — Standard (11+1)</SelectItem>
-                    <SelectItem value="CWD">CWD — Continuous (10)</SelectItem>
-                    <SelectItem value="SCWD">SCWD — Semi-Continuous (10.5+0.5)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          />
-
-          <Controller
-            name="standardWorkDayHrs"
-            control={control}
-            render={({ field }) => (
-              <div className="space-y-1.5">
-                <Label>Standard Day (hrs)</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={24}
-                  step={0.5}
-                  value={field.value ?? ""}
-                  onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
-                  className="tabular-nums"
-                />
-              </div>
-            )}
-          />
-
-          <Controller
-            name="lunchBreakHrs"
-            control={control}
-            render={({ field }) => (
-              <div className="space-y-1.5">
-                <Label>Lunch Break (hrs)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={2}
-                  step={0.5}
-                  value={field.value ?? ""}
-                  onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
-                  className="tabular-nums"
-                />
-              </div>
-            )}
-          />
-
-          <Controller
-            name="nightStartTime"
-            control={control}
-            render={({ field }) => (
-              <div className="space-y-1.5">
-                <Label>Night Premium From</Label>
-                <Input
-                  type="time"
-                  value={field.value ?? "23:00"}
-                  onChange={field.onChange}
-                />
-              </div>
-            )}
-          />
-        </CardContent>
-      </Card>
-
-      {/* OT Table — from territory rules */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Clock className="size-5 text-primary" />
-            Overtime & Day Premiums
-            {territoryRule && (
-              <Badge variant="outline" className="text-[10px] ml-2">{territoryRule.badge || territoryRule.unionKey}</Badge>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {otRows.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-xs text-muted-foreground">
-                    <th className="text-left py-2 px-2 font-medium w-16">Code</th>
-                    <th className="text-left py-2 px-2 font-medium">Description</th>
-                    <th className="text-left py-2 px-2 font-medium">Trigger</th>
-                    <th className="text-right py-2 px-2 font-medium w-16">Mult.</th>
-                    <th className="text-right py-2 px-2 font-medium">Rate</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {otRows.map((row) => (
-                    <tr key={row.code} className={cn(
-                      "border-b border-border/30",
-                      row.highlight && "bg-amber-500/5"
-                    )}>
-                      <td className="py-2 px-2">
-                        <Badge variant={row.highlight ? "default" : "secondary"} className="text-[10px]">{row.code}</Badge>
-                      </td>
-                      <td className="py-2 px-2 text-muted-foreground">{row.desc}</td>
-                      <td className="py-2 px-2 text-xs text-muted-foreground">{row.trigger}</td>
-                      <td className="py-2 px-2 text-right font-mono font-medium">{row.mult}</td>
-                      <td className="py-2 px-2 text-right font-mono tabular-nums">{row.rate}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {territoryRule?.mealPenaltyAmounts?.length > 0 && (
-                <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground border-t pt-2">
-                  <AlertTriangle className="size-3.5 text-amber-500" />
-                  <span>Meal penalty: {territoryRule.mealPenaltyAmounts.map(a => `${currencySymbol}${a}`).join(' → ')} per violation{territoryRule.mealPaidStatus === 'non-deductible' ? ' (non-deductible meals — clock keeps running)' : ''}</span>
-                </div>
-              )}
-              {territoryRule?.turnaroundMinHrs && (
-                <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                  <Shield className="size-3.5 text-blue-500" />
-                  <span>Turnaround: {territoryRule.turnaroundMinHrs}hrs minimum rest ({territoryRule.turnaroundDescription || 'wrap to call'})</span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="py-6 text-center text-sm text-muted-foreground">
-              <Clock className="size-8 mx-auto mb-2 opacity-40" />
-              {unionKey ? 'Loading territory rules...' : 'Select a union to see OT rules'}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Rate Comparison Bar — from Rates Bible */}
+      {/* Rate Compliance Check — from Rates Bible */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
@@ -527,75 +386,153 @@ export default function Step3Rates({
             Rate Compliance Check
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          {verifyRate.data ? (
+        <CardContent className="space-y-4">
+          {separateRates ? (
+            // Separate rate compliance — check the lowest rate
             <div className="space-y-3">
-              {verifyRate.data.isIndividuallyNegotiated ? (
-                <div className="flex items-center gap-2 rounded-lg bg-purple-500/10 px-4 py-3">
-                  <Badge className="bg-purple-500 text-white text-xs">Ind. Neg.</Badge>
-                  <span className="text-sm text-purple-300">Individually negotiated — no minimum rate applies for this role</span>
-                </div>
-              ) : verifyRate.data.minimum ? (
+              {lowestDailyRate > 0 ? (
                 <>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {verifyRate.data.isCompliant ? (
-                        <CheckCircle2 className="size-5 text-emerald-500" />
-                      ) : (
-                        <AlertTriangle className="size-5 text-red-500" />
-                      )}
-                      <span className={cn("text-sm font-medium", verifyRate.data.isCompliant ? "text-emerald-400" : "text-red-400")}>
-                        {verifyRate.data.isCompliant ? 'Rate meets union minimum' : 'Below union minimum'}
-                      </span>
-                    </div>
-                    {verifyRate.data.source && (
-                      <a href={verifyRate.data.pdfUrl || verifyRate.data.source} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary hover:underline">
-                        <ExternalLink className="size-3" />
-                        View source
-                      </a>
-                    )}
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground mb-2">
+                    <span>Rates entered:</span>
+                    {prepRate > 0 && <Badge variant="outline">Prep: {currencySymbol}{prepRate}/day</Badge>}
+                    {shootRate > 0 && <Badge variant="outline">Shoot: {currencySymbol}{shootRate}/day</Badge>}
+                    {wrapRate > 0 && <Badge variant="outline">Wrap: {currencySymbol}{wrapRate}/day</Badge>}
                   </div>
-                  {/* Progress bar */}
-                  <div>
-                    <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                      <span>Minimum: {currencySymbol}{verifyRate.data.minimum?.toLocaleString()}/wk</span>
-                      <span>Offered: {currencySymbol}{weeklyRate?.toLocaleString()}/wk</span>
-                    </div>
-                    <div className="h-2.5 rounded-full bg-muted overflow-hidden">
-                      <div
-                        className={cn("h-full rounded-full transition-all", verifyRate.data.isCompliant ? "bg-emerald-500" : "bg-red-500")}
-                        style={{ width: `${Math.min(100, ((weeklyRate || 0) / (verifyRate.data.minimum || 1)) * 100)}%` }}
-                      />
-                    </div>
-                    {verifyRate.data.percentAboveMinimum != null && verifyRate.data.isCompliant && (
-                      <p className="text-xs text-emerald-500 mt-1">+{verifyRate.data.percentAboveMinimum}% above minimum</p>
-                    )}
-                    {!verifyRate.data.isCompliant && verifyRate.data.difference != null && (
-                      <p className="text-xs text-red-500 mt-1">{currencySymbol}{Math.abs(verifyRate.data.difference).toLocaleString()} below minimum — requires justification</p>
-                    )}
+                  <div className="text-xs text-muted-foreground mb-1">
+                    Checking lowest rate ({currencySymbol}{lowestDailyRate}/day = {currencySymbol}{(lowestDailyRate * 5).toLocaleString()}/wk) against union minimum:
                   </div>
-                  {verifyRate.data.agreementName && (
-                    <p className="text-xs text-muted-foreground">Source: {verifyRate.data.agreementName}</p>
-                  )}
+                  <ComplianceSingle verifyRate={verifySeparateRate} weeklyRate={lowestDailyRate * 5} currencySymbol={currencySymbol} />
                 </>
-              ) : verifyRate.data.warning ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Info className="size-4" />
-                  <span>{verifyRate.data.warning}</span>
+              ) : (
+                <div className="py-4 text-center text-sm text-muted-foreground">
+                  Enter prep, shoot, or wrap rates to check compliance
                 </div>
-              ) : null}
-            </div>
-          ) : weeklyRate > 0 ? (
-            <div className="py-4 text-center text-sm text-muted-foreground">
-              Checking rate compliance...
+              )}
             </div>
           ) : (
-            <div className="py-4 text-center text-sm text-muted-foreground">
-              Enter a rate to check against union minimums
-            </div>
+            // Single rate compliance
+            <ComplianceSingle verifyRate={verifyRate} weeklyRate={weeklyRate} currencySymbol={currencySymbol} />
           )}
         </CardContent>
       </Card>
+
+      {/* Union-Specific Rates + OT Cap from territory rule */}
+      {(unionFields?.length > 0 || otRateCap) && (
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">Overtime & Union Rules</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            {unionFields?.map((field) => (
+              <UnionField
+                key={field.key}
+                field={field}
+                control={control}
+                errors={errors}
+                currencySymbol={currencySymbol}
+                watch={watch}
+              />
+            ))}
+            {otRateCap && (
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-1.5">
+                  Max OT Rate Cap
+                  <Tooltip>
+                    <TooltipTrigger><Info className="size-3.5 text-muted-foreground" /></TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs">
+                      Union-mandated cap on hourly OT rate. From {territoryRule?.badge || territoryRule?.unionKey || 'territory rule'}. OT hours above this cap are still paid, but capped at this rate.
+                    </TooltipContent>
+                  </Tooltip>
+                </Label>
+                <div className="flex items-center h-9 px-3 rounded-md border bg-muted/50 text-sm font-medium tabular-nums">
+                  {currencySymbol}{otRateCap.toFixed(2)}/hr
+                  <Badge variant="outline" className="ml-2 text-[10px]">From union agreement</Badge>
+                </div>
+                {hourlyRate > otRateCap && (
+                  <div className="flex items-center gap-2 rounded-md bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs">
+                    <AlertTriangle className="size-4 text-amber-500 shrink-0" />
+                    <span className="text-amber-600 dark:text-amber-400">
+                      Hourly rate ({currencySymbol}{Number(hourlyRate).toFixed(2)}) exceeds OT cap ({currencySymbol}{otRateCap.toFixed(2)}).
+                      OT will be calculated at the capped rate of {currencySymbol}{otRateCap.toFixed(2)}/hr.
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Compliance display for a single rate (used in non-separate mode)
+// ---------------------------------------------------------------------------
+function ComplianceSingle({ verifyRate, weeklyRate, currencySymbol }) {
+  const cs = currencySymbol;
+  if (verifyRate.data) {
+    return (
+      <div className="space-y-3">
+        {verifyRate.data.isIndividuallyNegotiated ? (
+          <div className="flex items-center gap-2 rounded-lg bg-purple-500/10 px-4 py-3">
+            <Badge className="bg-purple-500 text-white text-xs">Ind. Neg.</Badge>
+            <span className="text-sm text-purple-300">Individually negotiated — no minimum rate applies</span>
+          </div>
+        ) : verifyRate.data.minimum ? (
+          <>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {verifyRate.data.isCompliant ? (
+                  <CheckCircle2 className="size-5 text-emerald-500" />
+                ) : (
+                  <AlertTriangle className="size-5 text-red-500" />
+                )}
+                <span className={cn("text-sm font-medium", verifyRate.data.isCompliant ? "text-emerald-400" : "text-red-400")}>
+                  {verifyRate.data.isCompliant ? 'Rate meets union minimum' : 'Below union minimum'}
+                </span>
+              </div>
+              {verifyRate.data.source && (
+                <a href={verifyRate.data.pdfUrl || verifyRate.data.source} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary hover:underline">
+                  <ExternalLink className="size-3" />
+                  View source
+                </a>
+              )}
+            </div>
+            <div>
+              <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                <span>Minimum: {cs}{verifyRate.data.minimum?.toLocaleString()}/wk</span>
+                <span>Offered: {cs}{weeklyRate?.toLocaleString()}/wk</span>
+              </div>
+              <div className="h-2.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className={cn("h-full rounded-full transition-all", verifyRate.data.isCompliant ? "bg-emerald-500" : "bg-red-500")}
+                  style={{ width: `${Math.min(100, ((weeklyRate || 0) / (verifyRate.data.minimum || 1)) * 100)}%` }}
+                />
+              </div>
+              {verifyRate.data.percentAboveMinimum != null && verifyRate.data.isCompliant && (
+                <p className="text-xs text-emerald-500 mt-1">+{verifyRate.data.percentAboveMinimum}% above minimum</p>
+              )}
+              {!verifyRate.data.isCompliant && verifyRate.data.difference != null && (
+                <p className="text-xs text-red-500 mt-1">{cs}{Math.abs(verifyRate.data.difference).toLocaleString()} below minimum — requires justification</p>
+              )}
+            </div>
+            {verifyRate.data.agreementName && (
+              <p className="text-xs text-muted-foreground">Source: {verifyRate.data.agreementName}</p>
+            )}
+          </>
+        ) : verifyRate.data.warning ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Info className="size-4" />
+            <span>{verifyRate.data.warning}</span>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+  if (weeklyRate > 0) {
+    return <div className="py-4 text-center text-sm text-muted-foreground">Checking rate compliance...</div>;
+  }
+  return <div className="py-4 text-center text-sm text-muted-foreground">Enter a rate to check against union minimums</div>;
+}
+

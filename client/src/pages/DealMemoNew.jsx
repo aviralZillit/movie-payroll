@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import DealMemoWizard from "@/components/deal-memo/DealMemoWizard";
+import DealMemoWizard, { buildStepArrays } from "@/components/deal-memo/DealMemoWizard";
 import RateFieldWithInfo from "@/components/deal-memo/RateFieldWithInfo";
 import AIDealMemoChat from "@/components/deal-memo/AIDealMemoChat";
 // DealMemoSummaryPanel available for DealMemoDetail page later
@@ -58,6 +58,7 @@ import {
 
 import { useContractingEntities } from "@/hooks/useContractingEntities";
 import api from "@/lib/axios";
+import { getUnionConfig } from "@/lib/unionDealMemoConfig";
 import useAuthStore from "@/store/authStore";
 import { cn, formatCurrency, currencySymbol } from "@/lib/utils";
 import {
@@ -82,108 +83,71 @@ import {
 // ---------------------------------------------------------------------------
 // Schema
 // ---------------------------------------------------------------------------
+// Minimal schema — only Step 0 fields are strictly validated.
+// Everything else is optional and validated at submission time.
 const dealMemoSchema = z.object({
-  // Step 1
   productionId: z.string().min(1, "Select a production"),
   personId: z.string().min(1, "Select a person"),
-  startDate: z.string().min(1, "Start date is required"),
-  endDate: z.string().optional(),
-  // Step 2
   unionId: z.string().min(1, "Select a union"),
   departmentId: z.string().min(1, "Select a department"),
   designationId: z.string().min(1, "Select a designation"),
   budgetTierId: z.string().min(1, "Select a budget tier"),
-  // Step 3 - rates
-  hourlyRate: z.number().nullable().optional(),
-  dailyRate: z.number().nullable().optional(),
-  weeklyRate: z.number().min(0.01, "Weekly rate is required"),
-  guaranteedHours: z.number().min(0).optional(),
-  // US-specific rate fields
-  programFee: z.number().min(0).optional(),
-  overageRate: z.number().min(0).optional(),
-  prepDays: z.number().min(0).optional(),
-  shootDays: z.number().min(0).optional(),
-  studioOrLocation: z.enum(["studio", "location"]).optional(),
-  episodeLength: z.number().min(0).optional(),
-  // Step 4 - fringes (UK)
-  holidayPayPct: z.number().min(0).max(100),
-  employerNiPct: z.number().min(0).max(100),
-  pensionPct: z.number().min(0).max(100),
-  apprenticeLevyPct: z.number().min(0).max(100),
-  // Step 4 - fringes (US)
-  phPct: z.number().min(0).max(100).optional(),
-  vacationPct: z.number().min(0).max(100).optional(),
-  ficaPct: z.number().min(0).max(100).optional(),
-  stateTaxState: z.string().optional(),
-  // Step 5 - overtime & penalties
-  standardWorkDayHrs: z.number().min(1).max(24),
-  lunchBreakHrs: z.number().min(0).max(4),
-  sixthDayMultiplier: z.number().min(1),
-  seventhDayMultiplier: z.number().min(1),
-  nightPremiumPct: z.number().min(0).max(200),
-  mealPenaltyEnabled: z.boolean(),
-  mealPenaltyAmount: z.number().min(0).optional(),
-  mealPenaltyAfterHrs: z.number().min(0).optional(),
-  turnaroundMinHrs: z.number().min(0).max(24),
-  // Step 6 - allowances
-  kitAllowance: z.number().min(0),
-  travelAllowance: z.number().min(0),
-  perDiem: z.number().min(0),
-  phoneAllowance: z.number().min(0),
-  computerAllowance: z.number().min(0),
-  carAllowance: z.number().min(0),
-  // New allowance fields
-  productionFee: z.number().min(0),
-  productionFeeBasis: z.string().optional(),
-  idleDays: z.number().min(0),
-  idleDayRate: z.number().min(0),
-  housingAllowance: z.number().min(0),
-  customAllowances: z.array(z.object({
-    name: z.string().min(1),
-    amount: z.number().min(0),
-    period: z.string(),
-  })).optional(),
-});
+}).passthrough(); // Accept ALL other fields without validation
 
 const DEFAULT_VALUES = {
+  // Step 0 - Entity & Territory
   productionId: "",
   personId: "",
-  startDate: "",
-  endDate: "",
+  contractingEntityId: "",
   unionId: "",
   departmentId: "",
   designationId: "",
   budgetTierId: "",
-  hourlyRate: null,
-  dailyRate: null,
+  screenCredit: "",
+  // Step 1 - Crew Details
+  employmentStatus: "",
+  // Step 2 - Deal Structure
+  dealType: "weekly",
+  exclusivity: "",
+  startDate: "",
+  endDate: "",
+  separateRates: false,
+  prepRate: null,
+  shootRate: null,
+  wrapRate: null,
+  // Step 3 - Rates
+  rateBasis: "weekly",
+  rateAmount: null,
+  rateType: "",
+  hpMode: "excl",
   weeklyRate: 0,
-  guaranteedHours: 40,
-  // US-specific rate fields
-  programFee: 0,
-  overageRate: 0,
-  prepDays: 0,
-  shootDays: 0,
-  studioOrLocation: "studio",
-  episodeLength: 0,
-  // UK fringes
+  dailyRate: null,
+  hourlyRate: null,
+  // Step 4 - Allowances
+  allowances: [],
+  // Union-specific fields
+  unionFields: {},
+  // Step 6 - Right to Work
+  rightToWork: { status: "pending" },
+  // Step 7 - Documents
+  documents: [],
+  // Step 8 - Payroll
+  bureauId: "",
+  payFrequency: "weekly",
+  productionAccountant: "",
+  payrollAdmin: "",
+  hodApprover: "",
+  timecardApprover: "",
+  // v1 compat fields (kept for backward compat with existing deal memos)
   holidayPayPct: 12.07,
   employerNiPct: 13.8,
   pensionPct: 3,
   apprenticeLevyPct: 0.5,
-  // US fringes
-  phPct: 20,
-  vacationPct: 8.583,
-  ficaPct: 7.65,
-  stateTaxState: "",
-  // Overtime & penalties
   standardWorkDayHrs: 10,
   lunchBreakHrs: 1,
   sixthDayMultiplier: 1.5,
   seventhDayMultiplier: 2,
   nightPremiumPct: 25,
-  mealPenaltyEnabled: true,
-  mealPenaltyAmount: 35,
-  mealPenaltyAfterHrs: 6,
   turnaroundMinHrs: 11,
   kitAllowance: 0,
   travelAllowance: 0,
@@ -191,11 +155,6 @@ const DEFAULT_VALUES = {
   phoneAllowance: 0,
   computerAllowance: 0,
   carAllowance: 0,
-  // New allowance fields
-  productionFee: 0,
-  productionFeeBasis: "",
-  idleDays: 0,
-  idleDayRate: 0,
   housingAllowance: 0,
   customAllowances: [],
 };
@@ -214,17 +173,19 @@ const US_FRINGE_DEFAULTS = {
 };
 
 // Which schema fields belong to which step (for partial validation)
+// Per-step validation: only Step 0 (Entity) blocks navigation.
+// All other steps are optional during navigation — full validation happens at submission.
 const STEP_FIELDS_V2 = [
-  ["productionId", "personId", "unionId", "departmentId", "designationId", "budgetTierId"], // Step 0: Entity & Territory
-  [],                                                                                         // Step 1: Crew Details (optional at creation)
-  ["startDate"],                                                                               // Step 2: Deal Structure
-  ["weeklyRate"],                                                                              // Step 3: Rates
-  [],                                                                                         // Step 4: Allowances (optional)
-  [],                                                                                         // Step 5: Nominal Coding (auto-generated)
-  [],                                                                                         // Step 6: Compliance (display only)
-  [],                                                                                         // Step 7: Documents (optional)
-  [],                                                                                         // Step 8: Payroll Start (optional)
-  [],                                                                                         // Step 9: Preview & Issue
+  ["productionId", "personId", "unionId", "departmentId", "designationId", "budgetTierId"], // Step 0: must select production + classification
+  [],  // Step 1: Crew Details
+  [],  // Step 2: Deal Structure (startDate validated at submission)
+  [],  // Step 3: Rates (weeklyRate validated at submission)
+  [],  // Step 4: Allowances
+  [],  // Step 5: Nominal Coding
+  [],  // Step 6: Right to Work
+  [],  // Step 7: Documents
+  [],  // Step 8: Payroll Start
+  [],  // Step 9: Preview & Issue
 ];
 
 // Legacy v1 step fields (kept for backward compat if needed)
@@ -342,6 +303,12 @@ export default function DealMemoNew() {
   const { id: editId } = useParams(); // If present, we're editing an existing deal memo
   const isEditMode = !!editId;
   const user = useAuthStore((s) => s.user);
+  const userRole = user?.role || 'super_admin';
+
+  // Build step mapping: visible step index → original step index (0-9)
+  // Non-accounting roles skip Payroll Start (original index 8)
+  const { stepMap, labels: stepLabelsForRole } = useMemo(() => buildStepArrays(userRole), [userRole]);
+  const totalSteps = stepLabelsForRole.length;
 
   // Redirect crew members and department heads away from this page
   useEffect(() => {
@@ -367,6 +334,19 @@ export default function DealMemoNew() {
   const [direction, setDirection] = useState(1);
   const [rateSource, setRateSource] = useState(null);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  const [unionConfig, setUnionConfig] = useState(() => {
+    // Try to restore union config from saved labels on mount (for draft resume)
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY + "-labels");
+      if (saved) {
+        const labels = JSON.parse(saved);
+        if (labels.unionCode) {
+          return getUnionConfig(labels.unionCode, null) || null;
+        }
+      }
+    } catch {}
+    return null;
+  });
   const [draftSaved, setDraftSaved] = useState(false);
   const autoSaveTimerRef = useRef(null);
 
@@ -380,6 +360,7 @@ export default function DealMemoNew() {
 
   // Nominal lines (auto-generated from deal structure)
   const [nominalLines, setNominalLines] = useState([]);
+  const [codeMap, setCodeMap] = useState(null); // DesignationCodeMap for current designation
 
   const { data: productions, isLoading: prodsLoading } = useProductions();
   const rateLookup = useRateLookup();
@@ -404,7 +385,7 @@ export default function DealMemoNew() {
     reset,
     formState: { errors, isDirty },
   } = useForm({
-    resolver: zodResolver(dealMemoSchema),
+    // resolver: zodResolver(dealMemoSchema), // Disabled — validation done manually in goNext
     defaultValues: savedDraft || DEFAULT_VALUES,
     mode: "onTouched",
   });
@@ -415,6 +396,8 @@ export default function DealMemoNew() {
   const watchedBudgetTierId = watch("budgetTierId");
   const watchedProductionId = watch("productionId");
   const watchedPersonId = watch("personId");
+
+  // Union config is loaded dynamically below (after productionCountry is derived)
 
   // Auto-fill crew fields from user's previous deal memo when person is selected
   useEffect(() => {
@@ -455,36 +438,132 @@ export default function DealMemoNew() {
   const { data: budgetTiers, isLoading: tiersLoading } = useBudgetTiers(watchedUnionId, productionCountry);
   const { data: entities, isLoading: entitiesLoading } = useContractingEntities(watchedProductionId);
 
+  // Dynamically load union config when union selection changes (so step0 fields appear immediately)
+  useEffect(() => {
+    if (!watchedUnionId || !unions?.length) return;
+    const unionObj = unions.find((u) => u._id === watchedUnionId);
+    if (!unionObj) return;
+    const uConfig = getUnionConfig(unionObj.code, productionCountry);
+    setUnionConfig(uConfig);
+    // Apply union defaults immediately so fields pre-fill
+    if (uConfig?.defaults) {
+      Object.entries(uConfig.defaults).forEach(([k, v]) => {
+        const current = getValues(`unionFields.${k}`);
+        if (current === undefined || current === null || current === '' || current === 0) {
+          setValue(`unionFields.${k}`, v, { shouldDirty: false });
+        }
+      });
+    }
+  }, [watchedUnionId, unions, productionCountry]);
+
   // Generate nominal lines from current form values
-  const generateNominalLines = useCallback(() => {
+  const generateNominalLines = useCallback(async () => {
     const vals = getValues();
     const territory = selectedProduction?.country || 'UK';
     const lines = [];
     const cs = cSymbol;
     const nicLabel = territory === 'US' ? 'FICA / Employer Tax' : territory === 'AU' ? 'Superannuation' : 'Employer NIC';
-    const weekly = Number(vals.weeklyRate) || Number(vals.dailyRate) * 5 || Number(vals.hourlyRate) * 50 || 0;
+    const weekly = Number(vals.weeklyRate) || Number(vals.rateAmount) || Number(vals.dailyRate) * 5 || 0;
     const hpWeekly = (vals.hpMode === 'excl' && territory !== 'US') ? weekly * 0.1207 : 0;
     const nicPct = territory === 'US' ? 0.0765 : territory === 'AU' ? 0.115 : 0.138;
-    const penPct = territory === 'US' ? (Number(vals.phPct) || 20) / 100 : territory === 'AU' ? 0 : 0.03;
+    const penPct = territory === 'US' ? 0.20 : territory === 'AU' ? 0 : 0.03;
 
-    lines.push({ code: '2302', label: 'Basic Labour + HP', description: 'Contracted rate', costCentre: 'DEPT', isCore: true, taxCredit: true, estimatedWeekly: weekly + hpWeekly });
-    lines.push({ code: '2360', label: 'Overtime / Penalties', description: 'OT, meal penalties, turnaround', costCentre: 'DEPT', isCore: true, taxCredit: true, estimatedWeekly: null });
-    lines.push({ code: '2399', label: nicLabel, description: 'Employer social contributions', costCentre: 'DEPT', isCore: true, taxCredit: true, estimatedWeekly: weekly * nicPct });
-    if (vals.kitAllowance > 0) lines.push({ code: '2350', label: 'Box/Kit Allowance', description: `${cs}${vals.kitAllowance}/${vals.kitAllowancePeriod || 'weekly'}`, costCentre: 'DEPT', taxCredit: false, estimatedWeekly: Number(vals.kitAllowance) });
-    if (vals.carAllowance > 0) lines.push({ code: '2340', label: 'Car Allowance', description: `${cs}${vals.carAllowance}`, costCentre: 'DEPT', taxCredit: false, estimatedWeekly: Number(vals.carAllowance) });
-    if (vals.phoneAllowance > 0) lines.push({ code: '2340', label: 'Phone Allowance', description: `${cs}${vals.phoneAllowance}`, costCentre: 'DEPT', taxCredit: false, estimatedWeekly: Number(vals.phoneAllowance) });
-    if (vals.computerAllowance > 0) lines.push({ code: '2340', label: 'Computer Allowance', description: `${cs}${vals.computerAllowance}`, costCentre: 'DEPT', taxCredit: false, estimatedWeekly: Number(vals.computerAllowance) });
-    if (vals.travelAllowance > 0) lines.push({ code: '2340', label: 'Travel Allowance', description: `${cs}${vals.travelAllowance}`, costCentre: 'DEPT', taxCredit: false, estimatedWeekly: Number(vals.travelAllowance) });
-    if (vals.perDiem > 0) lines.push({ code: '2340', label: 'Per Diem', description: `${cs}${vals.perDiem}/day`, costCentre: 'DEPT', taxCredit: false, estimatedWeekly: Number(vals.perDiem) * 5 });
-    if (vals.housingAllowance > 0) lines.push({ code: '2340', label: 'Housing Allowance', description: `${cs}${vals.housingAllowance}`, costCentre: 'DEPT', taxCredit: false, estimatedWeekly: Number(vals.housingAllowance) });
-    (vals.customAllowances || []).forEach((ca) => {
-      if (ca.amount > 0) lines.push({ code: '2340', label: ca.name, description: `${cs}${ca.amount}/${ca.period || 'weekly'}`, costCentre: 'DEPT', taxCredit: false, estimatedWeekly: Number(ca.amount) });
-    });
-    if (territory === 'US' || territory === 'CA') {
-      lines.push({ code: '2397', label: 'Pension / Retirement', description: 'Union pension contribution', costCentre: 'DEPT', isCore: false, taxCredit: true, estimatedWeekly: weekly * penPct });
+    // Fetch designation → budget code mapping from API
+    let cm = codeMap;
+    if (!cm) {
+      try {
+        const desigName = classificationLabels?.designation || '';
+        const deptName = classificationLabels?.department || '';
+        if (desigName) {
+          const { data } = await api.get(`/nominal-codes/map?designation=${encodeURIComponent(desigName)}&department=${encodeURIComponent(deptName)}`);
+          cm = data.data || data;
+          setCodeMap(cm);
+        }
+      } catch (e) {
+        // Fallback to generic codes if API fails
+        console.warn('Failed to fetch code mapping, using defaults:', e.message);
+      }
     }
+
+    // Use mapped codes or fallback to generic
+    const labourCode = cm?.labourCode || '2302';
+    const otCode = cm?.overtimeCode || '4401';
+    const allowCode = cm?.allowanceCode || '2580';
+    const fringeCode = cm?.fringeCode || '2099';
+    const pensionCode = cm?.pensionCode || '2097';
+    const hpCode = cm?.holidayPayCode || '2096';
+    const deptLabel = classificationLabels?.department || 'DEPT';
+
+    // Core lines with real budget codes
+    if (hpWeekly > 0) {
+      lines.push({ code: labourCode, label: `Basic Labour`, description: `Contracted rate — ${deptLabel}`, isCore: true, estimatedWeekly: weekly });
+      lines.push({ code: hpCode, label: `Holiday Pay`, description: `12.07% on basic — ${deptLabel}`, isCore: true, estimatedWeekly: Math.round(hpWeekly * 100) / 100 });
+    } else {
+      lines.push({ code: labourCode, label: `Basic Labour`, description: `Contracted rate — ${deptLabel}`, isCore: true, estimatedWeekly: weekly });
+    }
+    lines.push({ code: otCode, label: 'Overtime', description: 'OT hours (from timecards)', isCore: true, estimatedWeekly: null });
+    lines.push({ code: otCode, label: 'Meal Penalties', description: 'Late meal break violations', isCore: true, estimatedWeekly: null });
+    lines.push({ code: otCode, label: '6th/7th Day Premiums', description: 'Consecutive day premiums', isCore: true, estimatedWeekly: null });
+    lines.push({ code: fringeCode, label: nicLabel, description: `Employer social contributions — ${deptLabel}`, isCore: true, estimatedWeekly: Math.round(weekly * nicPct * 100) / 100 });
+
+    // Pension
+    if (penPct > 0) {
+      lines.push({ code: pensionCode, label: 'Pension', description: `Employer pension contribution — ${deptLabel}`, isCore: true, estimatedWeekly: Math.round(weekly * penPct * 100) / 100 });
+    }
+
+    // v2 allowances array (from Step 4 Allowances)
+    const v2Allowances = vals.allowances || [];
+    v2Allowances.forEach((a) => {
+      const amt = Number(a?.amount) || 0;
+      if (amt <= 0) return;
+      const freq = a.frequency || 'weekly';
+      let weeklyEst = amt;
+      if (freq === 'daily') weeklyEst = amt * 5;
+      else if (freq === 'monthly') weeklyEst = amt / 4.33;
+      else if (freq === 'one_time') weeklyEst = 0;
+      lines.push({
+        code: allowCode,
+        label: a.name || 'Allowance',
+        description: `${cs}${amt}/${freq}`,
+        estimatedWeekly: Math.round(weeklyEst * 100) / 100,
+      });
+    });
+
+    // Union-specific allowances (from unionFields — box rental, kit, phone, car, etc.)
+    const uf = vals.unionFields || {};
+    const unionAllowanceFields = [
+      { key: 'boxRentalWeekly', label: 'Box Rental' },
+      { key: 'kitAllowanceWeekly', label: 'Kit Allowance' },
+      { key: 'computerRentalWeekly', label: 'Computer Rental' },
+      { key: 'phoneAllowanceWeekly', label: 'Phone Allowance' },
+      { key: 'carAllowanceWeekly', label: 'Car Allowance' },
+      { key: 'travelAllowanceDaily', label: 'Travel Allowance' },
+      { key: 'perDiem', label: 'Per Diem' },
+      { key: 'overnightAllowance', label: 'Overnight Allowance' },
+      { key: 'costumeAllowance', label: 'Costume Allowance' },
+      { key: 'wigAllowance', label: 'Wig Allowance' },
+      { key: 'porterageFee', label: 'Porterage Fee' },
+      { key: 'mileageRate', label: 'Mileage' },
+      { key: 'housingAllowanceWeekly', label: 'Housing Allowance' },
+      { key: 'cellPhoneAllowance', label: 'Cell Phone Allowance' },
+    ];
+    unionAllowanceFields.forEach(({ key, label }) => {
+      const amt = Number(uf[key]) || 0;
+      if (amt > 0) {
+        const isDaily = key.includes('Daily') || key === 'perDiem' || key === 'mileageRate';
+        const weeklyEst = isDaily ? amt * 5 : amt;
+        lines.push({
+          code: allowCode,
+          label,
+          description: `${cs}${amt}/${isDaily ? 'daily' : 'weekly'}`,
+          estimatedWeekly: Math.round(weeklyEst * 100) / 100,
+        });
+      }
+    });
+
     setNominalLines(lines);
-  }, [getValues, selectedProduction, cSymbol]);
+    setValue('nominalLines', lines, { shouldDirty: true });
+  }, [getValues, selectedProduction, cSymbol, setValue, codeMap, classificationLabels]);
 
   // ---- Draft save/load ----
   const saveDraft = useCallback(() => {
@@ -509,7 +588,6 @@ export default function DealMemoNew() {
   // Save draft to server (creates deal memo with status: 'draft')
   const saveDraftToServer = useCallback(() => {
     const data = getValues();
-    // Build minimal payload — only send fields that have values
     const payload = {
       productionId: data.productionId,
       personId: data.personId,
@@ -518,14 +596,36 @@ export default function DealMemoNew() {
       departmentId: data.departmentId,
       designationId: data.designationId,
       budgetTierId: data.budgetTierId,
-      weeklyRate: Number(data.weeklyRate) || 0,
+      contractingEntityId: data.contractingEntityId || undefined,
+      weeklyRate: Number(data.weeklyRate) || Number(data.rateAmount) || 0,
       dailyRate: Number(data.dailyRate) || 0,
       hourlyRate: Number(data.hourlyRate) || 0,
-      guaranteedHours: Number(data.guaranteedHours) || 50,
+      // v2 fields
+      screenCredit: data.screenCredit || undefined,
+      employmentStatus: data.employmentStatus || undefined,
+      dealType: data.dealType || 'weekly',
+      exclusivity: data.exclusivity || undefined,
+      rateBasis: data.rateBasis || undefined,
+      rateType: data.rateType || undefined,
+      rateAmount: Number(data.rateAmount) || undefined,
+      hpMode: data.hpMode || 'excl',
+      separateRates: data.separateRates || false,
+      prepRate: data.prepRate || undefined,
+      shootRate: data.shootRate || undefined,
+      wrapRate: data.wrapRate || undefined,
+      allowances: data.allowances?.length ? data.allowances : undefined,
+      rightToWork: data.rightToWork || undefined,
+      nominalLines: nominalLines.length > 0 ? nominalLines : undefined,
+      payrollBureau: data.bureauId || undefined,
+      payFrequency: data.payFrequency || 'weekly',
+      signingDocuments: data.documents?.filter(d => d.filename) || undefined,
+      // Union-specific fields
+      unionSpecificFields: data.unionFields || {},
       // Keep as draft
       status: 'draft',
       schemaVersion: 2,
       territory: productionCountry,
+      unionKey: (unions ?? []).find(u => u._id === data.unionId)?.code || undefined,
     };
 
     // Only send if minimum required fields are present
@@ -601,6 +701,16 @@ export default function DealMemoNew() {
       designation: dm.designationId?.name || "",
       budgetTier: dm.budgetTierId?.name || "",
     });
+    // Restore union config and union-specific field values for edit mode
+    const editUnionCode = dm.unionId?.code || dm.unionKey || "";
+    const editTerritory = dm.territory || productionCountry;
+    const editUConfig = getUnionConfig(editUnionCode, editTerritory);
+    setUnionConfig(editUConfig);
+    if (dm.unionSpecificFields) {
+      Object.entries(dm.unionSpecificFields).forEach(([k, v]) => {
+        setValue(`unionFields.${k}`, v, { shouldDirty: false });
+      });
+    }
     setHasDraft(false); // Don't show "Resuming from draft" banner in edit mode
   }, [isEditMode, existingDealMemo, reset]);
 
@@ -665,95 +775,111 @@ export default function DealMemoNew() {
   }, [watchedProductionId, productionCountry, setValue]);
 
   // ---- Step navigation ----
-  const goNext = useCallback(async () => {
+  // No useCallback — goNext uses too many dependencies that change frequently.
+  // Fresh closure every render avoids stale state bugs.
+  const goNext = async () => {
     const fieldsToValidate = STEP_FIELDS_V2[currentStep] || [];
     if (fieldsToValidate.length > 0) {
       const valid = await trigger(fieldsToValidate);
-      if (!valid) return;
+      if (!valid) {
+        // Fallback: check if values actually exist (trigger may fail due to stale form state)
+        const vals = getValues();
+        const allFilled = fieldsToValidate.every(f => vals[f] !== undefined && vals[f] !== '' && vals[f] !== null);
+        if (!allFilled) return; // truly invalid
+        // Values exist but trigger failed (stale state) — allow advancement
+      }
     }
 
-    // Advance step FIRST, then fire background lookups
-    setDirection(1);
-    setCurrentStep((s) => Math.min(s + 1, 9));
-
-    // Auto-generate nominal lines when entering step 5 (Nominal Coding)
-    if (currentStep === 4 && nominalLines.length === 0) {
-      generateNominalLines();
-    }
-
-    // After step 2 (classification), auto-lookup rates in the background
-    if (currentStep === 1) {
+    // Before advancing from Step 0: set labels + fetch rates synchronously
+    const currentOriginalStep = stepMap[currentStep];
+    if (currentOriginalStep === 0) {
       const vals = getValues();
 
-      // Store display labels for review
+      // Set classification labels FIRST (needed for compliance check + nominal codes)
       const unionObj = (unions ?? []).find((u) => u._id === vals.unionId);
       const unionName = unionObj?.name ?? "";
       const unionCode = unionObj?.code ?? "";
       const deptName = (departments ?? []).find((d) => d._id === vals.departmentId)?.name ?? "";
       const desigName = (designations ?? []).find((d) => d._id === vals.designationId)?.name ?? "";
       const tierName = (budgetTiers ?? []).find((t) => t._id === vals.budgetTierId)?.name ?? "";
-      setClassificationLabels({
-        union: unionName,
-        unionCode,
-        department: deptName,
-        designation: desigName,
-        budgetTier: tierName,
-      });
+      setClassificationLabels({ union: unionName, unionCode, department: deptName, designation: desigName, budgetTier: tierName });
+      setCodeMap(null);
 
-      rateLookup.mutate(
-        {
+      // Load union config
+      const uConfig = getUnionConfig(unionCode, productionCountry);
+      setUnionConfig(uConfig);
+      if (uConfig?.defaults) {
+        Object.entries(uConfig.defaults).forEach(([k, v]) => {
+          setValue(`unionFields.${k}`, v, { shouldDirty: false });
+        });
+      }
+
+      // Fetch rates synchronously
+      try {
+        const { data: lookupResp } = await api.post('/rate-cards/lookup', {
           unionId: vals.unionId,
           departmentId: vals.departmentId,
           designationId: vals.designationId,
           budgetTierId: vals.budgetTierId,
-        },
-        {
-          onSuccess: (result) => {
-            const data = result?.primary || result;
-            if (data?.weeklyRate > 0) {
-              setValue("weeklyRate", data.weeklyRate, { shouldDirty: true });
-              setValue("rateBasis", "weekly", { shouldDirty: true });
-              setValue("rateAmount", data.weeklyRate, { shouldDirty: true });
-            }
-            if (data?.dailyRate > 0) setValue("dailyRate", data.dailyRate, { shouldDirty: true });
-            if (data?.hourlyRate > 0) setValue("hourlyRate", data.hourlyRate, { shouldDirty: true });
-            if (data?.guaranteedHoursPerWeek > 0) setValue("guaranteedHours", data.guaranteedHoursPerWeek, { shouldDirty: true });
-            setRateSource(data?.sourceUrl ? { url: data.sourceUrl, label: data.sourceDocument } : null);
-            if (data?.guaranteedHoursPerDay > 0) setValue("standardWorkDayHrs", data.guaranteedHoursPerDay, { shouldDirty: true });
-          },
-          onError: (err) => {
-            if (err?.response?.status === 404) {
-              toast.info("No exact rate card found. Using closest available rate as starting point.");
-            }
-          },
+        });
+        const rateData = lookupResp?.data || lookupResp?.primary || lookupResp;
+        if (rateData?.weeklyRate > 0) {
+          setValue("weeklyRate", rateData.weeklyRate, { shouldDirty: true });
+          setValue("rateBasis", "weekly", { shouldDirty: true });
+          setValue("rateAmount", rateData.weeklyRate, { shouldDirty: true });
+          if (rateData.dailyRate > 0) setValue("dailyRate", rateData.dailyRate, { shouldDirty: true });
+          if (rateData.hourlyRate > 0) setValue("hourlyRate", rateData.hourlyRate, { shouldDirty: true });
+          // Also set union-specific rate fields (they use unionFields. prefix)
+          setValue("unionFields.weeklyRate", rateData.weeklyRate, { shouldDirty: true });
+          if (rateData.dailyRate > 0) setValue("unionFields.dailyRate", rateData.dailyRate, { shouldDirty: true });
+          if (rateData.hourlyRate > 0) {
+            setValue("unionFields.hourlyRate", rateData.hourlyRate, { shouldDirty: true });
+            setValue("unionFields.overtimeRateHourly", rateData.hourlyRate, { shouldDirty: true });
+          }
+          setRateSource(rateData.sourceUrl ? { url: rateData.sourceUrl, label: rateData.sourceDocument } : null);
         }
-      );
+      } catch { /* rate lookup failed, user enters manually */ }
+    }
 
-      // Also fetch territory rule defaults for fringes/OT
-      if (unionCode) {
-        api.get(`/territories/${productionCountry}/rules/${unionCode}`).then(({ data: ruleResp }) => {
-          const rule = ruleResp?.data;
-          if (!rule) return;
-          if (rule.turnaroundMinHrs) setValue("turnaroundMinHrs", rule.turnaroundMinHrs, { shouldDirty: true });
-          if (rule.mealPenaltyAmounts?.[0]) setValue("mealPenaltyAmount", rule.mealPenaltyAmounts[0], { shouldDirty: true });
-          if (rule.mealIntervalHrs) setValue("mealPenaltyAfterHrs", rule.mealIntervalHrs, { shouldDirty: true });
-          if (rule.sixthDayMultiplier) setValue("sixthDayMultiplier", rule.sixthDayMultiplier, { shouldDirty: true });
-          if (rule.seventhDayMultiplier) setValue("seventhDayMultiplier", rule.seventhDayMultiplier, { shouldDirty: true });
-          if (rule.rfPensionPct != null) {
-            if (productionCountry === 'US') setValue("phPct", (rule.rfPensionPct * 100) || 20, { shouldDirty: true });
-            else setValue("pensionPct", (rule.rfPensionPct * 100) || 3, { shouldDirty: true });
+    // Advance step
+    setDirection(1);
+    setCurrentStep((s) => Math.min(s + 1, totalSteps - 1));
+
+    // Auto-generate nominal lines when entering Nominal Coding step
+    const nextOriginalStep = stepMap[currentStep + 1];
+    if (nextOriginalStep === 5) {
+      // Entering Nominal Coding — always regenerate to pick up allowance changes
+      generateNominalLines();
+    }
+
+    // After Step 0: if rate wasn't set, try union minimum fallback
+    if (currentOriginalStep === 0) {
+      const currentWeekly = getValues("weeklyRate");
+      if (!currentWeekly || currentWeekly <= 0) {
+        try {
+          const desigName = classificationLabels?.designation || (designations ?? []).find(d => d._id === getValues("designationId"))?.name || '';
+          const tierName = classificationLabels?.budgetTier || '';
+          const { data: verifyResp } = await api.post('/rates-bible/verify', {
+            territoryCode: productionCountry,
+            grade: desigName,
+            budgetTier: tierName,
+            proposedWeeklyRate: 999999,
+          });
+          const vd = verifyResp.data || verifyResp;
+          if (vd?.minimum > 0) {
+            setValue("weeklyRate", vd.minimum, { shouldDirty: true });
+            setValue("rateBasis", "weekly", { shouldDirty: true });
+            setValue("rateAmount", vd.minimum, { shouldDirty: true });
+            setValue("dailyRate", Math.round(vd.minimum / 5 * 100) / 100, { shouldDirty: true });
+            setValue("unionFields.weeklyRate", vd.minimum, { shouldDirty: true });
+            toast.info(`Set to union minimum: £${vd.minimum.toLocaleString()}/wk (${vd.agreementName})`);
+          } else if (vd?.isIndividuallyNegotiated) {
+            toast.info("Rate is individually negotiated — please enter the agreed rate manually", { duration: 4000 });
           }
-          if (rule.rfHolidayPayPct != null && productionCountry !== 'US') {
-            setValue("holidayPayPct", (rule.rfHolidayPayPct * 100) || 12.07, { shouldDirty: true });
-          }
-          if (rule.rfNicPct != null) {
-            if (productionCountry === 'US') setValue("ficaPct", (rule.rfNicPct * 100) || 7.65, { shouldDirty: true });
-            else setValue("employerNiPct", (rule.rfNicPct * 100) || 13.8, { shouldDirty: true });
-          }
-        }).catch(() => {});
+        } catch { /* ignore */ }
       }
     }
-  }, [currentStep, trigger, getValues, setValue, unions, departments, designations, budgetTiers, productionCountry, nominalLines, generateNominalLines]);
+  };
 
   const goBack = useCallback(() => {
     setDirection(-1);
@@ -761,8 +887,14 @@ export default function DealMemoNew() {
   }, []);
 
   // ---- Submit ----
+  const issueModeRef = useRef(false);
+
+  const onIssue = () => {
+    issueModeRef.current = true;
+    onSubmit();
+  };
+
   const onSubmit = handleSubmit((data) => {
-    // Map form data to what POST /api/deal-memos expects
     const payload = {
       productionId: data.productionId,
       personId: data.personId,
@@ -831,9 +963,13 @@ export default function DealMemoNew() {
       // Deal structure
       dealType: data.dealType || 'weekly',
       exclusivity: data.exclusivity || undefined,
-      payOrPlay: data.payOrPlay || false,
-      wrapDays: data.wrapDays || 0,
-      travelDays: data.travelDays || 0,
+      // Separate rates
+      separateRates: data.separateRates || false,
+      prepRate: data.prepRate || undefined,
+      shootRate: data.shootRate || undefined,
+      wrapRate: data.wrapRate || undefined,
+      // Right to Work
+      rightToWork: data.rightToWork || undefined,
       // Rates v2
       rateBasis: data.rateBasis || undefined,
       rateType: data.rateType || undefined,
@@ -844,11 +980,22 @@ export default function DealMemoNew() {
       // Payroll start
       payrollBureau: data.bureauId || undefined,
       payFrequency: data.payFrequency || 'weekly',
+      // Responsibility assignments
+      productionAccountant: data.productionAccountant || undefined,
+      payrollAdmin: data.payrollAdmin || undefined,
+      hodApprover: data.hodApprover || undefined,
+      timecardApprover: data.timecardApprover || undefined,
       // Documents
       signingDocuments: data.documents?.filter(d => d.filename) || undefined,
       // Compliance checklist (auto-generated from territory)
       complianceChecklist: buildComplianceChecklist(productionCountry),
+      // Union-specific fields (flexible JSON object)
+      unionSpecificFields: data.unionFields || {},
+      // Status: "issued" when admin clicks Issue, "draft" otherwise
+      status: issueModeRef.current ? 'issued' : 'draft',
     };
+
+    issueModeRef.current = false;
 
     if (isEditMode) {
       // Update existing deal memo
@@ -865,7 +1012,12 @@ export default function DealMemoNew() {
       createDealMemo.mutate(payload, {
         onSuccess: (result) => {
           clearDraft();
-          toast.success("Deal memo created successfully", { duration: 3000 });
+          toast.success(
+            payload.status === 'issued'
+              ? "Deal memo issued to crew member"
+              : "Deal memo saved as draft",
+            { duration: 3000 }
+          );
           navigate(`/deal-memos/${result._id || result.id}`);
         },
         onError: (err) => {
@@ -947,11 +1099,13 @@ export default function DealMemoNew() {
     [setValue, setClassificationLabels, setDirection, setCurrentStep]
   );
 
-  // ---- Render steps (v2: 10 steps) ----
+  // ---- Render steps (v2: 10 steps, mapped by role) ----
   const commonProps = { control, errors, setValue, watch, country: productionCountry, cSymbol, currencySymbol: cSymbol };
 
+  // Map visible step index → original step index using stepMap
   const renderStep = () => {
-    switch (currentStep) {
+    const originalStep = stepMap[currentStep] ?? currentStep;
+    switch (originalStep) {
       case 0:
         return (
           <Step0EntityTerritory
@@ -970,12 +1124,13 @@ export default function DealMemoNew() {
             budgetTiers={budgetTiers}
             budgetTiersLoading={tiersLoading}
             territory={productionCountry}
+            unionFields={unionConfig?.steps?.step0}
           />
         );
       case 1:
-        return <Step1CrewDetails {...commonProps} territory={productionCountry} />;
+        return <Step1CrewDetails {...commonProps} territory={productionCountry} unionFields={unionConfig?.steps?.step1} />;
       case 2:
-        return <Step2DealStructure {...commonProps} />;
+        return <Step2DealStructure {...commonProps} currencySymbol={cSymbol} unionFields={unionConfig?.steps?.step2} />;
       case 3:
         return (
           <Step3Rates
@@ -986,12 +1141,13 @@ export default function DealMemoNew() {
             designationName={classificationLabels?.designation}
             budgetTierName={classificationLabels?.budgetTier}
             rateSource={rateSource}
+            unionFields={unionConfig?.steps?.step3}
           />
         );
       case 4:
-        return <Step4Allowances {...commonProps} />;
+        return <Step4Allowances {...commonProps} unionFields={unionConfig?.steps?.step4} allowanceSuggestions={unionConfig?.steps?.allowanceSuggestions} />;
       case 5:
-        return <Step5NominalCoding {...commonProps} territory={productionCountry} nominalLines={nominalLines} onRegenerate={generateNominalLines} />;
+        return <Step5NominalCoding {...commonProps} territory={productionCountry} nominalLines={nominalLines} setValue={setValue} designationName={classificationLabels?.designation} departmentName={classificationLabels?.department} />;
       case 6:
         return <Step6Compliance {...commonProps} territory={productionCountry} unionKey={watch("unionKey")} />;
       case 7:
@@ -1005,8 +1161,9 @@ export default function DealMemoNew() {
             labels={classificationLabels}
             currencySymbol={cSymbol}
             onSaveDraft={saveDraftToServer}
-            onIssue={onSubmit}
+            onIssue={onIssue}
             isSubmitting={createDealMemo.isPending}
+            userRole={user?.role}
           />
         );
       default:
@@ -1075,6 +1232,7 @@ export default function DealMemoNew() {
             onSaveDraft={saveDraft}
             draftSaved={draftSaved}
             isSubmitting={createDealMemo.isPending}
+            userRole={user?.role || 'super_admin'}
           >
             {renderStep()}
           </DealMemoWizard>

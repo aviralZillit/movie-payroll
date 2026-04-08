@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, parseISO } from "date-fns";
@@ -16,6 +16,9 @@ import {
   Loader2,
   Landmark,
   Download,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,11 +55,90 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn, formatCurrency } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import PayrollSummaryCard from "@/components/payroll/PayrollSummaryCard";
 import { usePayrollRuns, usePayrollStats, useCreatePayrollRun } from "@/hooks/usePayroll";
 import { useProductions } from "@/hooks/useTimecards";
 import ExportButton from "@/components/common/ExportButton";
 import api from "@/lib/axios";
+
+// ── Crew readiness helpers ─────────────────────────────────────────────
+function getCrewReadiness(dealMemo, onboardingReqs) {
+  const required = (onboardingReqs || []).filter((r) => r.required);
+  const filled = required.filter((r) => dealMemo[r.key]);
+  const rtwVerified = dealMemo.rightToWork?.status === "verified";
+
+  if (rtwVerified && filled.length === required.length) {
+    return { status: "ready", label: "Ready", missing: [] };
+  }
+  if (!rtwVerified) {
+    return {
+      status: "blocked",
+      label: "Blocked",
+      missing: [
+        ...required.filter((r) => !dealMemo[r.key]).map((r) => r.label),
+        "Right to Work not verified",
+      ],
+    };
+  }
+  return {
+    status: "incomplete",
+    label: "Incomplete",
+    missing: required.filter((r) => !dealMemo[r.key]).map((r) => r.label),
+  };
+}
+
+function CrewReadinessBadge({ readiness }) {
+  const config = {
+    ready: {
+      icon: CheckCircle2,
+      className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400",
+    },
+    incomplete: {
+      icon: AlertTriangle,
+      className: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
+    },
+    blocked: {
+      icon: XCircle,
+      className: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400",
+    },
+  };
+  const cfg = config[readiness.status] || config.incomplete;
+  const Icon = cfg.icon;
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium",
+              cfg.className
+            )}
+          >
+            <Icon className="h-3 w-3" />
+            {readiness.label}
+          </span>
+        </TooltipTrigger>
+        {readiness.missing.length > 0 && (
+          <TooltipContent side="bottom" className="max-w-xs">
+            <p className="text-xs font-medium mb-1">Missing:</p>
+            <ul className="text-xs space-y-0.5">
+              {readiness.missing.map((m) => (
+                <li key={m}>- {m}</li>
+              ))}
+            </ul>
+          </TooltipContent>
+        )}
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 const STATUS_MAP = {
   draft: { label: "Draft", variant: "secondary" },
@@ -95,6 +177,47 @@ export default function Payroll() {
     });
     return totals;
   })();
+
+  // ── Crew readiness state ──────────────────────────────────────────
+  const [crewReadiness, setCrewReadiness] = useState([]);
+  const [loadingReadiness, setLoadingReadiness] = useState(false);
+
+  useEffect(() => {
+    if (!filters.productionId) {
+      setCrewReadiness([]);
+      return;
+    }
+    let cancelled = false;
+    const fetchReadiness = async () => {
+      setLoadingReadiness(true);
+      try {
+        const [reqs, memos] = await Promise.all([
+          api.get(`/productions/${filters.productionId}/settings/onboarding`),
+          api.get("/deal-memos", { params: { productionId: filters.productionId, limit: 100 } }),
+        ]);
+        const requirements = reqs.data?.data?.requirements || [];
+        const dealMemos = memos.data?.data || [];
+        if (!cancelled) {
+          setCrewReadiness(
+            dealMemos.map((dm) => ({
+              _id: dm._id,
+              name: dm.personId?.firstName
+                ? `${dm.personId.firstName} ${dm.personId.lastName}`
+                : dm.personName || dm.dealNumber,
+              department: dm.departmentId?.name || dm.department || "-",
+              readiness: getCrewReadiness(dm, requirements),
+            }))
+          );
+        }
+      } catch {
+        if (!cancelled) setCrewReadiness([]);
+      } finally {
+        if (!cancelled) setLoadingReadiness(false);
+      }
+    };
+    fetchReadiness();
+    return () => { cancelled = true; };
+  }, [filters.productionId]);
 
   const [exportingRunId, setExportingRunId] = useState(null);
 
@@ -235,6 +358,61 @@ export default function Payroll() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Crew Readiness (visible when a production is selected) */}
+      {filters.productionId && (
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm">Crew Readiness</CardTitle>
+              {!loadingReadiness && crewReadiness.length > 0 && (
+                <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                    {crewReadiness.filter((c) => c.readiness.status === "ready").length} ready
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3 text-amber-500" />
+                    {crewReadiness.filter((c) => c.readiness.status === "incomplete").length} incomplete
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <XCircle className="h-3 w-3 text-red-500" />
+                    {crewReadiness.filter((c) => c.readiness.status === "blocked").length} blocked
+                  </span>
+                </div>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loadingReadiness ? (
+              <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading crew readiness...
+              </div>
+            ) : crewReadiness.length === 0 ? (
+              <p className="py-3 text-sm text-muted-foreground">
+                No deal memos found for this production.
+              </p>
+            ) : (
+              <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
+                {crewReadiness.map((crew) => (
+                  <div
+                    key={crew._id}
+                    className="flex items-center justify-between rounded-md border px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{crew.name}</p>
+                      <p className="text-[11px] text-muted-foreground">{crew.department}</p>
+                    </div>
+                    <CrewReadinessBadge readiness={crew.readiness} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Payroll runs table */}
       <Card>

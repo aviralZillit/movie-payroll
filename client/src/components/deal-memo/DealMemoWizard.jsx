@@ -2,36 +2,65 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useMemo } from "react";
+import { isPayrollVisibleRole } from "@/lib/countryFieldConfig";
 
-const STEP_LABELS = [
+// Full labels for all 10 steps
+const ALL_STEP_LABELS = [
   "Entity & Territory",
   "Crew Details",
   "Deal Structure",
   "Rates",
   "Allowances",
   "Nominal Coding",
-  "Compliance",
+  "Right to Work",
   "Documents",
   "Payroll Start",
   "Preview & Issue",
 ];
 
 // Short labels for the stepper (avoids truncation)
-const STEP_SHORT = [
+const ALL_STEP_SHORT = [
   "Entity",
   "Crew",
   "Deal",
   "Rates",
   "Allow.",
   "Codes",
-  "Comply",
+  "RTW",
   "Docs",
   "Payroll",
   "Issue",
 ];
 
+// Payroll Start step index (0-based) in the full list
+const PAYROLL_STEP_INDEX = 8;
+
 // ---------------------------------------------------------------------------
-// Stepper header — compact for 10 steps
+// Build step arrays based on user role
+// ---------------------------------------------------------------------------
+function buildStepArrays(userRole) {
+  const showPayroll = isPayrollVisibleRole(userRole);
+
+  if (showPayroll) {
+    return {
+      labels: ALL_STEP_LABELS,
+      short: ALL_STEP_SHORT,
+      // Maps visible step index → original step index
+      stepMap: ALL_STEP_LABELS.map((_, i) => i),
+    };
+  }
+
+  // Skip Payroll Start step for non-accounting roles
+  const labels = ALL_STEP_LABELS.filter((_, i) => i !== PAYROLL_STEP_INDEX);
+  const short = ALL_STEP_SHORT.filter((_, i) => i !== PAYROLL_STEP_INDEX);
+  const stepMap = ALL_STEP_LABELS.map((_, i) => i).filter(i => i !== PAYROLL_STEP_INDEX);
+
+  return { labels, short, stepMap };
+}
+
+// ---------------------------------------------------------------------------
+// Stepper header — compact for 9-10 steps
 // ---------------------------------------------------------------------------
 function StepIndicator({ stepIndex, currentStep, label }) {
   const isCompleted = stepIndex < currentStep;
@@ -114,12 +143,16 @@ export default function DealMemoWizard({
   draftSaved = false,
   isSubmitting = false,
   children,
-  stepLabels = STEP_LABELS,
+  userRole = "super_admin",
 }) {
+  const { labels: stepLabels, short: shortLabels } = useMemo(
+    () => buildStepArrays(userRole),
+    [userRole]
+  );
+
   const totalSteps = stepLabels.length;
   const isFirst = currentStep === 0;
   const isLast = currentStep === totalSteps - 1;
-  const shortLabels = stepLabels === STEP_LABELS ? STEP_SHORT : stepLabels;
 
   return (
     <div className="flex flex-col gap-8">
@@ -212,4 +245,4 @@ export default function DealMemoWizard({
   );
 }
 
-export { STEP_LABELS };
+export { ALL_STEP_LABELS as STEP_LABELS, buildStepArrays };

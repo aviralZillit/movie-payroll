@@ -6,7 +6,8 @@ import AppError from '../utils/AppError.js';
 import { UPLOADS_DIR } from '../middleware/upload.js';
 
 const VALID_TRANSITIONS = {
-  draft: ['sent', 'cancelled'],
+  draft: ['sent', 'issued', 'cancelled'],
+  issued: ['sent', 'signed', 'negotiating', 'active', 'cancelled'],
   sent: ['negotiating', 'signed', 'cancelled'],
   negotiating: ['sent', 'signed', 'cancelled'],
   signed: ['pending_approval', 'active', 'cancelled'],
@@ -57,14 +58,17 @@ export const create = asyncHandler(async (req, res) => {
     throw new AppError('Production not found.', 404);
   }
 
-  // Auto-populate rates from rate engine
-  const rateCard = await rateEngine.lookupRate({
-    unionId,
-    departmentId,
-    designationId,
-    budgetTierId,
-    date: startDate,
-  });
+  // Auto-populate rates from rate engine (skip if IDs are missing)
+  let rateCard = null;
+  if (unionId && departmentId && designationId && budgetTierId) {
+    rateCard = await rateEngine.lookupRate({
+      unionId,
+      departmentId,
+      designationId,
+      budgetTierId,
+      date: startDate,
+    });
+  }
 
   // Map form field names to model field names
   if (rest.guaranteedHours != null) {
@@ -88,10 +92,10 @@ export const create = asyncHandler(async (req, res) => {
     productionId,
     personId,
     createdById: req.user._id,
-    unionId,
-    departmentId,
-    designationId,
-    budgetTierId,
+    unionId: unionId || undefined,
+    departmentId: departmentId || undefined,
+    designationId: designationId || undefined,
+    budgetTierId: budgetTierId || undefined,
     startDate,
     ...rest,
   };
@@ -385,15 +389,23 @@ export const transitionStatus = asyncHandler(async (req, res) => {
  * Only the assigned person can update. Only CREW_FIELDS allowed.
  */
 const CREW_FIELDS = [
-  'dateOfBirth', 'address', 'emergencyContact',
-  'niNumber', 'taxCode', 'starterDeclaration', 'p45Received',
+  'dateOfBirth', 'address', 'crewAddress', 'emergencyContact',
+  'niNumber', 'taxCode', 'studentLoan', 'starterDeclaration', 'p45Received', 'p45',
   'bankSortCode', 'bankAccountNumber',
-  'ssn', 'w4FilingStatus', 'stateWithholding', 'achRoutingNumber', 'achAccountNumber',
+  'ssn', 'w4FilingStatus', 'w4Allowances', 'stateWithholding', 'achRoutingNumber', 'achAccountNumber',
   'tfn', 'superFund', 'superMemberNumber', 'bsb',
-  'sin', 'province',
+  'sin', 'province', 'td1Federal', 'td1Provincial', 'bankTransit', 'bankInstitution', 'bankAccount',
   'taxId', 'iban', 'swift',
   'ltdCompanyName', 'ltdCompanyReg',
   'corpName', 'corpEin',
+  // India
+  'aadhaar', 'pan', 'uan', 'esiNumber', 'ifsc', 'gstin',
+  // France
+  'numSecSociale', 'congespectacle', 'audiensMember', 'mutuelle',
+  // Germany
+  'steuerID', 'sozialversicherung', 'steuerklasse', 'steuernummer', 'ustIdNr', 'handelsregister',
+  // Spain
+  'nie', 'numSegSocial', 'iaeCode',
 ];
 
 export const crewComplete = asyncHandler(async (req, res) => {
@@ -405,11 +417,25 @@ export const crewComplete = asyncHandler(async (req, res) => {
     throw new AppError('Only the assigned crew member can complete these fields.', 403);
   }
 
-  // Filter to only allowed crew fields
+  // Filter to only allowed crew fields + parse dates
+  const DATE_FIELDS = ['dateOfBirth'];
   const updates = {};
   for (const [key, value] of Object.entries(req.body)) {
     if (CREW_FIELDS.includes(key)) {
-      updates[key] = value;
+      if (DATE_FIELDS.includes(key) && value) {
+        // Parse date: handle DD-MM-YYYY, DD/MM/YYYY, YYYY-MM-DD
+        let parsed = new Date(value);
+        if (isNaN(parsed.getTime()) && typeof value === 'string') {
+          const parts = value.split(/[-\/]/);
+          if (parts.length === 3) {
+            if (parts[0].length === 4) parsed = new Date(`${parts[0]}-${parts[1]}-${parts[2]}`); // YYYY-MM-DD
+            else parsed = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`); // DD-MM-YYYY → YYYY-MM-DD
+          }
+        }
+        updates[key] = isNaN(parsed.getTime()) ? value : parsed;
+      } else {
+        updates[key] = value;
+      }
     }
   }
 
@@ -725,4 +751,125 @@ export const toggleComplianceItem = asyncHandler(async (req, res) => {
     .populate('designationId', 'code name');
 
   res.json({ success: true, data: populated });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// RIGHT TO WORK — Document Request / Upload / Verify
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * GET /api/deal-memos/:id/rtw-documents
+ */
+export const getRtwDocuments = asyncHandler(async (req, res) => {
+  const deal = await DealMemo.findById(req.params.id)
+    .populate('rightToWork.documents.requestedBy', 'firstName lastName')
+    .populate('rightToWork.documents.uploadedBy', 'firstName lastName')
+    .populate('rightToWork.documents.verifiedBy', 'firstName lastName');
+  if (!deal) throw new AppError('Deal memo not found.', 404);
+
+  res.json({
+    success: true,
+    data: {
+      status: deal.rightToWork?.status || 'pending',
+      rtwDocType: deal.rightToWork?.rtwDocType,
+      notes: deal.rightToWork?.notes,
+      documents: deal.rightToWork?.documents || [],
+    },
+  });
+});
+
+/**
+ * POST /api/deal-memos/:id/rtw-documents
+ * Admin adds a document request.
+ */
+export const addRtwDocumentRequest = asyncHandler(async (req, res) => {
+  const deal = await DealMemo.findById(req.params.id);
+  if (!deal) throw new AppError('Deal memo not found.', 404);
+
+  const { docType, reference, expiryDate, required = true } = req.body;
+  if (!docType) throw new AppError('Document type is required.', 400);
+
+  if (!deal.rightToWork) deal.rightToWork = { status: 'pending', documents: [] };
+  if (!deal.rightToWork.documents) deal.rightToWork.documents = [];
+
+  deal.rightToWork.documents.push({
+    docType, reference: reference || '', expiryDate: expiryDate || null,
+    required, status: 'requested', requestedBy: req.user._id, requestedAt: new Date(),
+  });
+
+  await deal.save();
+  res.status(201).json({ success: true, data: deal.rightToWork });
+});
+
+/**
+ * POST /api/deal-memos/:id/rtw-documents/:docIdx/upload
+ * Crew uploads a file for a requested RTW document.
+ */
+export const uploadRtwDocument = asyncHandler(async (req, res) => {
+  const deal = await DealMemo.findById(req.params.id);
+  if (!deal) throw new AppError('Deal memo not found.', 404);
+
+  if (deal.personId.toString() !== req.user._id.toString()) {
+    throw new AppError('Only the assigned crew member can upload RTW documents.', 403);
+  }
+
+  const docIdx = parseInt(req.params.docIdx);
+  if (!deal.rightToWork?.documents || docIdx >= deal.rightToWork.documents.length) {
+    throw new AppError('Document index out of range.', 400);
+  }
+  if (!req.file) throw new AppError('No file uploaded.', 400);
+
+  const doc = deal.rightToWork.documents[docIdx];
+  doc.uploadedFile = req.file.originalname;
+  doc.fileUrl = `/uploads/${req.file.filename}`;
+  doc.fileSize = req.file.size;
+  doc.uploadedBy = req.user._id;
+  doc.uploadedAt = new Date();
+  doc.status = 'uploaded';
+  if (req.body.reference) doc.reference = req.body.reference;
+  if (req.body.expiryDate) doc.expiryDate = req.body.expiryDate;
+
+  await deal.save();
+  res.json({ success: true, data: doc });
+});
+
+/**
+ * PATCH /api/deal-memos/:id/rtw-documents/:docIdx/verify
+ * Admin verifies or rejects a crew-uploaded document.
+ */
+export const verifyRtwDocument = asyncHandler(async (req, res) => {
+  const deal = await DealMemo.findById(req.params.id);
+  if (!deal) throw new AppError('Deal memo not found.', 404);
+
+  const docIdx = parseInt(req.params.docIdx);
+  if (!deal.rightToWork?.documents || docIdx >= deal.rightToWork.documents.length) {
+    throw new AppError('Document index out of range.', 400);
+  }
+
+  const { status, rejectionNote } = req.body;
+  if (!['verified', 'rejected'].includes(status)) {
+    throw new AppError('Status must be "verified" or "rejected".', 400);
+  }
+
+  const doc = deal.rightToWork.documents[docIdx];
+  doc.status = status;
+  if (status === 'verified') {
+    doc.verifiedBy = req.user._id;
+    doc.verifiedAt = new Date();
+    doc.rejectionNote = undefined;
+  } else {
+    doc.rejectionNote = rejectionNote || 'Document rejected — please re-upload.';
+  }
+
+  // Auto-update RTW status if all required docs verified
+  const requiredDocs = deal.rightToWork.documents.filter(d => d.required);
+  const allVerified = requiredDocs.length > 0 && requiredDocs.every(d => d.status === 'verified');
+  deal.rightToWork.status = allVerified ? 'verified' : 'pending';
+  if (allVerified) {
+    deal.rightToWork.verifiedBy = req.user._id;
+    deal.rightToWork.verifiedAt = new Date();
+  }
+
+  await deal.save();
+  res.json({ success: true, data: { document: doc, rtwStatus: deal.rightToWork.status } });
 });

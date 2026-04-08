@@ -8,6 +8,12 @@ const payrollItemSchema = new mongoose.Schema({
   departmentName: String,
   designationName: String,
 
+  // Timecard summary
+  daysWorked: { type: Number, default: 0 },
+  totalHours: { type: Number, default: 0 },
+  otHours: { type: Number, default: 0 },
+  penalties: { type: Number, default: 0 },
+
   // Earnings
   basePay: { type: Number, default: 0 },
   overtime1x5Pay: { type: Number, default: 0 },

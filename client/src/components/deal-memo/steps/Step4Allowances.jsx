@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn, formatCurrency } from "@/lib/utils";
 import { Wallet, Plus, X, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
+import UnionField from "@/components/deal-memo/UnionField";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -135,13 +136,19 @@ function CapSettings({ index, control }) {
 // ---------------------------------------------------------------------------
 // Step 4 - Allowances
 // ---------------------------------------------------------------------------
-export default function Step4Allowances({ control, errors, watch, currencySymbol = "\u00A3" }) {
+export default function Step4Allowances({ control, errors, watch, currencySymbol = "\u00A3", unionFields, allowanceSuggestions }) {
   const { fields, append, remove } = useFieldArray({
     control,
     name: "allowances",
   });
 
   const allowances = watch("allowances") || [];
+  const addedNames = allowances.map(a => a?.name?.toLowerCase()).filter(Boolean);
+
+  // Filter suggestions to only show ones not already added
+  const suggestions = (allowanceSuggestions || []).filter(
+    s => !addedNames.includes(s.name.toLowerCase())
+  );
 
   const total = allowances.reduce((sum, a) => sum + (Number(a?.amount) || 0), 0);
 
@@ -178,8 +185,33 @@ export default function Step4Allowances({ control, errors, watch, currencySymbol
           </div>
         </CardHeader>
         <CardContent>
+          {/* Quick-add suggestions from union config */}
+          {suggestions.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs text-muted-foreground mb-2">Quick add:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {suggestions.map((s) => (
+                  <button
+                    key={s.name}
+                    type="button"
+                    className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs hover:bg-muted/50 transition-colors"
+                    onClick={() => append({
+                      name: s.name,
+                      amount: 0,
+                      frequency: s.frequency || "weekly",
+                      taxTreatment: "taxable",
+                    })}
+                  >
+                    <Plus className="size-3" />
+                    {s.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {fields.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
+            <p className="text-sm text-muted-foreground text-center py-4">
               No allowances added yet. Click "Add Allowance" to get started.
             </p>
           ) : (
@@ -298,19 +330,29 @@ export default function Step4Allowances({ control, errors, watch, currencySymbol
             </div>
           )}
 
-          {fields.length > 0 && (
-            <>
-              <Separator className="my-4" />
-              <div className="flex justify-end">
-                <div className="rounded-md bg-muted px-4 py-2 text-sm font-medium tabular-nums">
-                  Total: {currencySymbol}
-                  {total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </div>
-              </div>
-            </>
-          )}
+          {/* Total removed per client request */}
         </CardContent>
       </Card>
+
+      {unionFields?.length > 0 && (
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">Union-Specific Allowances</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            {unionFields.map((field) => (
+              <UnionField
+                key={field.key}
+                field={field}
+                control={control}
+                errors={errors}
+                currencySymbol={currencySymbol}
+                watch={watch}
+              />
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

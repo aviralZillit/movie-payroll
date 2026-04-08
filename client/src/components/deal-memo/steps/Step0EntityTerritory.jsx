@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Controller } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,24 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { Film, Users, Building2, Globe, Flag } from "lucide-react";
+import { Film, Users, Building2, Globe } from "lucide-react";
+import { getTerritoryFlag } from "@/lib/countryFieldConfig";
+import UnionField from "@/components/deal-memo/UnionField";
+
+// ---------------------------------------------------------------------------
+// Auto-scroll Card — scrolls into view when it first mounts
+// ---------------------------------------------------------------------------
+function AutoScrollCard({ children }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (ref.current) {
+      setTimeout(() => {
+        ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, []);
+  return <div ref={ref}><Card>{children}</Card></div>;
+}
 
 // ---------------------------------------------------------------------------
 // FilterSelect (shared pattern)
@@ -26,8 +44,10 @@ function FilterSelect({
   loading,
   error,
   className,
+  renderLabel,
 }) {
-  const selectedLabel = (options ?? []).find((o) => o._id === value)?.name;
+  const selectedOption = (options ?? []).find((o) => o._id === value);
+  const selectedLabel = renderLabel ? renderLabel(selectedOption) : selectedOption?.name;
   return (
     <div className={cn("space-y-1.5", className)}>
       <Label>{label}</Label>
@@ -42,7 +62,7 @@ function FilterSelect({
         <SelectContent>
           {(options ?? []).map((opt) => (
             <SelectItem key={opt._id} value={opt._id}>
-              {opt.name}
+              {renderLabel ? renderLabel(opt) : opt.name}
             </SelectItem>
           ))}
         </SelectContent>
@@ -55,22 +75,34 @@ function FilterSelect({
 // ---------------------------------------------------------------------------
 // Territory flag badge
 // ---------------------------------------------------------------------------
-const TERRITORY_FLAGS = {
-  UK: { emoji: "\uD83C\uDDEC\uD83C\uDDE7", label: "United Kingdom" },
-  US: { emoji: "\uD83C\uDDFA\uD83C\uDDF8", label: "United States" },
-  AU: { emoji: "\uD83C\uDDE6\uD83C\uDDFA", label: "Australia" },
-  CA: { emoji: "\uD83C\uDDE8\uD83C\uDDE6", label: "Canada" },
-  NZ: { emoji: "\uD83C\uDDF3\uD83C\uDDFF", label: "New Zealand" },
-};
-
 function TerritoryBadge({ territory }) {
-  const info = TERRITORY_FLAGS[territory] || { emoji: "\uD83C\uDF0D", label: territory };
+  const info = getTerritoryFlag(territory);
   return (
     <Badge variant="outline" className="gap-1.5 text-sm px-3 py-1">
       <span>{info.emoji}</span>
       <span>{info.label}</span>
     </Badge>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Union short code helper — prefers shortCode, falls back to acronym
+// ---------------------------------------------------------------------------
+function getUnionDisplayName(union) {
+  if (!union) return '';
+  // Use shortCode if available
+  if (union.shortCode) return union.shortCode;
+  // Try to extract acronym from name (e.g. "Broadcasting, Entertainment, Communications and Theatre Union" → "BECTU")
+  if (union.code) return union.code;
+  // Fallback: if name is long (>30 chars), create acronym from capital letters or first letters of words
+  const name = union.name || '';
+  if (name.length > 30) {
+    const words = name.split(/[\s,&-]+/).filter(w => w.length > 0 && w[0] === w[0].toUpperCase() && !['and', 'the', 'of', 'for', 'in'].includes(w.toLowerCase()));
+    if (words.length >= 2) {
+      return words.map(w => w[0]).join('');
+    }
+  }
+  return name;
 }
 
 // ---------------------------------------------------------------------------
@@ -95,10 +127,23 @@ export default function Step0EntityTerritory({
   budgetTiers,
   budgetTiersLoading,
   territory,
+  unionFields,
+  currencySymbol,
 }) {
   const watchedProductionId = watch("productionId");
   const watchedUnionId = watch("unionId");
   const watchedDepartmentId = watch("departmentId");
+  const watchedDesignationId = watch("designationId");
+  const screenCredit = watch("screenCredit");
+
+  // Auto-fill screen credit from designation name when designation changes
+  useEffect(() => {
+    if (!watchedDesignationId) return;
+    const designation = (designations ?? []).find(d => d._id === watchedDesignationId);
+    if (designation?.name && (!screenCredit || screenCredit === '')) {
+      setValue("screenCredit", designation.name, { shouldDirty: true });
+    }
+  }, [watchedDesignationId, designations, setValue]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="space-y-6">
@@ -204,6 +249,7 @@ export default function Step0EntityTerritory({
                 loading={unionsLoading}
                 disabled={!watchedProductionId}
                 error={errors.unionId?.message}
+                renderLabel={getUnionDisplayName}
               />
             )}
           />
@@ -282,6 +328,26 @@ export default function Step0EntityTerritory({
           />
         </CardContent>
       </Card>
+
+      {unionFields?.length > 0 && (
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">Union-Specific Terms</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            {unionFields.map((field) => (
+              <UnionField
+                key={field.key}
+                field={field}
+                control={control}
+                errors={errors}
+                currencySymbol={currencySymbol}
+                watch={watch}
+              />
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

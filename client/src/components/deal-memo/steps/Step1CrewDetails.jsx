@@ -13,97 +13,11 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Users, Briefcase } from "lucide-react";
-
-// ---------------------------------------------------------------------------
-// Territory-aware employment status options
-// ---------------------------------------------------------------------------
-const EMPLOYMENT_STATUSES = {
-  UK: [
-    { value: "paye", label: "PAYE" },
-    { value: "ltd", label: "Ltd Company" },
-    { value: "sole_trader", label: "Sole Trader" },
-  ],
-  US: [
-    { value: "w2", label: "W-2 Employee" },
-    { value: "loanout", label: "Loan-out Corp" },
-    { value: "1099", label: "1099 Contractor" },
-  ],
-  AU: [
-    { value: "payg", label: "PAYG" },
-    { value: "pty_ltd", label: "Pty Ltd" },
-    { value: "abn", label: "ABN Sole Trader" },
-  ],
-  CA: [
-    { value: "t4", label: "T4 Employee" },
-    { value: "corp", label: "Personal Corp" },
-    { value: "self_employed", label: "Self-Employed" },
-  ],
-};
-
-// ---------------------------------------------------------------------------
-// Field definitions per employment status
-// ---------------------------------------------------------------------------
-const FIELD_DEFS = {
-  // UK
-  paye: [
-    { name: "niNumber", label: "NI Number", placeholder: "AB 12 34 56 C", owner: "crew" },
-    { name: "taxCode", label: "Tax Code", placeholder: "1257L", owner: "crew" },
-    { name: "studentLoan", label: "Student Loan Plan", placeholder: "Plan 1 / Plan 2 / None", owner: "crew" },
-  ],
-  ltd: [
-    { name: "companyName", label: "Company Name", placeholder: "Enter company name", owner: "crew" },
-    { name: "companyRegNumber", label: "Company Reg Number", placeholder: "12345678", owner: "crew" },
-    { name: "vatNumber", label: "VAT Number", placeholder: "GB 123 4567 89", owner: "crew" },
-  ],
-  sole_trader: [
-    { name: "niNumber", label: "NI Number", placeholder: "AB 12 34 56 C", owner: "crew" },
-    { name: "utrNumber", label: "UTR Number", placeholder: "1234567890", owner: "crew" },
-  ],
-  // US
-  w2: [
-    { name: "ssn", label: "SSN", placeholder: "XXX-XX-XXXX", owner: "crew" },
-    { name: "w4FilingStatus", label: "W-4 Filing Status", placeholder: "Single / Married", owner: "crew" },
-    { name: "w4Allowances", label: "W-4 Allowances", placeholder: "0", owner: "crew", type: "number" },
-    { name: "stateWithholding", label: "State Withholding", placeholder: "CA / NY / etc.", owner: "production" },
-  ],
-  loanout: [
-    { name: "loanoutCorpName", label: "Loan-out Corp Name", placeholder: "Enter corp name", owner: "crew" },
-    { name: "federalId", label: "Federal ID (EIN)", placeholder: "XX-XXXXXXX", owner: "crew" },
-    { name: "stateOfIncorp", label: "State of Incorporation", placeholder: "CA", owner: "crew" },
-  ],
-  "1099": [
-    { name: "ssn", label: "SSN / EIN", placeholder: "XXX-XX-XXXX", owner: "crew" },
-    { name: "businessName", label: "Business Name (if applicable)", placeholder: "", owner: "crew" },
-  ],
-  // AU
-  payg: [
-    { name: "tfn", label: "Tax File Number", placeholder: "123 456 789", owner: "crew" },
-    { name: "superFund", label: "Super Fund Name", placeholder: "Enter super fund", owner: "crew" },
-    { name: "superMemberNo", label: "Super Member Number", placeholder: "Member number", owner: "crew" },
-  ],
-  pty_ltd: [
-    { name: "abn", label: "ABN", placeholder: "12 345 678 901", owner: "crew" },
-    { name: "companyName", label: "Company Name", placeholder: "Enter company name", owner: "crew" },
-    { name: "gstRegistered", label: "GST Registered", placeholder: "Yes / No", owner: "crew" },
-  ],
-  abn: [
-    { name: "tfn", label: "Tax File Number", placeholder: "123 456 789", owner: "crew" },
-    { name: "abn", label: "ABN", placeholder: "12 345 678 901", owner: "crew" },
-  ],
-  // CA
-  t4: [
-    { name: "sin", label: "SIN", placeholder: "123 456 789", owner: "crew" },
-    { name: "td1FederalClaim", label: "TD1 Federal Claim", placeholder: "Basic personal amount", owner: "crew" },
-  ],
-  corp: [
-    { name: "corpName", label: "Corporation Name", placeholder: "Enter corp name", owner: "crew" },
-    { name: "businessNumber", label: "Business Number", placeholder: "123456789RC0001", owner: "crew" },
-  ],
-  self_employed: [
-    { name: "sin", label: "SIN", placeholder: "123 456 789", owner: "crew" },
-    { name: "businessNumber", label: "Business Number (optional)", placeholder: "", owner: "crew" },
-  ],
-};
+import {
+  getEmploymentStatuses,
+  getCrewFields,
+} from "@/lib/countryFieldConfig";
+import UnionField from "@/components/deal-memo/UnionField";
 
 // ---------------------------------------------------------------------------
 // Responsibility badge
@@ -124,23 +38,24 @@ function OwnerBadge({ owner }) {
 }
 
 // ---------------------------------------------------------------------------
-// Step 1 - Crew Details
+// Step 1 - Crew Details + Right to Work
 // ---------------------------------------------------------------------------
-export default function Step1CrewDetails({ control, errors, setValue, watch, territory = "UK" }) {
+export default function Step1CrewDetails({ control, errors, setValue, watch, territory = "UK", unionFields, currencySymbol }) {
   const employmentStatus = watch("employmentStatus");
 
   const statusOptions = useMemo(
-    () => EMPLOYMENT_STATUSES[territory] || EMPLOYMENT_STATUSES.UK,
+    () => getEmploymentStatuses(territory),
     [territory]
   );
 
   const dynamicFields = useMemo(
-    () => FIELD_DEFS[employmentStatus] || [],
+    () => getCrewFields(employmentStatus),
     [employmentStatus]
   );
 
   return (
     <div className="space-y-6">
+      {/* Employment Status */}
       <Card>
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-lg">
@@ -181,6 +96,7 @@ export default function Step1CrewDetails({ control, errors, setValue, watch, ter
         </CardContent>
       </Card>
 
+      {/* Dynamic crew fields based on employment status */}
       {dynamicFields.length > 0 && (
         <Card>
           <CardHeader className="pb-4">
@@ -217,6 +133,28 @@ export default function Step1CrewDetails({ control, errors, setValue, watch, ter
                     )}
                   </div>
                 )}
+              />
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Right to Work is handled in Step 6 (RTW) with the document checklist */}
+
+      {unionFields?.length > 0 && (
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">Union-Specific Terms</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            {unionFields.map((field) => (
+              <UnionField
+                key={field.key}
+                field={field}
+                control={control}
+                errors={errors}
+                currencySymbol={currencySymbol}
+                watch={watch}
               />
             ))}
           </CardContent>

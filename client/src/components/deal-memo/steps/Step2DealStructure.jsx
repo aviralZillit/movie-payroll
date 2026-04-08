@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Controller } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,9 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { CalendarDays, Briefcase, Shield } from "lucide-react";
+import { CalendarDays, Briefcase, Info } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import UnionField from "@/components/deal-memo/UnionField";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -22,20 +25,40 @@ const DEAL_TYPES = [
   { value: "flat", label: "Flat / Run of Show" },
   { value: "picture", label: "Per Picture" },
   { value: "step", label: "Step Deal" },
-  { value: "pop", label: "Pay or Play" },
 ];
 
 const EXCLUSIVITY_OPTIONS = [
-  { value: "exclusive", label: "Exclusive" },
-  { value: "non_exclusive", label: "Non-Exclusive" },
-  { value: "first_priority", label: "First Priority" },
+  { value: "full", label: "Exclusive" },
+  { value: "first_call", label: "First Call" },
+  { value: "none", label: "Non-Exclusive" },
 ];
 
 // ---------------------------------------------------------------------------
 // Step 2 - Deal Structure
 // ---------------------------------------------------------------------------
-export default function Step2DealStructure({ control, errors, watch }) {
-  const dealType = watch("dealType");
+export default function Step2DealStructure({ control, errors, watch, setValue, currencySymbol = "£", unionFields, country }) {
+  const separateRates = watch("separateRates");
+  const weeklyRate = watch("weeklyRate");
+  const dailyRate = watch("dailyRate");
+
+  // Auto-populate prep/shoot/wrap/travel rates when toggle turns ON
+  useEffect(() => {
+    if (!separateRates || !setValue) return;
+    const daily = Number(dailyRate) || (Number(weeklyRate) / 5) || 0;
+    if (daily <= 0) return;
+    const r2 = (n) => Math.round(n * 100) / 100;
+    // Derive from daily rate — only set if currently empty
+    const prepRate = watch("prepRate");
+    const shootRate = watch("shootRate");
+    const wrapRate = watch("wrapRate");
+    const travelRate = watch("travelRate");
+    if (!prepRate) setValue("prepRate", r2(daily), { shouldDirty: true });
+    if (!shootRate) setValue("shootRate", r2(daily), { shouldDirty: true });
+    if (!wrapRate) setValue("wrapRate", r2(daily), { shouldDirty: true });
+    // Travel rate: no standard — BECTU pays 1T (one hour) minimum, but productions often negotiate more
+    // Default to 0 so user must enter the negotiated amount
+    if (!travelRate) setValue("travelRate", 0, { shouldDirty: true });
+  }, [separateRates]); // Only runs when toggle changes
 
   return (
     <div className="space-y-6">
@@ -76,31 +99,33 @@ export default function Step2DealStructure({ control, errors, watch }) {
             )}
           />
 
-          <Controller
-            name="exclusivity"
-            control={control}
-            render={({ field }) => (
-              <div className="space-y-1.5">
-                <Label>Exclusivity</Label>
-                <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                  <SelectTrigger>
-                    {field.value ? (
-                      <span>{EXCLUSIVITY_OPTIONS.find(o => o.value === field.value)?.label || field.value}</span>
-                    ) : (
-                      <SelectValue placeholder="Select exclusivity..." />
-                    )}
-                  </SelectTrigger>
-                  <SelectContent>
-                    {EXCLUSIVITY_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          />
+          {country === 'US' && (
+            <Controller
+              name="exclusivity"
+              control={control}
+              render={({ field }) => (
+                <div className="space-y-1.5">
+                  <Label>Exclusivity</Label>
+                  <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      {field.value ? (
+                        <span>{EXCLUSIVITY_OPTIONS.find(o => o.value === field.value)?.label || field.value}</span>
+                      ) : (
+                        <SelectValue placeholder="Select exclusivity..." />
+                      )}
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EXCLUSIVITY_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -111,7 +136,7 @@ export default function Step2DealStructure({ control, errors, watch }) {
             Dates & Duration
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <CardContent className="grid gap-4 sm:grid-cols-2">
           <Controller
             name="startDate"
             control={control}
@@ -146,103 +171,23 @@ export default function Step2DealStructure({ control, errors, watch }) {
             )}
           />
 
-          <Controller
-            name="guaranteedWeeks"
-            control={control}
-            render={({ field }) => (
-              <div className="space-y-1.5">
-                <Label>Guaranteed Weeks</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  placeholder="0"
-                  value={field.value ?? ""}
-                  onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
-                />
-              </div>
-            )}
-          />
-
-          <Controller
-            name="prepDays"
-            control={control}
-            render={({ field }) => (
-              <div className="space-y-1.5">
-                <Label>Prep Days</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  placeholder="0"
-                  value={field.value ?? ""}
-                  onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
-                />
-              </div>
-            )}
-          />
-
-          <Controller
-            name="shootDays"
-            control={control}
-            render={({ field }) => (
-              <div className="space-y-1.5">
-                <Label>Shoot Days</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  placeholder="0"
-                  value={field.value ?? ""}
-                  onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
-                />
-              </div>
-            )}
-          />
-
-          <Controller
-            name="wrapDays"
-            control={control}
-            render={({ field }) => (
-              <div className="space-y-1.5">
-                <Label>Wrap Days</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  placeholder="0"
-                  value={field.value ?? ""}
-                  onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
-                />
-              </div>
-            )}
-          />
-
-          <Controller
-            name="travelDays"
-            control={control}
-            render={({ field }) => (
-              <div className="space-y-1.5">
-                <Label>Travel Days</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  placeholder="0"
-                  value={field.value ?? ""}
-                  onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
-                />
-              </div>
-            )}
-          />
+          <p className="text-xs text-muted-foreground sm:col-span-2">
+            Prep, shoot, wrap & travel periods are defined in the production schedule and applied automatically during payroll.
+          </p>
         </CardContent>
       </Card>
 
+      {/* Separate rates toggle */}
       <Card>
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Shield className="size-5 text-primary" />
-            Terms
+            <Briefcase className="size-5 text-primary" />
+            Rate Structure
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <Controller
-            name="payOrPlay"
+            name="separateRates"
             control={control}
             render={({ field }) => (
               <div className="flex items-center gap-3">
@@ -250,15 +195,142 @@ export default function Step2DealStructure({ control, errors, watch }) {
                   checked={field.value ?? false}
                   onCheckedChange={field.onChange}
                 />
-                <Label className="cursor-pointer">Pay or Play</Label>
+                <Label className="cursor-pointer">Different rates for prep / shoot / wrap</Label>
                 <span className="text-xs text-muted-foreground">
-                  Guarantees full payment regardless of whether services are used
+                  Enable to set separate day rates for each production period
                 </span>
               </div>
             )}
           />
+
+          {separateRates && (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 pt-2">
+              <Controller
+                name="prepRate"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-1.5">
+                    <Label>Prep Day Rate</Label>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                        {currencySymbol}
+                      </span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                        className="pl-7 tabular-nums"
+                      />
+                    </div>
+                  </div>
+                )}
+              />
+              <Controller
+                name="shootRate"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-1.5">
+                    <Label>Shoot Day Rate</Label>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                        {currencySymbol}
+                      </span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                        className="pl-7 tabular-nums"
+                      />
+                    </div>
+                  </div>
+                )}
+              />
+              <Controller
+                name="wrapRate"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-1.5">
+                    <Label>Wrap Day Rate</Label>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                        {currencySymbol}
+                      </span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                        className="pl-7 tabular-nums"
+                      />
+                    </div>
+                  </div>
+                )}
+              />
+              <Controller
+                name="travelRate"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Label>Travel Day Rate</Label>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="size-3.5 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          Enter the agreed travel day rate. Productions typically negotiate half-day or full-day rate depending on travel duration.
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                        {currencySymbol}
+                      </span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
+                        className="pl-7 tabular-nums"
+                      />
+                    </div>
+                  </div>
+                )}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {unionFields?.length > 0 && (
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">Union-Specific Terms</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            {unionFields.map((field) => (
+              <UnionField
+                key={field.key}
+                field={field}
+                control={control}
+                errors={errors}
+                currencySymbol={currencySymbol}
+                watch={watch}
+              />
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

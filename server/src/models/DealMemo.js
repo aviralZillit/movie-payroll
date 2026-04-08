@@ -108,10 +108,10 @@ const dealMemoSchema = new mongoose.Schema(
     costCentre: String,
 
     // Union & Classification (existing)
-    unionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Union', required: true },
-    departmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Department', required: true },
-    designationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Designation', required: true },
-    budgetTierId: { type: mongoose.Schema.Types.ObjectId, ref: 'BudgetTier', required: true },
+    unionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Union' },
+    departmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' },
+    designationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Designation' },
+    budgetTierId: { type: mongoose.Schema.Types.ObjectId, ref: 'BudgetTier' },
 
     // Country (derived from production — kept for v1 backward compat)
     country: { type: String, default: 'UK' },
@@ -119,7 +119,7 @@ const dealMemoSchema = new mongoose.Schema(
     currency: { type: String, default: 'GBP' },
 
     // ═══ STEP 1: Crew Details ═════════════════════════════════════════
-    employmentStatus: String,        // 'paye','ltd','sole','w2','loanout','1099','payg','ptyltd','abn','t4'
+    employmentStatus: String,        // UK: paye/ltd/sole_trader | US: w2/loanout/1099 | AU: payg/pty_ltd/abn | CA: t4/corp/self_employed | FR: cdi/cdd/intermittent | DE: festanstellung/freiberufler/gmbh | ES: fijo/temporal/autonomo
     // Tax ID fields (territory-specific, crew-to-complete)
     niNumber: String,
     taxCode: String,
@@ -160,6 +160,41 @@ const dealMemoSchema = new mongoose.Schema(
     dateOfBirth: Date,
     crewAddress: mongoose.Schema.Types.Mixed,
     emergencyContact: mongoose.Schema.Types.Mixed,
+
+    // Right to Work (replaces old compliance for v3)
+    rightToWork: {
+      rtwDocType: String,                // Primary auth type (UK Passport, Visa, etc.)
+      status: { type: String, enum: ['pending', 'verified', 'expired'], default: 'pending' },
+      notes: String,
+      verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      verifiedAt: Date,
+      documents: [{
+        docType: String,                 // "Passport", "Visa", "BRP", "Share Code"
+        reference: String,               // Doc number / reference
+        expiryDate: Date,
+        required: { type: Boolean, default: true },
+        status: { type: String, enum: ['requested', 'uploaded', 'verified', 'rejected'], default: 'requested' },
+        requestedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        requestedAt: { type: Date, default: Date.now },
+        // Crew fills:
+        uploadedFile: String,            // original filename
+        fileUrl: String,                 // /uploads/xxx.pdf
+        fileSize: Number,
+        uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        uploadedAt: Date,
+        // Admin fills:
+        verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        verifiedAt: Date,
+        rejectionNote: String,
+      }],
+    },
+
+    // Separate rates toggle — different rates for different day types
+    separateRates: { type: Boolean, default: false },
+    prepRate: Number,       // rateKey: "prep"
+    shootRate: Number,      // rateKey: "shoot"
+    wrapRate: Number,       // rateKey: "wrap"
+    travelRate: Number,     // rateKey: "travel"
 
     // ═══ STEP 2: Deal Structure ═══════════════════════════════════════
     dealType: {
@@ -215,7 +250,7 @@ const dealMemoSchema = new mongoose.Schema(
 
     // v2 rate fields
     rateBasis: { type: String, enum: ['daily', 'weekly', 'hourly', null], default: null },
-    rateType: { type: String, enum: ['negotiated', 'scale', 'scale_plus_10', 'scale_plus_15', null], default: null },
+    rateType: { type: String, enum: ['negotiated', 'basic', 'all_in', 'buyout', 'scale', 'scale_plus_10', 'scale_plus_15', null], default: null },
     hpMode: { type: String, enum: ['excl', 'incl', 'na'], default: 'excl' },
     rateVerification: mongoose.Schema.Types.Mixed, // snapshot from rateVerificationService
 
@@ -311,6 +346,11 @@ const dealMemoSchema = new mongoose.Schema(
     payrollBureau: String,
     payFrequency: { type: String, enum: ['weekly', 'biweekly', 'monthly', null], default: null },
     outstandingFields: [String],
+    // Responsibility assignments (free-text names)
+    productionAccountant: String,
+    payrollAdmin: String,
+    hodApprover: String,
+    timecardApprover: String,
 
     // ═══ STEP 9: Preview & Issue ═════════════════════════════════════
     dealReference: String,           // e.g. 'MH-DM-2026-0047'
@@ -319,6 +359,11 @@ const dealMemoSchema = new mongoose.Schema(
     crewPortalInviteSentAt: Date,
     timecardActivatedAt: Date,
     costReportLinesGenerated: { type: Boolean, default: false },
+
+    // ═══ Union-Specific Fields (flexible JSON) ════════════════════════
+    // Stores all union-specific field values from the deal memo wizard.
+    // Shape depends on the union config (e.g. UK_BECTU, US_SAG_AFTRA).
+    unionSpecificFields: { type: mongoose.Schema.Types.Mixed, default: {} },
 
     // ═══ Existing fields ═════════════════════════════════════════════
     signedAt: Date,

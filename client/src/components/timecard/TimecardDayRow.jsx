@@ -9,6 +9,18 @@ import TimeInput from "./TimeInput";
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+const DEFAULT_DAY_TYPES = [
+  { name: 'Shoot', color: '#3b82f6' },
+  { name: 'Prep', color: '#f59e0b' },
+  { name: 'Wrap', color: '#8b5cf6' },
+  { name: 'Travel', color: '#6b7280' },
+  { name: '6th Day', color: '#ea580c' },
+  { name: '7th Day', color: '#dc2626' },
+  { name: 'Rest', color: '#d1d5db' },
+];
+
+const NON_WORK_DAY_TYPES = ['Rest', 'Travel'];
+
 function TimecardDayRow({
   entry,
   dayIndex,
@@ -18,7 +30,13 @@ function TimecardDayRow({
   isSixthDay = false,
   isSeventhDay = false,
   standardDayHrs = 11,
+  dayTypes,
 }) {
+  const availableDayTypes = dayTypes?.length > 0 ? dayTypes : DEFAULT_DAY_TYPES;
+  const currentDayType = entry?.dayType || 'Shoot';
+  const isNonWorkDayType = NON_WORK_DAY_TYPES.some(
+    (t) => currentDayType.toLowerCase().includes(t.toLowerCase())
+  ) || availableDayTypes.find((dt) => dt.name === currentDayType)?.isWorkDay === false;
   const dayLabel = DAY_LABELS[dayIndex] || "";
   const dateStr = date ? format(new Date(date), "dd/MM") : "";
   const fullDateStr = date ? format(new Date(date), "EEE dd MMM") : "";
@@ -28,7 +46,7 @@ function TimecardDayRow({
   const isRestDay = entry?.isRestDay || false;
   const isTravelDay = entry?.isTravelDay || false;
   const isHoliday = entry?.isHoliday || false;
-  const isOff = isRestDay || isHoliday;
+  const isOff = isRestDay || isHoliday || isNonWorkDayType;
 
   // Client-side hour calculation for real-time display
   const hours = useMemo(() => {
@@ -125,6 +143,36 @@ function TimecardDayRow({
             </Tooltip>
           )}
         </div>
+      </td>
+
+      {/* Day Type */}
+      <td className="px-1.5 py-2">
+        <select
+          value={currentDayType}
+          onChange={(e) => handleFieldChange("dayType", e.target.value)}
+          disabled={disabled}
+          className={cn(
+            "h-8 w-[110px] rounded-md border border-input bg-background px-2 text-xs font-medium",
+            "focus:outline-none focus:ring-1 focus:ring-ring",
+            "disabled:cursor-not-allowed disabled:opacity-50"
+          )}
+        >
+          {availableDayTypes.map((dt) => (
+            <option key={dt.name} value={dt.name}>
+              {dt.name}
+            </option>
+          ))}
+        </select>
+        {/* Color dot indicator */}
+        {(() => {
+          const dtColor = availableDayTypes.find((dt) => dt.name === currentDayType)?.color;
+          return dtColor ? (
+            <span
+              className="ml-1 inline-block h-2 w-2 rounded-full align-middle"
+              style={{ backgroundColor: dtColor }}
+            />
+          ) : null;
+        })()}
       </td>
 
       {/* Call Time */}

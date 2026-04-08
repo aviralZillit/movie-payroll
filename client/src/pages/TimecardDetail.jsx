@@ -389,6 +389,7 @@ export default function TimecardDetail() {
             onEntryChange={handleEntryChange}
             disabled={!isEditable}
             standardDayHrs={timecard.dealMemoId?.standardWorkDayHrs}
+            dayTypes={timecard.productionId?.dayTypes}
           />
         </div>
 

@@ -25,6 +25,7 @@ import {
   Landmark,
   Calculator,
 } from "lucide-react";
+import { isPayrollVisibleRole } from "@/lib/countryFieldConfig";
 
 // ---------------------------------------------------------------------------
 // Summary section helper
@@ -59,6 +60,19 @@ function SummaryRow({ label, value, badge }) {
 }
 
 // ---------------------------------------------------------------------------
+// Status badge for right to work
+// ---------------------------------------------------------------------------
+function RtwStatusBadge({ status }) {
+  const config = {
+    verified: { label: "Verified", className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" },
+    pending: { label: "Pending", className: "bg-amber-500/10 text-amber-600 border-amber-500/30" },
+    expired: { label: "Expired", className: "bg-red-500/10 text-red-600 border-red-500/30" },
+  };
+  const c = config[status] || config.pending;
+  return <Badge variant="outline" className={cn("text-[10px]", c.className)}>{c.label}</Badge>;
+}
+
+// ---------------------------------------------------------------------------
 // Step 9 - Preview & Issue
 // ---------------------------------------------------------------------------
 export default function Step9PreviewIssue({
@@ -67,44 +81,35 @@ export default function Step9PreviewIssue({
   onSaveDraft,
   isSubmitting = false,
   labels = {},
-  currencySymbol = "\u00A3",
+  currencySymbol = "£",
+  userRole,
 }) {
   const data = watch();
   const previewRef = useRef(null);
 
   const allowances = data.allowances || [];
   const documents = data.documents || [];
-  const totalAllowances = allowances.reduce((sum, a) => sum + (Number(a?.amount) || 0), 0);
   const cs = currencySymbol;
+  const showPayroll = isPayrollVisibleRole(userRole);
 
   // Weekly cost estimate
+  const isUS = labels.territory === "US" || data.territory === "US";
   const costEstimate = useMemo(() => {
-    const weekly = Math.round((Number(data.weeklyRate) || Number(data.dailyRate) * 5 || Number(data.hourlyRate) * 50 || 0) * 100) / 100;
-    const isUS = labels.territory === "US" || data.territory === "US";
+    const weekly = Math.round((Number(data.weeklyRate) || Number(data.dailyRate) * 5 || 0) * 100) / 100;
     const hp = (!isUS && data.hpMode !== "incl" && data.hpMode !== "na") ? weekly * 0.1207 : 0;
-    const kit = Number(data.kitAllowance) || 0;
-    const car = Number(data.carAllowance) || 0;
-    const phone = Number(data.phoneAllowance) || 0;
-    const computer = Number(data.computerAllowance) || 0;
-    const travel = Number(data.travelAllowance) || 0;
-    const perDiem = (Number(data.perDiem) || 0) * 5;
-    const housing = Number(data.housingAllowance) || 0;
-    const custom = (data.customAllowances || []).reduce((s, c) => s + (Number(c?.amount) || 0), 0);
-    const allowTotal = kit + car + phone + computer + travel + perDiem + housing + custom + totalAllowances;
-    const nicPct = isUS ? 0.0765 : 0.138;
-    const penPct = isUS ? 0.20 : 0.03;
-    const onCosts = weekly * (nicPct + penPct);
+    const allowTotal = allowances.reduce((sum, a) => sum + (Number(a?.amount) || 0), 0);
+    // US: FICA (7.65%) + P&H/Fringe (~20%)  |  UK: Employer NIC (13.8%) + Pension (3%)
+    const employerTaxPct = isUS ? 0.0765 : 0.138;
+    const fringePct = isUS ? 0.20 : 0.03;
+    const onCosts = weekly * (employerTaxPct + fringePct);
     const total = weekly + hp + allowTotal + onCosts;
     return { weekly, hp, allowances: allowTotal, onCosts, total };
-  }, [data, totalAllowances, labels]);
+  }, [data, allowances, isUS]);
 
   const handleDownloadPDF = useCallback(() => {
     if (!previewRef.current) return;
-
-    // Clone the preview content into a new window for clean printing
     const printWindow = window.open("", "_blank", "width=800,height=1100");
     if (!printWindow) return;
-
     const content = previewRef.current.innerHTML;
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -187,6 +192,15 @@ export default function Step9PreviewIssue({
           {/* Crew Details */}
           <SummarySection icon={Users} title="Crew Details">
             <SummaryRow label="Employment Status" value={labels.employmentStatus || data.employmentStatus} />
+            {data.rightToWork?.rtwDocType && (
+              <div className="flex justify-between py-1 px-2">
+                <span className="text-muted-foreground">Right to Work</span>
+                <span className="flex items-center gap-2">
+                  <span className="text-sm">{data.rightToWork.rtwDocType}</span>
+                  <RtwStatusBadge status={data.rightToWork?.status} />
+                </span>
+              </div>
+            )}
           </SummarySection>
 
           <Separator />
@@ -196,13 +210,14 @@ export default function Step9PreviewIssue({
             <SummaryRow label="Deal Type" value={data.dealType} />
             <SummaryRow label="Start Date" value={data.startDate} />
             <SummaryRow label="End Date" value={data.endDate} />
-            <SummaryRow label="Guaranteed Weeks" value={data.guaranteedWeeks} />
-            <SummaryRow label="Prep Days" value={data.prepDays} />
-            <SummaryRow label="Shoot Days" value={data.shootDays} />
-            <SummaryRow label="Wrap Days" value={data.wrapDays} />
-            <SummaryRow label="Travel Days" value={data.travelDays} />
             <SummaryRow label="Exclusivity" value={data.exclusivity} />
-            <SummaryRow label="Pay or Play" value={data.payOrPlay ? "Yes" : "No"} />
+            {data.separateRates && (
+              <>
+                <SummaryRow label="Prep Rate" value={data.prepRate != null ? `${cs}${Number(data.prepRate).toLocaleString()}` : null} />
+                <SummaryRow label="Shoot Rate" value={data.shootRate != null ? `${cs}${Number(data.shootRate).toLocaleString()}` : null} />
+                <SummaryRow label="Wrap Rate" value={data.wrapRate != null ? `${cs}${Number(data.wrapRate).toLocaleString()}` : null} />
+              </>
+            )}
           </SummarySection>
 
           <Separator />
@@ -210,24 +225,22 @@ export default function Step9PreviewIssue({
           {/* Rates */}
           <SummarySection icon={Banknote} title="Rates">
             <SummaryRow label="Rate Basis" value={data.rateBasis} />
-            <SummaryRow
-              label="Rate Amount"
-              value={data.rateAmount != null ? `${currencySymbol}${Number(data.rateAmount).toLocaleString()}` : null}
-            />
+            {!data.separateRates && (
+              <SummaryRow
+                label="Rate Amount"
+                value={data.rateAmount != null ? `${cs}${Number(data.rateAmount).toLocaleString()}` : null}
+              />
+            )}
             <SummaryRow label="Rate Type" value={data.rateType} />
             <SummaryRow
               label="Weekly Rate"
-              value={data.weeklyRate != null ? `${currencySymbol}${Number(data.weeklyRate).toLocaleString()}` : null}
+              value={data.weeklyRate != null ? `${cs}${Number(data.weeklyRate).toLocaleString()}` : null}
             />
             <SummaryRow
               label="Daily Rate"
-              value={data.dailyRate != null ? `${currencySymbol}${Number(data.dailyRate).toLocaleString()}` : null}
+              value={data.dailyRate != null ? `${cs}${Number(data.dailyRate).toLocaleString()}` : null}
             />
-            <SummaryRow
-              label="Hourly Rate"
-              value={data.hourlyRate != null ? `${currencySymbol}${Number(data.hourlyRate).toLocaleString()}` : null}
-            />
-            {data.hpMode && <SummaryRow label="Holiday Pay Mode" value={data.hpMode} />}
+            {data.hpMode && !isUS && <SummaryRow label="Holiday Pay Mode" value={data.hpMode} />}
           </SummarySection>
 
           <Separator />
@@ -237,22 +250,14 @@ export default function Step9PreviewIssue({
             {allowances.length === 0 ? (
               <p className="text-muted-foreground text-sm px-2">No allowances</p>
             ) : (
-              <>
-                {allowances.map((a, i) => (
-                  <SummaryRow
-                    key={i}
-                    label={a.name || `Allowance ${i + 1}`}
-                    value={`${currencySymbol}${Number(a.amount || 0).toLocaleString()}`}
-                    badge={a.frequency}
-                  />
-                ))}
-                <div className="flex justify-between px-2 pt-1 font-medium">
-                  <span>Total Allowances</span>
-                  <span className="tabular-nums">
-                    {currencySymbol}{totalAllowances.toLocaleString()}
-                  </span>
-                </div>
-              </>
+              allowances.map((a, i) => (
+                <SummaryRow
+                  key={i}
+                  label={a.name || `Allowance ${i + 1}`}
+                  value={`${cs}${Number(a.amount || 0).toLocaleString()}`}
+                  badge={a.frequency}
+                />
+              ))
             )}
           </SummarySection>
 
@@ -260,15 +265,20 @@ export default function Step9PreviewIssue({
 
           {/* Nominal Coding */}
           <SummarySection icon={Hash} title="Nominal Coding">
-            <SummaryRow label="Tax Credit Scheme" value={data.taxCreditScheme || "None"} />
+            <div className="px-2 text-muted-foreground text-sm">
+              {(data.nominalLines || []).length} nominal lines configured
+            </div>
           </SummarySection>
 
           <Separator />
 
-          {/* Compliance */}
-          <SummarySection icon={ShieldCheck} title="Compliance">
-            <div className="px-2 text-muted-foreground text-sm">
-              Compliance checks reviewed in previous step
+          {/* Right to Work */}
+          <SummarySection icon={ShieldCheck} title="Right to Work">
+            <div className="px-2 flex items-center gap-2">
+              <RtwStatusBadge status={data.rightToWork?.status} />
+              <span className="text-sm text-muted-foreground">
+                {data.rightToWork?.rtwDocType || "Not yet configured"}
+              </span>
             </div>
           </SummarySection>
 
@@ -289,13 +299,16 @@ export default function Step9PreviewIssue({
             )}
           </SummarySection>
 
-          <Separator />
-
-          {/* Payroll */}
-          <SummarySection icon={Building} title="Payroll">
-            <SummaryRow label="Bureau" value={labels.bureau} />
-            <SummaryRow label="Pay Frequency" value={data.payFrequency} />
-          </SummarySection>
+          {/* Payroll - only visible to accounting roles */}
+          {showPayroll && (
+            <>
+              <Separator />
+              <SummarySection icon={Building} title="Payroll">
+                <SummaryRow label="Bureau" value={labels.bureau} />
+                <SummaryRow label="Pay Frequency" value={data.payFrequency} />
+              </SummarySection>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -327,7 +340,7 @@ export default function Step9PreviewIssue({
               </div>
             )}
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground flex items-center gap-1.5"><TrendingDown className="size-3" />Employer On-costs</span>
+              <span className="text-muted-foreground flex items-center gap-1.5"><TrendingDown className="size-3" />{isUS ? 'FICA + P&H/Fringe' : 'Employer On-costs'}</span>
               <span className="font-medium tabular-nums text-red-500">{cs}{costEstimate.onCosts.toFixed(0)}</span>
             </div>
             <Separator />
@@ -346,9 +359,9 @@ export default function Step9PreviewIssue({
             </div>
             <div className="flex gap-3 flex-wrap">
               <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><span className="size-2 rounded-full bg-primary" />Basic</span>
-              <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><span className="size-2 rounded-full bg-amber-500" />HP</span>
+              {!isUS && <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><span className="size-2 rounded-full bg-amber-500" />HP</span>}
               <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><span className="size-2 rounded-full bg-blue-500" />Allow.</span>
-              <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><span className="size-2 rounded-full bg-red-500" />On-costs</span>
+              <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><span className="size-2 rounded-full bg-red-500" />{isUS ? 'FICA+P&H' : 'On-costs'}</span>
             </div>
           </CardContent>
         </Card>
@@ -368,14 +381,14 @@ export default function Step9PreviewIssue({
                 {i < 5 ? (
                   <>
                     <span className="text-[11px] text-muted-foreground">
-                      {data.standardWorkDayHrs || 10}hrs + {data.lunchBreakHrs || 1}hr lunch
+                      Standard day
                     </span>
                     <Badge variant="secondary" className="text-[10px] h-5">Work</Badge>
                   </>
                 ) : i === 5 ? (
                   <>
                     <span className="text-[11px] text-muted-foreground">
-                      {data.sixthDayMultiplier ? `×${data.sixthDayMultiplier}` : "×1.5"} premium
+                      6th day premium
                     </span>
                     <Badge variant="outline" className="text-[10px] h-5 text-amber-500 border-amber-500/30">6th Day</Badge>
                   </>
@@ -387,21 +400,6 @@ export default function Step9PreviewIssue({
                 )}
               </div>
             ))}
-            <Separator className="my-2" />
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Standard Day</span>
-              <span className="font-medium">{data.standardWorkDayHrs || 10} hrs</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Turnaround</span>
-              <span className="font-medium">{data.turnaroundMinHrs || 11} hrs min</span>
-            </div>
-            {data.mealPenaltyAmount > 0 && (
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Meal Penalty</span>
-                <span className="font-medium">{cs}{data.mealPenaltyAmount} after {data.mealPenaltyAfterHrs || 6}hrs</span>
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>

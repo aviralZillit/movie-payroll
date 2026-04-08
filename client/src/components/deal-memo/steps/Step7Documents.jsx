@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { FileText, Plus, X, Pen, FileCheck, Upload, CheckCircle2 } from "lucide-react";
+import { FileText, Plus, X, Pen, FileCheck, Upload, CheckCircle2, Info } from "lucide-react";
+import { toast } from "sonner";
 
 // Standard production documents (from Kate's documentSigningService)
 const STANDARD_DOCUMENTS = [
@@ -163,14 +164,16 @@ export default function Step7Documents({ control, errors, watch, setValue }) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleFileUpload = (index, file) => {
-    // In production, this would upload to S3/cloud storage
-    // For now, just store the filename
+    // Store filename and file size in form state
     setValue(`documents.${index}.uploadedFile`, file.name);
+    setValue(`documents.${index}.fileSize`, file.size);
     if (!documents[index]?.filename || documents[index]?.isStandard) {
       // Don't overwrite standard document filenames
     } else {
       setValue(`documents.${index}.filename`, file.name);
     }
+    const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+    toast.success(`${file.name} (${sizeMB}MB) selected — will be uploaded when deal memo is saved`);
   };
 
   return (
@@ -201,6 +204,12 @@ export default function Step7Documents({ control, errors, watch, setValue }) {
           </div>
         </CardHeader>
         <CardContent>
+          <div className="flex items-start gap-2 rounded-md bg-blue-500/10 border border-blue-500/20 px-3 py-2 mb-4">
+            <Info className="size-4 text-blue-500 mt-0.5 shrink-0" />
+            <p className="text-xs text-blue-600 dark:text-blue-400">
+              Select files to attach. Documents will be uploaded to the server when the deal memo is created or saved as draft.
+            </p>
+          </div>
           {fields.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">
               No documents added yet. Standard documents will be added automatically.

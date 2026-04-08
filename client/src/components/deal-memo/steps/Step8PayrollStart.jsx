@@ -1,7 +1,7 @@
 import { Controller } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectTrigger,
@@ -10,7 +10,8 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { Building, CalendarClock, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { Building, Users } from "lucide-react";
+import { getBureauOptions } from "@/lib/countryFieldConfig";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -22,96 +23,6 @@ const PAY_FREQUENCY_OPTIONS = [
   { value: "semi_monthly", label: "Semi-Monthly" },
 ];
 
-// Bureau options by territory (from bureauExportService.js)
-const BUREAU_OPTIONS = {
-  UK: [
-    { _id: "SARGENT_DISC", name: "Sargent-Disc" },
-    { _id: "MEDIA_SERVICES", name: "Media Services" },
-    { _id: "PSS_PAYROLL", name: "PSS Payroll" },
-    { _id: "IN_HOUSE", name: "In-house" },
-  ],
-  US: [
-    { _id: "CAST_AND_CREW", name: "Cast & Crew" },
-    { _id: "ENTERTAINMENT_PARTNERS", name: "Entertainment Partners" },
-    { _id: "IN_HOUSE", name: "In-house" },
-  ],
-  IE: [
-    { _id: "MONEYPENNY", name: "Moneypenny" },
-    { _id: "IN_HOUSE", name: "In-house" },
-  ],
-  CA: [
-    { _id: "CAST_AND_CREW", name: "Cast & Crew" },
-    { _id: "ENTERTAINMENT_PARTNERS", name: "Entertainment Partners" },
-    { _id: "IN_HOUSE", name: "In-house" },
-  ],
-  AU: [
-    { _id: "PSS_PAYROLL", name: "PSS Payroll" },
-    { _id: "IN_HOUSE", name: "In-house" },
-  ],
-  DEFAULT: [
-    { _id: "IN_HOUSE", name: "In-house" },
-    { _id: "OTHER", name: "Other" },
-  ],
-};
-
-// Outstanding fields by territory (from complianceService.js)
-const OUTSTANDING_FIELDS = {
-  UK: [
-    { name: "niNumber", label: "NI Number" },
-    { name: "taxCode", label: "Tax Code" },
-    { name: "bankSortCode", label: "Bank Sort Code" },
-    { name: "bankAccountNumber", label: "Bank Account Number" },
-    { name: "dateOfBirth", label: "Date of Birth" },
-    { name: "address", label: "Address" },
-    { name: "emergencyContact", label: "Emergency Contact" },
-  ],
-  US: [
-    { name: "ssn", label: "Social Security Number" },
-    { name: "w4FilingStatus", label: "W-4 Filing Status" },
-    { name: "stateWithholding", label: "State Withholding" },
-    { name: "achRoutingNumber", label: "ACH Routing Number" },
-    { name: "achAccountNumber", label: "ACH Account Number" },
-    { name: "dateOfBirth", label: "Date of Birth" },
-    { name: "address", label: "Address" },
-  ],
-  CA: [
-    { name: "sin", label: "Social Insurance Number" },
-    { name: "province", label: "Province" },
-    { name: "dateOfBirth", label: "Date of Birth" },
-    { name: "address", label: "Address" },
-  ],
-  AU: [
-    { name: "tfn", label: "Tax File Number" },
-    { name: "superFund", label: "Superannuation Fund" },
-    { name: "superMemberNumber", label: "Super Member Number" },
-    { name: "bsb", label: "BSB" },
-    { name: "dateOfBirth", label: "Date of Birth" },
-    { name: "address", label: "Address" },
-  ],
-};
-
-// ---------------------------------------------------------------------------
-// Outstanding field status
-// ---------------------------------------------------------------------------
-function FieldStatus({ label, completed }) {
-  return (
-    <div className="flex items-center justify-between rounded-md border px-3 py-2">
-      <span className="text-sm">{label}</span>
-      {completed ? (
-        <Badge variant="outline" className="gap-1 text-xs bg-emerald-500/10 text-emerald-600 border-emerald-500/30 dark:text-emerald-400">
-          <CheckCircle2 className="size-3" />
-          Complete
-        </Badge>
-      ) : (
-        <Badge variant="outline" className="gap-1 text-xs bg-red-500/10 text-red-600 border-red-500/30 dark:text-red-400">
-          <XCircle className="size-3" />
-          Missing
-        </Badge>
-      )}
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Step 8 - Payroll Start
 // ---------------------------------------------------------------------------
@@ -120,22 +31,8 @@ export default function Step8PayrollStart({
   errors,
   watch,
   territory = "UK",
-  bureaus: propBureaus,
-  outstandingFields: propFields,
 }) {
-  // Use props if provided, otherwise generate from territory
-  const bureaus = propBureaus?.length > 0 ? propBureaus : (BUREAU_OPTIONS[territory] || BUREAU_OPTIONS.DEFAULT);
-  const territoryFields = OUTSTANDING_FIELDS[territory] || OUTSTANDING_FIELDS.UK;
-
-  // Check which fields the crew has already filled (from form state)
-  const formValues = watch();
-  const outstandingFields = (propFields?.length > 0 ? propFields : territoryFields).map((f) => ({
-    ...f,
-    completed: !!formValues[f.name],
-  }));
-
-  const completedCount = outstandingFields.filter((f) => f.completed).length;
-  const totalCount = outstandingFields.length;
+  const bureaus = getBureauOptions(territory);
 
   return (
     <div className="space-y-6">
@@ -199,44 +96,87 @@ export default function Step8PayrollStart({
         </CardContent>
       </Card>
 
+      {/* Responsibility Assignments */}
       <Card>
         <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <CalendarClock className="size-5 text-primary" />
-              Outstanding Fields
-            </CardTitle>
-            {totalCount > 0 && (
-              <div className="flex items-center gap-1.5">
-                <AlertCircle className={cn(
-                  "size-4",
-                  completedCount === totalCount ? "text-emerald-500" : "text-amber-500"
-                )} />
-                <span className="text-sm text-muted-foreground tabular-nums">
-                  {completedCount} / {totalCount} complete
-                </span>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Users className="size-5 text-primary" />
+            Responsibility Assignments
+          </CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Who manages approvals, payroll processing, and department oversight for this deal.
+          </p>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <Controller
+            name="productionAccountant"
+            control={control}
+            defaultValue=""
+            render={({ field }) => (
+              <div className="space-y-1.5">
+                <Label>Production Accountant</Label>
+                <Input
+                  placeholder="e.g. David Chen"
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                />
               </div>
             )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {outstandingFields.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">
-              All required fields will be checked before payroll can start.
-            </p>
-          ) : (
-            <div className="grid gap-2 sm:grid-cols-2">
-              {outstandingFields.map((field) => (
-                <FieldStatus
-                  key={field.name}
-                  label={field.label}
-                  completed={field.completed}
+          />
+
+          <Controller
+            name="payrollAdmin"
+            control={control}
+            defaultValue=""
+            render={({ field }) => (
+              <div className="space-y-1.5">
+                <Label>Payroll Admin</Label>
+                <Input
+                  placeholder="e.g. Sarah Mitchell"
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
                 />
-              ))}
-            </div>
-          )}
+              </div>
+            )}
+          />
+
+          <Controller
+            name="hodApprover"
+            control={control}
+            defaultValue=""
+            render={({ field }) => (
+              <div className="space-y-1.5">
+                <Label>HOD / Approver</Label>
+                <Input
+                  placeholder="e.g. Emma Thompson"
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                />
+              </div>
+            )}
+          />
+
+          <Controller
+            name="timecardApprover"
+            control={control}
+            defaultValue=""
+            render={({ field }) => (
+              <div className="space-y-1.5">
+                <Label>Timecard Approver</Label>
+                <Input
+                  placeholder="e.g. Michael Brooks"
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                />
+              </div>
+            )}
+          />
         </CardContent>
       </Card>
+
+      <p className="text-xs text-muted-foreground text-center">
+        Crew onboarding requirements and payroll readiness are tracked separately in the Crew Portal and Payroll page.
+      </p>
     </div>
   );
 }

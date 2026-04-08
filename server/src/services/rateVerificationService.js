@@ -13,6 +13,88 @@ import { RateBibleEntry } from '../models/index.js';
  * Returns 0 (no match) to 100 (exact match).
  * Uses scoring instead of boolean to pick the BEST match.
  */
+// Grade aliases: maps designation names → rate bible grade names
+const GRADE_ALIASES = {
+  // Camera
+  'director of photography': 'dop / cinematographer',
+  '1st assistant camera (focus puller)': 'focus puller / 1st ac',
+  '2nd assistant camera (clapper loader)': '2nd ac / clapper loader',
+  'drone operator': 'camera operator',
+  // ADs
+  'floor runner': 'set runner',
+  'crowd ad': '3rd ad',
+  // Sound
+  'sound trainee': 'sound assistant',
+  // Lighting
+  'best boy electric': 'best boy (electric)',
+  'electrician (spark)': 'spark',
+  'rigging electrician': 'rigger electrician',
+  // Art
+  'production designer': 'art director',
+  'art department assistant': 'art department trainee',
+  'draughtsperson': 'standby art director',
+  'art department trainee': 'art dept trainee',
+  // Costume
+  'costume standby': 'stand-by costume',
+  'costume maker / cutter': 'cutter / maker',
+  'costume daily / dresser': 'crowd costume',
+  // HMU
+  'hair & makeup assistant': 'makeup artist',
+  'hair & makeup trainee': 'hmu trainee',
+  // Props
+  'standby props': 'stand-by props',
+  'props buyer': 'assistant property master',
+  'chargehand props': 'chargehand dressing props',
+  // Construction
+  'hod plasterer': 'plasterer',
+  // SFX
+  'sfx assistant': 'sfx floor technician',
+  // Set Crafts
+  'standby rigger': 'drapes hand',
+  'standby stagehand': 'drapes hand',
+  // Graphics
+  'graphics trainee': 'graphic assistant',
+  // VFX
+  'cg artist': '3d artist',
+  // Runners
+  'rushes runner': 'rushes / post runner',
+  // Drivers
+  'minibus driver': 'minibus / car driver',
+  'hgv driver': 'hgv / artic driver',
+  // Riggers
+  'rigging supervisor': 'rigging gaffer',
+  'rigging assistant': 'rigger electrician',
+  // US Camera
+  'still photographer': 'camera operator',
+  // US Costume
+  'key costumer': 'costume supervisor',
+  'costumer': 'assistant costume designer',
+  'costume coordinator': 'assistant costume designer',
+  // US HMU
+  'department head - makeup': 'makeup / hair designer',
+  'department head - hair': 'makeup / hair designer',
+  'key makeup artist': 'key makeup artist',
+  'key hairstylist': 'key hair artist',
+  'hairstylist': 'hair artist',
+  'special makeup effects artist': 'prosthetics supervisor',
+  // US Sound
+  'sound utility': 'sound assistant',
+  'video assist operator': 'playback operator',
+  // US Props
+  'props buyer': 'assistant property master',
+  'props person': 'dressing props',
+  // US Art
+  'art department coordinator': 'art dept trainee',
+  'model maker': 'props maker',
+  // Production Office
+  'script supervisor': 'production coordinator',
+  'production office coordinator': 'production coordinator',
+  'assistant production office coordinator': 'asst production coordinator',
+  'first assistant accountant': '1st assistant accountant',
+  'second assistant accountant': '2nd assistant accountant',
+  'payroll accountant': '1st assistant accountant',
+};
+
 function gradeMatchScore(rateGrade, searchGrade) {
   if (!rateGrade || !searchGrade) return 0;
   const a = rateGrade.toLowerCase().trim();
@@ -21,16 +103,25 @@ function gradeMatchScore(rateGrade, searchGrade) {
   // Exact match
   if (a === b) return 100;
 
+  // Check aliases — if the search grade has a known alias, also check that
+  const alias = GRADE_ALIASES[b];
+  if (alias && a.includes(alias.toLowerCase())) return 95;
+  if (alias && alias.toLowerCase().includes(a)) return 92;
+
   // Direct includes (one contains the other fully)
   if (a.includes(b)) return 90;
   if (b.includes(a)) return 85;
 
   // Expand abbreviations for comparison
-  const ABBREVS = { 'ad': 'assistant director', 'ac': 'assistant camera', 'dop': 'director of photography', 'upm': 'unit production manager', 'hmu': 'hair make-up', 'sfx': 'special effects', 'dit': 'digital imaging technician' };
+  const ABBREVS = {
+    'ad': 'assistant director', 'ac': 'assistant camera', 'dop': 'director of photography',
+    'upm': 'unit production manager', 'hmu': 'hair make-up', 'sfx': 'special effects',
+    'dit': 'digital imaging technician', 'hod': 'head of department',
+    'best boy': 'best boy', 'vfx': 'visual effects', 'cg': 'computer graphics',
+  };
   let aExpanded = a;
   let bExpanded = b;
   for (const [abbr, full] of Object.entries(ABBREVS)) {
-    // Only expand standalone abbreviations (word boundary), not substrings
     aExpanded = aExpanded.replace(new RegExp(`\\b${abbr}\\b`, 'g'), full);
     bExpanded = bExpanded.replace(new RegExp(`\\b${abbr}\\b`, 'g'), full);
   }
@@ -38,13 +129,26 @@ function gradeMatchScore(rateGrade, searchGrade) {
   // After expansion, check includes again
   if (aExpanded.includes(bExpanded) || bExpanded.includes(aExpanded)) return 80;
 
+  // Also check alias after expansion
+  if (alias) {
+    const aliasExpanded = alias.toLowerCase();
+    if (aExpanded.includes(aliasExpanded) || aliasExpanded.includes(aExpanded)) return 78;
+  }
+
   // Token-based scoring
-  const aTokens = aExpanded.replace(/[()\/,]/g, ' ').split(/\s+/).filter(t => t.length > 1);
-  const bTokens = bExpanded.replace(/[()\/,]/g, ' ').split(/\s+/).filter(t => t.length > 1);
+  const aTokens = aExpanded.replace(/[()\/,\-&]/g, ' ').split(/\s+/).filter(t => t.length > 1);
+  const bTokens = bExpanded.replace(/[()\/,\-&]/g, ' ').split(/\s+/).filter(t => t.length > 1);
   const matching = bTokens.filter(bt => aTokens.some(at => at === bt));
   const matchRatio = bTokens.length > 0 ? matching.length / bTokens.length : 0;
 
-  // Need at least 50% of search tokens to match AND at least 2 tokens
+  // Allow single-token match if the token is highly specific (not a generic word)
+  const GENERIC = new Set(['assistant', 'senior', 'junior', 'head', 'key', 'lead', 'trainee', 'department', 'the', 'and', 'of']);
+  const specificMatching = matching.filter(m => !GENERIC.has(m));
+
+  // If at least 1 specific token matches and ratio is decent
+  if (specificMatching.length >= 1 && matchRatio >= 0.4) return Math.round(40 + matchRatio * 40);
+
+  // Fallback: at least 2 tokens match with 50%+
   if (matching.length >= 2 && matchRatio >= 0.5) return Math.round(40 + matchRatio * 40);
 
   return 0;

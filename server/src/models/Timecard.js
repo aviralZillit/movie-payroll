@@ -24,7 +24,11 @@ const timecardEntrySchema = new mongoose.Schema({
   turnaroundViolation: { type: Boolean, default: false },
   turnaroundShortfallHrs: { type: Number, default: 0 },
 
-  // Flags
+  // Day type — crew selects from production's configured day types
+  // Free text: "Prep", "Shoot", "Wrap", "Travel", "Turnaround", "Rehearsal", "Recce", "Rest", etc.
+  dayType: { type: String, default: null },
+
+  // Flags (some auto-derived from dayType, others from calendar position)
   isTravelDay: { type: Boolean, default: false },
   isSixthDay: { type: Boolean, default: false },
   isSeventhDay: { type: Boolean, default: false },

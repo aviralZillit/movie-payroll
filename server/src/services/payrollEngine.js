@@ -9,6 +9,38 @@ import { getOvertimeRules } from './rateEngine.js';
 import { calculateTerritoryFringes } from './territoryFringeCalculator.js';
 import { calculateTerritoryTax } from './territoryTaxCalculator.js';
 import { calculateAllowanceProRating } from './allowanceCalculator.js';
+import { getDefaultDayTypes } from '../config/dayTypeDefaults.js';
+
+/**
+ * Get the daily rate for an entry based on its dayType and the deal memo rates.
+ * When separateRates is enabled on the deal memo, routes to the correct rate
+ * (prep/shoot/wrap/travel) and applies the day type premium multiplier.
+ */
+function getDailyRateForEntry(entry, dealMemo, dayTypeConfig) {
+  if (!dealMemo.separateRates) {
+    return dealMemo.dailyRate || (dealMemo.weeklyRate / 5) || 0;
+  }
+
+  const rateKey = dayTypeConfig?.rateKey || 'shoot';
+  const rateMap = {
+    prep: dealMemo.prepRate,
+    shoot: dealMemo.shootRate || dealMemo.dailyRate,
+    wrap: dealMemo.wrapRate,
+    travel: dealMemo.travelRate,
+  };
+
+  const baseRate = rateMap[rateKey] || dealMemo.dailyRate || (dealMemo.weeklyRate / 5) || 0;
+  const premium = dayTypeConfig?.premiumMultiplier || 1.0;
+  return baseRate * premium;
+}
+
+/**
+ * Resolve the dayTypeConfig for an entry from the production day types or defaults.
+ */
+function resolveDayTypeConfig(entry, dayTypes) {
+  const dayTypeName = entry.dayType || 'Shoot';
+  return dayTypes.find((dt) => dt.name === dayTypeName) || dayTypes[0] || null;
+}
 
 /**
  * Calculate a full payroll item for a timecard + deal memo.
@@ -36,18 +68,32 @@ const calculatePayrollItemV2 = async (timecard, dealMemo) => {
   const dailyRate = new Decimal(dealMemo.dailyRate || 0);
   const weeklyRate = new Decimal(dealMemo.weeklyRate || 0);
 
+  // --- Resolve day type configurations ---
+  const productionDayTypes = timecard.productionId?.dayTypes
+    || getDefaultDayTypes(dealMemo.territory || 'UK');
+
   // --- Base pay ---
   let basePay;
   const payBasis = dealMemo.payBasis || 'weekly';
   if (payBasis === 'weekly') {
     basePay = weeklyRate;
+  } else if (dealMemo.separateRates) {
+    // When separate rates are enabled, sum per-entry daily rates
+    let entryBasePay = new Decimal(0);
+    for (const entry of timecard.entries || []) {
+      if (!entry.callTime || !entry.wrapTime) continue;
+      const dtConfig = resolveDayTypeConfig(entry, productionDayTypes);
+      const entryRate = getDailyRateForEntry(entry, dealMemo, dtConfig);
+      entryBasePay = entryBasePay.plus(entryRate);
+    }
+    basePay = entryBasePay;
   } else {
     basePay = dailyRate.times(timecard.daysWorked || 0);
   }
 
   // HP inclusive adjustment: basic = quoted / (1 + hpPct)
   if (dealMemo.hpMode === 'incl') {
-    const hpPct = dealMemo.holidayPayPct || 0.1207;
+    const hpPct = dealMemo.holidayPayPct != null ? dealMemo.holidayPayPct / 100 : 0.1207;
     basePay = basePay.div(1 + hpPct);
   }
 
@@ -77,6 +123,10 @@ const calculatePayrollItemV2 = async (timecard, dealMemo) => {
   let mealPenaltyPay = new Decimal(0);
   for (const entry of timecard.entries || []) {
     if (entry.mealPenaltyCount > 0) {
+      const dtConfig = resolveDayTypeConfig(entry, productionDayTypes);
+      // Skip meal penalty if day type config says it doesn't apply
+      if (dtConfig?.mealPenaltyApplies === false) continue;
+
       const amounts = dealMemo.mealPenaltyAmounts || [dealMemo.mealPenaltyRate || 0];
       for (let i = 0; i < entry.mealPenaltyCount; i++) {
         const amount = amounts[Math.min(i, amounts.length - 1)] || 0;
@@ -99,7 +149,8 @@ const calculatePayrollItemV2 = async (timecard, dealMemo) => {
 
   // --- Night premium ---
   const nightHrs = new Decimal(timecard.totalNightHrs || 0);
-  const nightPremiumPay = nightHrs.times(hourlyRate).times(dealMemo.nightPremiumPct || 0);
+  const nightPct = dealMemo.nightPremiumPct != null ? dealMemo.nightPremiumPct / 100 : 0;
+  const nightPremiumPay = nightHrs.times(hourlyRate).times(nightPct);
 
   // --- Turnaround penalties ---
   let turnaroundPenaltyPay = new Decimal(0);
@@ -197,6 +248,11 @@ const calculatePayrollItemV1 = async (timecard, dealMemo) => {
   const otRate2x = new Decimal(dealMemo.otRate2x || hourlyRate.times(2));
   const payBasis = dealMemo.payBasis || 'weekly';
 
+  // --- Resolve day type configurations ---
+  const territory = dealMemo.country === 'US' ? 'US' : 'UK';
+  const productionDayTypes = timecard.productionId?.dayTypes
+    || getDefaultDayTypes(territory);
+
   // Fetch OT rules for the union/dept
   const overtimeRules = await getOvertimeRules(
     dealMemo.unionId._id || dealMemo.unionId,
@@ -229,18 +285,40 @@ const calculatePayrollItemV1 = async (timecard, dealMemo) => {
 
     daysWorked++;
 
-    // Calculate day hours
-    const hours = calculateDayHours(entry, dealMemo, overtimeRules);
+    // Resolve day type config for this entry
+    const dayTypeConfig = resolveDayTypeConfig(entry, productionDayTypes);
+
+    // Calculate day hours — pass standardHoursOverride from day type config
+    const otOptions = {};
+    if (dayTypeConfig?.standardHours) {
+      otOptions.standardHoursOverride = dayTypeConfig.standardHours;
+    }
+
+    let hours;
+    if (dayTypeConfig?.otApplies === false) {
+      // No OT for this day type — all hours are straight
+      hours = calculateDayHours(entry, dealMemo, overtimeRules, otOptions);
+      // Override: put all hours into straight, zero out OT
+      hours.straightHrs = hours.totalWorkedHrs;
+      hours.ot1x5Hrs = 0;
+      hours.ot2xHrs = 0;
+    } else {
+      hours = calculateDayHours(entry, dealMemo, overtimeRules, otOptions);
+    }
 
     totalStraightHrs = totalStraightHrs.plus(hours.straightHrs);
     totalOt1x5Hrs = totalOt1x5Hrs.plus(hours.ot1x5Hrs);
     totalOt2xHrs = totalOt2xHrs.plus(hours.ot2xHrs);
     totalNightHrs = totalNightHrs.plus(hours.nightHrs);
 
-    // Meal penalty
-    const mealPenalty = calculateMealPenalty(entry, dealMemo);
-    totalMealPenalties = totalMealPenalties.plus(mealPenalty.count);
-    totalMealPenaltyAmount = totalMealPenaltyAmount.plus(mealPenalty.amount);
+    // Meal penalty — skip if day type config says it doesn't apply
+    if (dayTypeConfig?.mealPenaltyApplies === false) {
+      // No meal penalty for this day type
+    } else {
+      const mealPenalty = calculateMealPenalty(entry, dealMemo);
+      totalMealPenalties = totalMealPenalties.plus(mealPenalty.count);
+      totalMealPenaltyAmount = totalMealPenaltyAmount.plus(mealPenalty.amount);
+    }
 
     // Turnaround violation check
     if (i > 0) {

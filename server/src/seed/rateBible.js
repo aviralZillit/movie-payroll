@@ -1,7 +1,13 @@
+import { extraRateBibleEntries } from './rateBibleExtra.js';
+
 /**
  * Global Rates Bible seed data.
  * Extracted from Kate's zillit-rates-bible-ratesData.ts (261KB, 57 agreements).
  * Key agreements with verified rates from official BECTU, DGA, SAG-AFTRA, IATSE sources.
+ *
+ * Extra UK BECTU department rates (Sound, Grip, Lighting, Costume, HMU, Props,
+ * Construction, Locations, Post, Production Office, SFX, Set Crafts, Graphics,
+ * Animation & VFX, Runners, Drivers, Riggers) are imported from rateBibleExtra.js.
  */
 export const rateBibleEntries = [
   // ═══════════════════════════════════════════════════════════════════
@@ -283,4 +289,7 @@ export const rateBibleEntries = [
       { key: 'Turnaround', value: '10hrs minimum (BRECA Award)' },
     ],
   },
+
+  // Extra UK BECTU departments (imported from rateBibleExtra.js)
+  ...extraRateBibleEntries,
 ];

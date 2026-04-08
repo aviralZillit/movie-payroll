@@ -51,17 +51,20 @@ import {
   MessageSquare,
   History,
   Edit3,
+  Shield,
 } from "lucide-react";
 import { useState } from "react";
 
 // ---------------------------------------------------------------------------
 // Status config & timeline
 // ---------------------------------------------------------------------------
-const STATUS_ORDER = ["draft", "sent", "negotiating", "signed", "active", "completed"];
+const STATUS_ORDER = ["draft", "issued", "signed", "active", "completed"];
 const STATUS_CONFIG = {
   draft: { label: "Draft", color: "bg-gray-500", textColor: "text-gray-600 dark:text-gray-400" },
+  issued: { label: "Issued", color: "bg-blue-500", textColor: "text-blue-600 dark:text-blue-400" },
   sent: { label: "Sent", color: "bg-blue-500", textColor: "text-blue-600 dark:text-blue-400" },
   negotiating: { label: "Negotiating", color: "bg-amber-500", textColor: "text-amber-600 dark:text-amber-400" },
+  pending_approval: { label: "Pending Approval", color: "bg-orange-500", textColor: "text-orange-600 dark:text-orange-400" },
   signed: { label: "Signed", color: "bg-emerald-500", textColor: "text-emerald-600 dark:text-emerald-400" },
   active: { label: "Active", color: "bg-purple-500", textColor: "text-purple-600 dark:text-purple-400" },
   completed: { label: "Completed", color: "bg-teal-500", textColor: "text-teal-600 dark:text-teal-400" },
@@ -96,8 +99,18 @@ function getStatusActions(status, user, memo) {
 
   if (status === 'draft' && isAdmin) {
     actions.push({ action: 'edit', label: 'Edit', icon: PenLine, variant: 'outline', isLink: true });
-    actions.push({ action: 'send', label: 'Send', icon: Send, variant: 'default' });
+    actions.push({ action: 'send', label: 'Issue to Crew', icon: Send, variant: 'default' });
     actions.push({ action: 'cancel', label: 'Cancel', icon: XCircle, variant: 'destructive', confirm: true });
+  } else if (status === 'issued') {
+    // Issued → crew is completing onboarding / RTW / signing
+    if (isAdmin) {
+      actions.push({ action: 'sign', label: 'Mark Signed', icon: PenLine, variant: 'default' });
+      actions.push({ action: 'edit', label: 'Edit', icon: PenLine, variant: 'outline', isLink: true });
+      actions.push({ action: 'cancel', label: 'Cancel', icon: XCircle, variant: 'destructive', confirm: true });
+    }
+    if (isPersonOnDeal) {
+      actions.push({ action: 'sign', label: 'Review & Sign', icon: PenLine, variant: 'default', signFlow: true });
+    }
   } else if (status === 'sent') {
     if (isPersonOnDeal) {
       actions.push({ action: 'sign', label: 'Review & Sign', icon: PenLine, variant: 'default', signFlow: true });
@@ -154,8 +167,7 @@ function StatusTimeline({ currentStatus }) {
                   isCompleted ? `${cfg.color} border-transparent` : "border-muted-foreground/30 bg-transparent",
                   isCurrent && "ring-4 ring-offset-2 ring-offset-background",
                   isCurrent && status === "draft" && "ring-gray-500/20",
-                  isCurrent && status === "sent" && "ring-blue-500/20",
-                  isCurrent && status === "negotiating" && "ring-amber-500/20",
+                  isCurrent && status === "issued" && "ring-blue-500/20",
                   isCurrent && status === "signed" && "ring-emerald-500/20",
                   isCurrent && status === "active" && "ring-purple-500/20",
                   isCurrent && status === "completed" && "ring-teal-500/20"
@@ -676,6 +688,168 @@ export default function DealMemoDetail() {
           </Section>
         </CardContent>
       </Card>
+
+      {/* Right to Work Documents — Admin Review */}
+      {memo.rightToWork?.documents?.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Shield className="size-4 text-primary" />
+              <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Right to Work Documents
+              </CardTitle>
+              <Badge variant="outline" className={cn("ml-auto text-xs",
+                memo.rightToWork.status === 'verified' ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" : "bg-amber-500/10 text-amber-600 border-amber-500/30"
+              )}>
+                {memo.rightToWork.status === 'verified' ? 'Verified' : 'Pending'}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {memo.rightToWork.documents.map((doc, idx) => {
+                const statusColors = {
+                  requested: "text-amber-600 bg-amber-500/10 border-amber-500/30",
+                  uploaded: "text-blue-600 bg-blue-500/10 border-blue-500/30",
+                  verified: "text-emerald-600 bg-emerald-500/10 border-emerald-500/30",
+                  rejected: "text-red-600 bg-red-500/10 border-red-500/30",
+                };
+                return (
+                  <div key={idx} className={cn("rounded-md border px-3 py-2 space-y-1",
+                    doc.status === 'rejected' && "border-red-500/30",
+                    doc.status === 'verified' && "border-emerald-500/30",
+                  )}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{doc.docType}</span>
+                        {doc.required && <Badge variant="outline" className="text-[10px]">Required</Badge>}
+                        {doc.reference && <span className="text-xs text-muted-foreground">Ref: {doc.reference}</span>}
+                      </div>
+                      <Badge variant="outline" className={cn("text-xs", statusColors[doc.status])}>
+                        {doc.status}
+                      </Badge>
+                    </div>
+                    {doc.uploadedFile && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>📎 {doc.uploadedFile}</span>
+                        {doc.fileUrl && (
+                          <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                            Download
+                          </a>
+                        )}
+                      </div>
+                    )}
+                    {doc.rejectionNote && (
+                      <p className="text-xs text-red-500">Rejection: {doc.rejectionNote}</p>
+                    )}
+                    {/* Admin verify/reject buttons */}
+                    {isAdmin && doc.status === 'uploaded' && (
+                      <div className="flex items-center gap-2 pt-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 text-xs text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10"
+                          onClick={() => {
+                            api.patch(`/deal-memos/${id}/rtw-documents/${idx}/verify`, { status: 'verified' })
+                              .then(() => { toast.success(`${doc.docType} verified`); queryClient.invalidateQueries({ queryKey: ['deal-memos'] }); })
+                              .catch((err) => toast.error(err?.response?.data?.message || 'Failed'));
+                          }}
+                        >
+                          ✓ Verify
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 text-xs text-red-600 border-red-500/30 hover:bg-red-500/10"
+                          onClick={() => {
+                            const note = prompt('Rejection reason:');
+                            if (!note) return;
+                            api.patch(`/deal-memos/${id}/rtw-documents/${idx}/verify`, { status: 'rejected', rejectionNote: note })
+                              .then(() => { toast.success(`${doc.docType} rejected — crew will be notified`); queryClient.invalidateQueries({ queryKey: ['deal-memos'] }); })
+                              .catch((err) => toast.error(err?.response?.data?.message || 'Failed'));
+                          }}
+                        >
+                          ✗ Reject
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Signing Documents — Admin View */}
+      {memo.signingDocuments?.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="size-4 text-primary" />
+              <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Signing Documents
+              </CardTitle>
+              {(() => {
+                const reqSig = memo.signingDocuments.filter(d => d.requiresSignature);
+                const signed = reqSig.filter(d => d.status === 'signed');
+                return (
+                  <Badge variant="outline" className={cn("ml-auto text-xs",
+                    signed.length === reqSig.length ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" : "bg-amber-500/10 text-amber-600 border-amber-500/30"
+                  )}>
+                    {signed.length}/{reqSig.length} signed
+                  </Badge>
+                );
+              })()}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {memo.signingDocuments.map((doc, idx) => (
+                <div key={idx} className={cn(
+                  "flex items-center justify-between rounded-md border px-3 py-2",
+                  doc.status === 'signed' && "border-emerald-500/30 bg-emerald-500/5"
+                )}>
+                  <div className="flex items-center gap-3">
+                    {doc.status === 'signed' ? (
+                      <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+                    ) : doc.requiresSignature ? (
+                      <Clock className="size-4 text-amber-500 shrink-0" />
+                    ) : (
+                      <Info className="size-4 text-muted-foreground shrink-0" />
+                    )}
+                    <div>
+                      <p className="text-sm font-medium">{doc.filename}</p>
+                      {doc.description && <p className="text-xs text-muted-foreground">{doc.description}</p>}
+                      {doc.status === 'signed' && (
+                        <p className="text-[10px] text-emerald-600 mt-0.5">
+                          ✍️ Signed by {doc.signatureText || 'crew member'}
+                          {doc.signedAt && ` on ${new Date(doc.signedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`}
+                          {doc.signedIP && ` • IP: ${doc.signedIP}`}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {doc.fileUrl && (
+                      <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                        Download
+                      </a>
+                    )}
+                    {doc.status === 'signed' ? (
+                      <Badge className="bg-emerald-500 text-white text-xs">Signed</Badge>
+                    ) : doc.requiresSignature ? (
+                      <Badge variant="outline" className="text-xs text-amber-600 border-amber-500/30">Awaiting signature</Badge>
+                    ) : (
+                      <Badge variant="secondary" className="text-xs">Read-only</Badge>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Compliance Checklist */}
       {memo.complianceChecklist && memo.complianceChecklist.length > 0 && (

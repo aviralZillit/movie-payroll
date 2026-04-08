@@ -15,6 +15,10 @@ import {
   approveDealMemo,
   rejectApproval,
   toggleComplianceItem,
+  getRtwDocuments,
+  addRtwDocumentRequest,
+  uploadRtwDocument,
+  verifyRtwDocument,
 } from '../controllers/dealMemoController.js';
 import { upload } from '../middleware/upload.js';
 import auth from '../middleware/auth.js';
@@ -57,5 +61,11 @@ router.patch(
 router.post('/:id/documents/:docIndex/upload', upload.single('file'), uploadDocument);
 router.get('/:id/documents/:docIndex/download', downloadDocument);
 router.post('/:id/documents/:docIndex/sign', signDocument);
+
+// Right to Work document workflow
+router.get('/:id/rtw-documents', getRtwDocuments);
+router.post('/:id/rtw-documents', authorize('super_admin', 'payroll_admin', 'production_accountant'), addRtwDocumentRequest);
+router.post('/:id/rtw-documents/:docIdx/upload', upload.single('file'), uploadRtwDocument);
+router.patch('/:id/rtw-documents/:docIdx/verify', authorize('super_admin', 'payroll_admin', 'production_accountant'), verifyRtwDocument);
 
 export default router;

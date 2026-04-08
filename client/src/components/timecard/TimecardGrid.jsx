@@ -6,6 +6,7 @@ import TimecardDayRow from "./TimecardDayRow";
 
 const COLUMN_HEADERS = [
   { label: "Day", className: "sticky left-0 z-10 bg-background min-w-[100px]" },
+  { label: "Day Type", className: "min-w-[120px]" },
   { label: "Call Time", className: "min-w-[80px]" },
   { label: "Lunch Start", className: "min-w-[80px]" },
   { label: "Lunch End", className: "min-w-[80px]" },
@@ -49,6 +50,7 @@ export default function TimecardGrid({
   onEntryChange,
   disabled = false,
   standardDayHrs,
+  dayTypes,
 }) {
   // Build 7-day array starting from weekStartDate (Monday)
   const days = useMemo(() => {
@@ -107,6 +109,7 @@ export default function TimecardGrid({
                 isSixthDay={index === sixthDay}
                 isSeventhDay={index === seventhDay}
                 standardDayHrs={standardDayHrs}
+                dayTypes={dayTypes}
               />
             ))}
           </tbody>

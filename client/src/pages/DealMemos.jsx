@@ -45,11 +45,14 @@ import { toast } from "sonner";
 // ---------------------------------------------------------------------------
 const STATUS_CONFIG = {
   draft: { label: "Draft", color: "bg-gray-500/15 text-gray-600 dark:text-gray-400" },
+  issued: { label: "Issued", color: "bg-blue-500/15 text-blue-600 dark:text-blue-400" },
   sent: { label: "Sent", color: "bg-blue-500/15 text-blue-600 dark:text-blue-400" },
   negotiating: { label: "Negotiating", color: "bg-amber-500/15 text-amber-600 dark:text-amber-400" },
+  pending_approval: { label: "Pending Approval", color: "bg-orange-500/15 text-orange-600 dark:text-orange-400" },
   signed: { label: "Signed", color: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" },
   active: { label: "Active", color: "bg-purple-500/15 text-purple-600 dark:text-purple-400" },
   completed: { label: "Completed", color: "bg-teal-500/15 text-teal-600 dark:text-teal-400" },
+  cancelled: { label: "Cancelled", color: "bg-red-500/15 text-red-600 dark:text-red-400" },
 };
 
 const UNION_LABELS = {
