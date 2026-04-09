@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zillit Coda — Crew Grid · The Gilded Hour S2</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0e0f12;--bg-s:#13151b;--bg-e:#181b24;--bg-h:#1e222d;
+  --b:#252a38;--bm:#2e3448;--bl:#3a4158;
+  --gold:#e8b84b;--gold-g:rgba(232,184,75,.10);--gold-gg:rgba(232,184,75,.05);
+  --t1:#eeeef3;--t2:#8b90aa;--t3:#555a72;
+  --green:#4ade80;--gr-g:rgba(74,222,128,.10);
+  --red:#f87171;--red-g:rgba(248,113,113,.10);
+  --orange:#fb923c;--or-g:rgba(251,146,60,.10);
+  --blue:#60a5fa;--bl-g:rgba(96,165,250,.10);
+  --teal:#2dd4bf;--tl-g:rgba(45,212,191,.10);
+  --yellow:#fbbf24;--yl-g:rgba(251,191,36,.10);
+  --purple:#c084fc;--pu-g:rgba(192,132,252,.10);
+  --pink:#f472b6;--pk-g:rgba(244,114,182,.10);
+  --r:5px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--t1);font-family:'DM Sans',sans-serif;font-size:12px;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── TOPBAR ── */
+.topbar{height:48px;background:var(--bg-s);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 14px;gap:8px;flex-shrink:0;}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:var(--gold);padding-right:10px;border-right:1px solid var(--b);}
+.tb-prod{font-size:11px;color:var(--t2);}
+.tb-r{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.week-chip{background:var(--gold-g);border:1px solid rgba(232,184,75,.2);color:var(--gold);border-radius:4px;padding:3px 9px;font-size:10px;font-family:'DM Mono',monospace;}
+
+/* ── VIEW SELECTOR BAR ── */
+.view-bar{height:42px;background:var(--bg-s);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 14px;gap:0;flex-shrink:0;}
+.view-tab{height:42px;display:flex;align-items:center;gap:6px;padding:0 16px;font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--t3);cursor:pointer;border-bottom:2px solid transparent;transition:all .14s;white-space:nowrap;}
+.view-tab:hover{color:var(--t2);}
+.view-tab.on{color:var(--gold);border-bottom-color:var(--gold);}
+.view-tab .vt-icon{font-size:13px;}
+.vbar-sep{width:1px;background:var(--b);height:20px;margin:0 8px;}
+
+/* Day selector */
+.day-sel{display:flex;align-items:center;gap:5px;margin-left:20px;}
+.day-pill{padding:3px 10px;border-radius:20px;font-size:10px;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.3px;cursor:pointer;transition:all .12s;border:1px solid transparent;}
+.day-pill.past{color:var(--t2);background:var(--bg-h);border-color:var(--b);}
+.day-pill.past:hover{border-color:var(--bm);color:var(--t1);}
+.day-pill.today{color:var(--gold);background:var(--gold-g);border-color:rgba(232,184,75,.3);}
+.day-pill.future{color:var(--t3);background:transparent;border-color:var(--b);opacity:.5;}
+.day-pill.active{color:#0e0f12;background:var(--gold);border-color:var(--gold);}
+.day-pill.future.active{opacity:1;}
+
+/* WTD progress */
+.wtd-progress{display:none;align-items:center;gap:8px;margin-left:16px;padding-left:16px;border-left:1px solid var(--b);}
+.wtd-bar-wrap{width:100px;height:5px;background:var(--b);border-radius:3px;overflow:hidden;}
+.wtd-bar-fill{height:100%;background:var(--gold);border-radius:3px;transition:width .3s ease;}
+.wtd-label{font-size:10px;color:var(--t3);font-family:'DM Mono',monospace;white-space:nowrap;}
+
+/* ── LAYOUT ── */
+.layout{display:flex;flex:1;overflow:hidden;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:200px;flex-shrink:0;background:var(--bg-s);border-right:1px solid var(--b);display:flex;flex-direction:column;overflow-y:auto;}
+.sb-sec{padding:10px 8px 4px;}
+.sb-lbl{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.7px;padding:0 6px;margin-bottom:4px;}
+.sb-item{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:4px;cursor:pointer;color:var(--t3);transition:all .1s;margin-bottom:1px;}
+.sb-item:hover{background:var(--bg-e);color:var(--t2);}
+.sb-item.on{background:var(--gold-g);color:var(--gold);}
+.sb-icon{font-size:12px;width:15px;text-align:center;}
+.sb-label{font-size:11px;flex:1;}
+.sb-count{font-size:9px;font-family:'DM Mono',monospace;background:var(--bg-h);border-radius:8px;padding:1px 5px;color:var(--t3);}
+.sb-item.on .sb-count{background:rgba(232,184,75,.15);color:var(--gold);}
+.sb-div{border:none;border-top:1px solid var(--b);margin:5px 8px;}
+
+/* Sum card */
+.sum-card{margin:5px 8px;background:var(--bg-e);border:1px solid var(--b);border-radius:7px;padding:9px 10px;}
+.sc-lbl{font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;font-family:'Syne',sans-serif;font-weight:700;}
+.sc-row{display:flex;justify-content:space-between;margin-bottom:2px;}
+.sc-k{font-size:10px;color:var(--t3);}
+.sc-v{font-size:10px;font-family:'DM Mono',monospace;}
+.sc-v.gd{color:var(--gold);}
+.sc-v.gr{color:var(--green);}
+.sc-v.or{color:var(--orange);}
+.sc-v.rd{color:var(--red);}
+.sc-v.pu{color:var(--purple);}
+.prog-w{margin:6px 0 3px;}
+.prog-l{display:flex;justify-content:space-between;font-size:8.5px;color:var(--t3);margin-bottom:2px;}
+.prog-b{height:3px;background:var(--b);border-radius:2px;overflow:hidden;}
+.prog-f{height:100%;background:var(--gold);border-radius:2px;}
+
+/* Bureau card */
+.bureau{margin:0 8px 8px;background:var(--bg-e);border:1px solid var(--b);border-radius:6px;padding:7px 10px;}
+.bc-l{font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:1px;}
+.bc-n{font-size:11px;font-weight:600;}
+.bc-r{font-size:9px;color:var(--t3);font-family:'DM Mono',monospace;}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+/* Intel cards */
+.intel{display:flex;gap:6px;padding:8px 14px;border-bottom:1px solid var(--b);flex-shrink:0;overflow-x:auto;}
+.ic{background:var(--bg-s);border:1px solid var(--b);border-radius:7px;padding:9px 12px;flex-shrink:0;min-width:120px;cursor:default;transition:border-color .12s;}
+.ic:hover{border-color:var(--bm);}
+.ic-lbl{font-size:8.5px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;font-family:'Syne',sans-serif;font-weight:600;}
+.ic-val{font-size:17px;font-weight:700;font-family:'DM Mono',monospace;line-height:1;}
+.ic-sub{font-size:9px;color:var(--t3);margin-top:1px;}
+
+/* Controls */
+.ctrl{display:flex;align-items:center;gap:7px;padding:7px 14px;border-bottom:1px solid var(--b);flex-shrink:0;flex-wrap:wrap;}
+.srch{background:var(--bg-e);border:1px solid var(--b);border-radius:4px;padding:4px 9px;display:flex;align-items:center;gap:6px;width:190px;}
+.srch input{background:none;border:none;outline:none;color:var(--t1);font-size:11px;width:100%;font-family:inherit;}
+.srch input::placeholder{color:var(--t3);}
+.fb{background:var(--bg-e);border:1px solid var(--b);border-radius:4px;padding:4px 9px;font-size:10px;color:var(--t3);cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.2px;transition:all .1s;white-space:nowrap;}
+.fb:hover,.fb.on{border-color:var(--gold);color:var(--gold);background:var(--gold-gg);}
+.cr{margin-left:auto;display:flex;gap:5px;}
+.btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;font-family:'Syne',sans-serif;font-size:9px;font-weight:700;letter-spacing:.3px;border:none;border-radius:4px;cursor:pointer;transition:all .13s;white-space:nowrap;}
+.btn-gold{background:var(--gold);color:#0e0f12;}.btn-gold:hover{opacity:.85;}
+.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--bm);}.btn-ghost:hover{border-color:var(--bl);color:var(--t1);}
+.btn-teal{background:var(--teal);color:#0e0f12;}
+
+/* Dept tabs */
+.dept-tabs{display:flex;gap:0;padding:0 14px;border-bottom:1px solid var(--b);flex-shrink:0;overflow-x:auto;}
+.dt{padding:6px 10px;font-size:9.5px;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.3px;color:var(--t3);cursor:pointer;border-bottom:2px solid transparent;transition:all .12s;white-space:nowrap;display:flex;align-items:center;gap:4px;}
+.dt:hover{color:var(--t2);}
+.dt.on{color:var(--gold);border-bottom-color:var(--gold);}
+.dt-badge{font-size:8.5px;font-family:'DM Mono',monospace;background:var(--bg-h);border-radius:7px;padding:1px 4px;}
+.dt.on .dt-badge{background:var(--gold-g);color:var(--gold);}
+
+/* Table */
+.table-wrap{flex:1;overflow:auto;}
+table{width:100%;border-collapse:collapse;min-width:1100px;}
+thead th{padding:6px 8px;text-align:left;font-size:8.5px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--b);font-family:'Syne',sans-serif;font-weight:700;position:sticky;top:0;background:var(--bg-h);z-index:10;white-space:nowrap;}
+thead th:first-child{width:28px;padding:6px 5px;}
+tbody tr{border-bottom:1px solid rgba(37,42,56,.4);transition:background .07s;cursor:pointer;}
+tbody tr:hover{background:rgba(255,255,255,.012);}
+tbody tr.sel{background:var(--gold-gg);}
+tbody tr.dept-hdr{background:var(--bg-e);cursor:default;}
+tbody tr.dept-hdr:hover{background:var(--bg-e);}
+td{padding:6px 8px;vertical-align:middle;}
+td:first-child{padding:6px 5px;}
+
+/* Dept header row */
+.dh-cell{display:flex;align-items:center;gap:7px;font-family:'Syne',sans-serif;font-size:10px;font-weight:700;}
+.dh-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+
+/* Crew cell */
+.cc-w{display:flex;align-items:center;gap:7px;}
+.av{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8.5px;font-weight:700;flex-shrink:0;}
+.cn{font-size:11px;font-weight:600;}
+.cr-role{font-size:9.5px;color:var(--t3);}
+
+/* Status pills */
+.sp{display:inline-flex;align-items:center;gap:2px;padding:1.5px 6px;border-radius:10px;font-family:'Syne',sans-serif;font-size:8px;font-weight:700;white-space:nowrap;}
+.sp-appr{background:var(--gr-g);color:var(--green);border:1px solid rgba(74,222,128,.2);}
+.sp-pend{background:var(--bg-h);color:var(--t3);border:1px solid var(--b);}
+.sp-prog{background:var(--yl-g);color:var(--yellow);border:1px solid rgba(251,191,36,.2);}
+.sp-lock{background:var(--tl-g);color:var(--teal);border:1px solid rgba(45,212,191,.2);}
+.sp-upco{background:var(--bg-h);color:var(--t3);border:1px solid var(--b);opacity:.5;}
+.sp-off{background:var(--bg-h);color:var(--t3);border:1px solid var(--b);}
+.sp-exc{background:var(--or-g);color:var(--orange);border:1px solid rgba(251,146,60,.2);}
+
+/* Day type chips */
+.day-chip{display:inline-flex;align-items:center;padding:1px 5px;border-radius:3px;font-family:'Syne',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:.3px;}
+.dc-swd{background:var(--bl-g);color:var(--blue);}
+.dc-cwd{background:var(--tl-g);color:var(--teal);}
+.dc-scwd{background:var(--pu-g);color:var(--purple);}
+.dc-rig{background:var(--or-g);color:var(--orange);}
+.dc-trvl{background:var(--yl-g);color:var(--yellow);}
+.dc-off{background:var(--bg-h);color:var(--t3);}
+
+/* Pay cells */
+.pay-cell{font-family:'DM Mono',monospace;font-size:11px;text-align:right;}
+
+/* Time cells */
+.tc{font-family:'DM Mono',monospace;font-size:10.5px;text-align:center;color:var(--t2);}
+.tc.uc{color:var(--green);}
+.tc.rel{color:var(--t1);}
+
+/* Flag dots */
+.fds{display:flex;gap:2px;align-items:center;}
+.fd{width:5.5px;height:5.5px;border-radius:50%;}
+.fd.bta{background:var(--red);}
+.fd.meal{background:var(--yellow);}
+.fd.camot{background:var(--red);opacity:.6;}
+.fd.night{background:var(--blue);}
+.fd.ok{background:var(--green);}
+
+/* WTD mini progress bar in cell */
+.wtd-mini{display:flex;align-items:center;gap:5px;}
+.wtd-m-bar{flex:1;height:4px;background:var(--b);border-radius:2px;overflow:hidden;}
+.wtd-m-fill{height:100%;border-radius:2px;}
+.wtd-m-pct{font-size:9px;color:var(--t3);font-family:'DM Mono',monospace;flex-shrink:0;}
+
+/* HETVC */
+.htv{display:inline-flex;align-items:center;gap:2px;padding:1px 5px;background:var(--pu-g);border:1px solid rgba(192,132,252,.2);border-radius:3px;font-size:7.5px;color:var(--purple);font-weight:700;font-family:'Syne',sans-serif;}
+
+/* ── DETAIL PANEL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;}
+.overlay.open{display:block;}
+.panel{position:fixed;right:0;top:0;bottom:0;width:560px;background:var(--bg-s);border-left:1px solid var(--b);z-index:201;overflow-y:auto;transform:translateX(100%);transition:transform .22s ease;display:flex;flex-direction:column;}
+.panel.open{transform:translateX(0);}
+.ph{padding:16px 18px;border-bottom:1px solid var(--b);display:flex;align-items:flex-start;gap:10px;flex-shrink:0;}
+.ph-av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+.ph-name{font-size:14px;font-weight:700;font-family:'Syne',sans-serif;}
+.ph-meta{font-size:10px;color:var(--t2);}
+.ph-close{margin-left:auto;background:var(--bg-e);border:1px solid var(--b);border-radius:4px;padding:4px 8px;font-size:15px;cursor:pointer;color:var(--t3);}
+.psec{padding:12px 18px;border-bottom:1px solid var(--b);}
+.psl{font-size:8.5px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;font-family:'Syne',sans-serif;font-weight:700;}
+.pg{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:0;}
+.pgc{background:var(--bg-e);border:1px solid var(--b);border-radius:5px;padding:8px 10px;}
+.pgcl{font-size:8.5px;color:var(--t3);margin-bottom:2px;}
+.pgcv{font-size:15px;font-weight:700;font-family:'DM Mono',monospace;}
+.pgcs{font-size:8.5px;color:var(--t3);margin-top:1px;}
+
+/* Day breakdown table in panel */
+.dbt{width:100%;border-collapse:collapse;}
+.dbt th{font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;padding:4px 6px;border-bottom:1px solid var(--b);font-family:'Syne',sans-serif;font-weight:700;}
+.dbt td{padding:5px 6px;font-size:10.5px;border-bottom:1px solid rgba(37,42,56,.3);}
+.dbt tr:last-child td{border-bottom:none;}
+.dbt tr.tot-r td{font-weight:700;color:var(--gold);border-top:1px solid var(--b);}
+
+/* Panel footer */
+.pf{padding:10px 18px;border-top:1px solid var(--b);background:var(--bg-s);display:flex;gap:7px;flex-shrink:0;margin-top:auto;}
+
+/* Toast */
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--bg-h);border:1px solid var(--bm);border-radius:7px;padding:7px 14px;font-size:10.5px;z-index:400;display:none;max-width:340px;text-align:center;}
+
+/* Scroll */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--b);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">Zillit Coda</div>
+  <div class="tb-prod">Payroll · The Gilded Hour S2 · Gilded Hour Productions</div>
+  <div class="tb-r">
+    <div class="week-chip">Week 14 · w/c Mon 7 Apr 2026</div>
+    <span style="padding:2px 8px;background:var(--bg-h);border:1px solid var(--b);border-radius:4px;font-size:9.5px;color:var(--t2)">PACT/BECTU MMP 2021</span>
+    <div style="width:26px;height:26px;border-radius:50%;background:var(--gold-g);border:1px solid rgba(232,184,75,.25);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--gold)">SA</div>
+  </div>
+</div>
+
+<!-- VIEW BAR -->
+<div class="view-bar">
+  <div class="view-tab on" onclick="setView('daily',this)" id="vtab-daily">
+    <span class="vt-icon">📅</span> Day View
+  </div>
+  <div class="view-tab" onclick="setView('wtd',this)" id="vtab-wtd">
+    <span class="vt-icon">📈</span> Week to Date
+  </div>
+  <div class="view-tab" onclick="setView('weekly',this)" id="vtab-weekly">
+    <span class="vt-icon">📊</span> Weekly Total
+  </div>
+  <div class="vbar-sep"></div>
+
+  <!-- Day selector (hidden for weekly) -->
+  <div class="day-sel" id="daySelWrap">
+    <div class="day-pill past" onclick="setDay(0,this)" data-day="0">MON</div>
+    <div class="day-pill past" onclick="setDay(1,this)" data-day="1">TUE</div>
+    <div class="day-pill today active" onclick="setDay(2,this)" data-day="2">WED ·today</div>
+    <div class="day-pill future" onclick="setDay(3,this)" data-day="3">THU</div>
+    <div class="day-pill future" onclick="setDay(4,this)" data-day="4">FRI</div>
+    <div class="day-pill future" onclick="setDay(5,this)" data-day="5">SAT</div>
+  </div>
+
+  <!-- WTD progress (only for WTD view) -->
+  <div class="wtd-progress" id="wtdProgress">
+    <div class="wtd-bar-wrap"><div class="wtd-bar-fill" id="wtdBarFill" style="width:50%"></div></div>
+    <div class="wtd-label" id="wtdLabel">3 of 6 days</div>
+  </div>
+</div>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sb-sec">
+    <div class="sb-lbl">Payroll</div>
+    <div class="sb-item on" onclick="setNav(this,'all')"><span class="sb-icon">📋</span><span class="sb-label">All Timecards</span><span class="sb-count" id="sn-all">145</span></div>
+    <div class="sb-item" onclick="setNav(this,'pending')"><span class="sb-icon">⏳</span><span class="sb-label">Pending</span><span class="sb-count" id="sn-pend">0</span></div>
+    <div class="sb-item" onclick="setNav(this,'approved')"><span class="sb-icon">✅</span><span class="sb-label">Approved</span><span class="sb-count" id="sn-appr">0</span></div>
+    <div class="sb-item" onclick="setNav(this,'exception')"><span class="sb-icon">⚠️</span><span class="sb-label">Exceptions</span><span class="sb-count" id="sn-exc">0</span></div>
+  </div>
+  <hr class="sb-div">
+  <div class="sb-sec">
+    <div class="sb-lbl">Output</div>
+    <div class="sb-item" onclick="toast('BACS file — opening…')"><span class="sb-icon">🏦</span><span class="sb-label">BACS File</span></div>
+    <div class="sb-item" onclick="toast('Payslips — generating…')"><span class="sb-icon">📄</span><span class="sb-label">Payslips</span></div>
+    <div class="sb-item" onclick="toast('Variance report — opening…')"><span class="sb-icon">📊</span><span class="sb-label">Variance Report</span></div>
+    <div class="sb-item" onclick="toast('Cost report impact — opening…')"><span class="sb-icon">💰</span><span class="sb-label">Cost Report Impact</span></div>
+  </div>
+  <hr class="sb-div">
+  <div class="sum-card" id="sideCard"></div>
+  <div class="bureau">
+    <div class="bc-l">Payroll Bureau</div>
+    <div class="bc-n">Sargent-Disc</div>
+    <div class="bc-r">Ref: GHP-S2-2026</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="intel" id="intelBar"></div>
+  <div class="ctrl">
+    <div class="srch"><span style="color:var(--t3);font-size:11px">🔍</span><input type="text" placeholder="Search crew, role…" oninput="filterSearch(this.value)"></div>
+    <button class="fb on" onclick="setFilt(this,'all')">All</button>
+    <button class="fb" onclick="setFilt(this,'pending')">Pending</button>
+    <button class="fb" onclick="setFilt(this,'approved')">Approved</button>
+    <button class="fb" onclick="setFilt(this,'exception')">Exceptions</button>
+    <div class="cr">
+      <button class="btn btn-ghost" onclick="selectAll()">☑ Select All</button>
+      <button class="btn btn-teal" onclick="approveSelected()">✓ Approve Selected</button>
+    </div>
+  </div>
+  <div class="dept-tabs" id="deptTabs"></div>
+  <div class="table-wrap">
+    <table><thead id="thead"></thead><tbody id="tbody"></tbody></table>
+  </div>
+</div>
+</div>
+
+<!-- PANEL -->
+<div class="overlay" id="overlay" onclick="closePanel()"></div>
+<div class="panel" id="panel">
+  <div class="ph">
+    <div class="ph-av" id="pAv"></div>
+    <div>
+      <div class="ph-name" id="pName"></div>
+      <div class="ph-meta" id="pMeta"></div>
+    </div>
+    <button class="ph-close" onclick="closePanel()">×</button>
+  </div>
+  <div id="panelBody"></div>
+  <div class="pf">
+    <button class="btn btn-ghost" style="color:var(--red);border-color:rgba(248,113,113,.3)" onclick="flagExc()">⚠ Flag Exception</button>
+    <div style="flex:1"></div>
+    <button class="btn btn-ghost" onclick="closePanel()">Close</button>
+    <button class="btn btn-gold" id="pProcBtn" onclick="approveFromPanel()">✓ Approve Day</button>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+// ── MMP 2021 CONSTANTS ─────────────────────────────────────────
+const OT_CAP = 81.82;
+const BTA_CAP = 45.00;
+const NIGHT_PREM = 20.00;
+const HOL_PCT = 0.1207;
+const MIN_TA = 660; // 11 hours in minutes
+
+function hrRate(dr){ return +(dr/11).toFixed(4); }
+function camOTRate(dr){ return Math.min(hrRate(dr)*2, OT_CAP); }
+function ncOTRate(dr){ return Math.min(hrRate(dr)*1.5, OT_CAP); }
+
+// ── RNG ────────────────────────────────────────────────────────
+function rng(s){ let x=Math.sin(s+7)*10000; return x-Math.floor(x); }
+function ri(s,a,b){ return a+Math.floor(rng(s)*(b-a+1)); }
+
+// ── DEPARTMENTS ────────────────────────────────────────────────
+const DEPTS=[
+  {id:'camera',   name:'Camera',            color:'#e8b84b',count:14,base:700,cam:true},
+  {id:'elec',     name:'Electrical',        color:'#fbbf24',count:18,base:580,cam:false},
+  {id:'grip',     name:'Grip',              color:'#f59e0b',count:10,base:560,cam:false},
+  {id:'art',      name:'Art Department',    color:'#a78bfa',count:20,base:520,cam:false},
+  {id:'sound',    name:'Sound',             color:'#60a5fa',count:6, base:640,cam:false},
+  {id:'prod',     name:'Production Office', color:'#f87171',count:15,base:490,cam:false},
+  {id:'locations',name:'Locations',         color:'#34d399',count:8, base:510,cam:false},
+  {id:'costume',  name:'Costume',           color:'#2dd4bf',count:12,base:480,cam:false},
+  {id:'makeup',   name:'Make-Up & Hair',    color:'#ec4899',count:10,base:490,cam:false},
+  {id:'transport',name:'Transport',         color:'#6366f1',count:14,base:420,cam:false},
+  {id:'stunts',   name:'Stunts',            color:'#ef4444',count:6, base:780,cam:false},
+  {id:'vfx',      name:'VFX',               color:'#14b8a6',count:4, base:600,cam:false},
+  {id:'construct',name:'Construction',      color:'#8b5cf6',count:12,base:440,cam:false},
+  {id:'directing',name:'Directing',         color:'#fb923c',count:6, base:820,cam:false},
+];
+
+const DAY_TYPES={
+  camera:['SWD','SWD','SWD','CWD','SCWD'],
+  elec:['SWD','SWD','CWD','CWD','SCWD'],
+  grip:['SWD','SWD','CWD','SCWD','SWD'],
+  art:['SWD','SWD','SWD','SWD','CWD'],
+  sound:['SWD','SWD','SWD','CWD','SCWD'],
+  prod:['SWD','SWD','SWD','SWD','SWD'],
+  locations:['SWD','CWD','SWD','SWD','TRVL'],
+  costume:['SWD','SWD','SWD','CWD','SWD'],
+  makeup:['SWD','SWD','CWD','SCWD','SWD'],
+  transport:['SWD','CWD','CWD','SWD','SWD'],
+  stunts:['SWD','SWD','SWD','CWD','SCWD'],
+  vfx:['SWD','SWD','SWD','SWD','CWD'],
+  construct:['SWD','SWD','SWD','CWD','SWD'],
+  directing:['SWD','SWD','SWD','CWD','SCWD'],
+};
+
+const FIRSTS=['James','Emily','Marcus','Priya','Tom','Rosa','Cass','Yuki','Lee','Sam','Alex','Rachel','Owen','Nina','Isla','Demi','Fatima','Harry','Gerry','Mia','Dan','Billie','Jamie','Elena','Sofia','Liam','Aisha','Ravi','Zoe','Oscar','Chen','Wei','Layla','Kofi','Ivan','Pilar','Seren','Nadia','Bram','Kira','Darius','Sienna','Felix','Jade','Theo'];
+const LASTS=['Webb','Chen','Vasquez','Patel','Richards','Mendez','Park','Tanaka','Franklin','Walsh','Nolan','Santos','Cooper','Byrne','Osei','Al-Hassan','Carter','Hughes','Kwame','Cameron','Clarke','Wu','Sharma','Murphy','Schmidt','Johansson','Petrov','Nielsen','Moreau','Bauer','Romero','Andersen','Reid','Torres','Foster','Shaw','Lane','Hart','Cross','Myers','Williams','Lawson','Ford','Yuen','Thorn'];
+const ROLES={
+  camera:['DP','1st AC','1st AC','2nd AC','2nd AC','Camera Trainee','Camera Trainee','Steadicam Op','DIT','DIT','Camera PA','B-Cam Op','Focus Puller','Loader'],
+  elec:['Gaffer','Gaffer','Best Boy Elec','Best Boy Elec','Rigging Gaffer','Spark','Spark','Spark','Spark','Spark','Spark','Lamp Op','Lamp Op','Lamp Op','Rigging Spark','Rigging Spark','Generator Op','Practical Elec'],
+  grip:['Key Grip','Key Grip','Best Boy Grip','Dolly Grip','Dolly Grip','Grip','Grip','Grip','Crane Tech','Rigging Grip'],
+  art:['Production Designer','Art Director','Art Director','Set Decorator','Set Decorator','Props Master','Props Buyer','Standby Props','Standby Art Dir','Art Dept Coord','Set Dresser','Set Dresser','Set Dresser','Sculptor','Graphic Designer','Art PA','Draftsperson','Storyboard Artist','Concept Artist','Buyer'],
+  sound:['Production Sound Mixer','Boom Operator','Boom Operator','Sound Trainee','Playback Op','Sound PA'],
+  prod:['Line Producer','UPM','1st AD','1st AD','2nd AD','2nd AD','3rd AD','3rd AD','Script Supervisor','Production Coord','Production Secretary','Production Accountant','Prod Accountant Asst','Continuity','Runner'],
+  locations:['Location Manager','Location Manager','Asst Location Mgr','Asst Location Mgr','Location Scout','Location Asst','Unit Manager','Location PA'],
+  costume:['Costume Designer','Costume Supervisor','Cutter','Cutter','Costume Standby','Costume Standby','Costume Asst','Costume Asst','Seamstress','Dresser','Buyer','Wardrobe Master'],
+  makeup:['Hair & MU Designer','MU Supervisor','Make-Up Artist','Make-Up Artist','Make-Up Artist','Hair Stylist','Hair Stylist','SFX MU Artist','MU Trainee','MU Trainee'],
+  transport:['Transport Captain','Transport Captain','Driver','Driver','Driver','Driver','Driver','Driver','Driver','Driver','Driver','Driver','Unit Driver','Honey Wagon Driver'],
+  stunts:['Stunt Coordinator','Stunt Coordinator','Stunt Performer','Stunt Performer','Stunt Performer','Stunt PA'],
+  vfx:['VFX Supervisor','VFX Producer','On-Set VFX','VFX PA'],
+  construct:['Construction Manager','Propmaker Foreman','Propmaker','Propmaker','Carpenter','Carpenter','Carpenter','Painter','Painter','Plasterer','Sculptor','Labourer'],
+  directing:['Director','Director','Director of Photography','Script Supervisor','Script Supervisor','Director PA'],
+};
+
+const BTA_IDS=new Set([2,5,9,14,19,28,35,41,52,63,74,88,102,118]);
+const DAYS_LABELS=['MON','TUE','WED','THU','FRI','SAT'];
+const DATES=['7 Apr','8 Apr','9 Apr','10 Apr','11 Apr','12 Apr'];
+
+function fmtTime(m){
+  const t=((m%1440)+1440)%1440;
+  return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');
+}
+function fmtH(m){ if(m<=0)return '—'; const h=Math.floor(m/60),mn=m%60; return mn?`${h}h${String(mn).padStart(2,'0')}m`:`${h}h`; }
+function fmtP(v){ if(!v||v===0)return '—'; return '£'+v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
+function fmtPS(v){ return '£'+Math.round(v).toLocaleString('en-GB'); }
+
+// ── GENERATE CREW ──────────────────────────────────────────────
+let allCrew=[];
+let idC=1;
+
+DEPTS.forEach((dept,di)=>{
+  const roles=ROLES[dept.id];
+  for(let i=0;i<dept.count;i++){
+    const seed=idC*79+di*31+i*23;
+    const fn=FIRSTS[(idC+i*3)%FIRSTS.length];
+    const ln=LASTS[(i*7+idC)%LASTS.length];
+    const dailyRate=dept.base+ri(seed+1,i===0?50:0,i===0?100:40);
+    const hr=hrRate(dailyRate);
+    const isCam=dept.cam;
+    const hasBTA=BTA_IDS.has(idC-1);
+    const hetvc=!['transport','construct'].includes(dept.id);
+    const s1=ri(seed+60,10,99),s2=ri(seed+61,10,99),s3=ri(seed+62,10,99);
+
+    // Generate 6 days of data
+    const dayData=[];
+    let prevReleaseMins=null;
+    for(let d=0;d<6;d++){
+      const ds=seed+d*137+idC*11;
+      const dtypes=DAY_TYPES[dept.id];
+      let type=dtypes[d%dtypes.length];
+
+      // Saturday: ~60% crew are off
+      if(d===5 && rng(ds+200)<0.55){ type='OFF'; }
+
+      if(type==='OFF'){
+        dayData.push({type:'OFF',crewCallM:0,unitCallM:0,unitWrapM:0,releaseM:0,
+          preM:0,camOTM:0,wrapOTM:0,btaM:0,mealM:0,night:false,
+          pp:0,cp:0,wp:0,bp:0,mp:0,np:0,basicPay:0,dayTotal:0,status:'off'});
+        prevReleaseMins=null; continue;
+      }
+
+      const ctrHrs=(type==='CWD'||type==='SCWD')?10:11;
+      const crewCallM=360+ri(ds+10,0,90); // 06:00–07:30
+      const preM=rng(ds+11)<0.45?ri(ds+12,15,45):0;
+      const unitCallM=crewCallM+preM;
+      const filmM=ctrHrs*60+ri(ds+13,-20,isCam?90:60);
+      const unitWrapM=unitCallM+filmM;
+      const wrapOTM=ri(ds+14,0,80);
+      const releaseM=unitWrapM+wrapOTM;
+
+      // BTA
+      let btaM=0;
+      if(hasBTA && d===1 && prevReleaseMins!==null){
+        const ta=crewCallM+1440-prevReleaseMins;
+        const shortfall=MIN_TA-ta;
+        if(shortfall>0) btaM=shortfall;
+      }
+
+      // Camera OT (only cam dept, filming beyond contracted)
+      const camOTM=isCam?Math.max(0,filmM-ctrHrs*60):0;
+
+      // Meal delay: 12% chance on SWD/SCWD
+      const mealM=(type!=='CWD'&&rng(ds+15)<0.12)?30:0;
+
+      // Night premium: wrap after midnight
+      const night=(unitWrapM%1440)<unitCallM%1440&&unitWrapM>1440;
+
+      // Pay
+      const pp=(preM/60)*ncOTRate(dailyRate);
+      const cp=(camOTM/60)*camOTRate(dailyRate);
+      const wp=(wrapOTM/60)*ncOTRate(dailyRate);
+      const bp=(btaM/60)*BTA_CAP;
+      const mp=(mealM/60)*hr;
+      const np=night?NIGHT_PREM:0;
+      const ot=pp+cp+wp+bp+mp+np;
+      const dayTotal=dailyRate+ot;
+
+      // Day status based on day index (0=Mon,1=Tue = approved, 2=Wed = pending, 3-5 = upcoming)
+      const dayStatus=d<2?'approved':d===2?(rng(ds+99)<0.35?'pending':'in-progress'):d===5&&type!=='OFF'?'pending':'upcoming';
+
+      dayData.push({
+        type,crewCallM,unitCallM,unitWrapM,releaseM,
+        preM,camOTM,nonCamOTM:preM+wrapOTM,wrapOTM,btaM,mealM,night,
+        pp,cp,wp,bp,mp,np,basicPay:dailyRate,dayTotal,
+        crewCall:fmtTime(crewCallM),unitCall:fmtTime(unitCallM),
+        unitWrap:fmtTime(unitWrapM%1440)+(unitWrapM>=1440?'+':''),
+        release:fmtTime(releaseM%1440)+(releaseM>=1440?'+':''),
+        status:dayStatus,
+      });
+      prevReleaseMins=releaseM%1440;
+    }
+
+    // Weekly totals
+    const wkDays=dayData.filter(d=>d.type!=='OFF');
+    const wkBasic=wkDays.reduce((a,d)=>a+d.basicPay,0);
+    const wkPP=wkDays.reduce((a,d)=>a+d.pp,0);
+    const wkCP=wkDays.reduce((a,d)=>a+d.cp,0);
+    const wkWP=wkDays.reduce((a,d)=>a+d.wp,0);
+    const wkBP=wkDays.reduce((a,d)=>a+d.bp,0);
+    const wkMP=wkDays.reduce((a,d)=>a+d.mp,0);
+    const wkNP=wkDays.reduce((a,d)=>a+d.np,0);
+    const wkGross=wkBasic+wkPP+wkCP+wkWP+wkBP+wkMP+wkNP;
+
+    const excTypes=['rate_query','missing_consent','golden_time','bank_details'];
+    const stSeed=rng(seed+50);
+    const wkStatus=stSeed<0.07?'exception':stSeed<0.10?'hold':stSeed<0.45?'approved':'pending';
+
+    allCrew.push({
+      id:idC,name:`${fn} ${ln}`,role:roles[i%roles.length],
+      dept:dept.id,deptName:dept.name,deptColor:dept.color,
+      dailyRate,hr,isCam,hetvc,hasBTA,
+      sortCode:`${s1}-${s2}-${s3}`,account:String(ri(seed+63,10000000,99999999)),
+      initials:(fn[0]+ln[0]).toUpperCase(),color:dept.color,
+      dayData,
+      wkBasic,wkPP,wkCP,wkWP,wkBP,wkMP,wkNP,wkGross,
+      wkStatus,wkDaysWorked:wkDays.length,
+    });
+    idC++;
+  }
+});
+
+// ── STATE ─────────────────────────────────────────────────────
+let currentView='daily';   // daily | wtd | weekly
+let currentDay=2;          // 0=Mon … 5=Sat
+let currentDept='all';
+let currentFilt='all';
+let currentSearch='';
+let currentNav='all';
+let selectedIds=new Set();
+let panelCrew=null;
+const overrides={};
+
+function getStatus(c,dayIdx){
+  if(currentView==='weekly') return overrides[c.id]||c.wkStatus;
+  return c.dayData[dayIdx]?.status||'upcoming';
+}
+
+// ── DEPT TABS ─────────────────────────────────────────────────
+(function buildTabs(){
+  const t=document.getElementById('deptTabs');
+  t.innerHTML=`<div class="dt on" onclick="setDept('all',this)">All <span class="dt-badge">${allCrew.length}</span></div>`;
+  DEPTS.forEach(d=>{
+    const n=allCrew.filter(c=>c.dept===d.id).length;
+    t.innerHTML+=`<div class="dt" onclick="setDept('${d.id}',this)">${d.name} <span class="dt-badge">${n}</span></div>`;
+  });
+})();
+
+function setDept(id,el){
+  currentDept=id;
+  document.querySelectorAll('.dt').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  render();
+}
+
+// ── VIEW SWITCHING ─────────────────────────────────────────────
+function setView(v,el){
+  currentView=v;
+  document.querySelectorAll('.view-tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  const dayWrap=document.getElementById('daySelWrap');
+  const wtdProg=document.getElementById('wtdProgress');
+  const procBtn=document.getElementById('pProcBtn');
+  dayWrap.style.display=(v==='weekly')?'none':'flex';
+  wtdProg.style.display=(v==='wtd')?'flex':'none';
+  if(procBtn) procBtn.textContent=v==='daily'?'✓ Approve Day':'✓ Approve Week';
+  render();
+}
+
+function setDay(d,el){
+  currentDay=d;
+  document.querySelectorAll('.day-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  if(currentView==='wtd') updateWTDProgress();
+  render();
+}
+
+function updateWTDProgress(){
+  const pct=Math.round((currentDay+1)/6*100);
+  document.getElementById('wtdBarFill').style.width=pct+'%';
+  document.getElementById('wtdLabel').textContent=`${currentDay+1} of 6 days`;
+}
+
+// ── INTEL CARDS ────────────────────────────────────────────────
+function buildIntel(){
+  const bar=document.getElementById('intelBar');
+  let cards=[];
+
+  if(currentView==='daily'){
+    const dd=currentDay;
+    const vis=getVisible();
+    const daysOn=vis.filter(c=>c.dayData[dd]?.type!=='OFF');
+    const grossDay=daysOn.reduce((a,c)=>a+c.dayData[dd].dayTotal,0);
+    const camOT=daysOn.reduce((a,c)=>a+c.dayData[dd].cp,0);
+    const ncOT=daysOn.reduce((a,c)=>a+(c.dayData[dd].pp+c.dayData[dd].wp),0);
+    const bta=daysOn.reduce((a,c)=>a+c.dayData[dd].bp,0);
+    const meal=daysOn.filter(c=>c.dayData[dd].mealM>0).length;
+    const night=daysOn.filter(c=>c.dayData[dd].night).length;
+    const appr=daysOn.filter(c=>c.dayData[dd].status==='approved').length;
+    cards=[
+      {l:'Day Gross',v:fmtPS(grossDay),s:`${daysOn.length} crew working`,c:'var(--gold)'},
+      {l:'Camera OT (2T→£81.82)',v:fmtPS(camOT),s:'cam dept only',c:'var(--red)'},
+      {l:'Non-Cam OT (1.5T→£81.82)',v:fmtPS(ncOT),s:'pre-call + wrap',c:'var(--orange)'},
+      {l:'BTA (§5.3 £45/hr)',v:fmtPS(bta),s:bta>0?BTA_IDS.size+' crew affected':'none today',c:'var(--orange)'},
+      {l:'Meal Delay (§5.4)',v:meal||'—',s:`${meal} instance${meal!==1?'s':''}`,c:'var(--yellow)'},
+      {l:'Night Premium (§5.2)',v:night||'—',s:`${night} crew`,c:'var(--blue)'},
+      {l:'Approved Today',v:`${appr}/${daysOn.length}`,s:'timecards',c:'var(--green)'},
+      {l:'Upcoming Days',v:6-currentDay-1,s:'in this week',c:'var(--t2)'},
+    ];
+  } else if(currentView==='wtd'){
+    const cutoff=currentDay;
+    const vis=getVisible();
+    const wtdGross=vis.reduce((a,c)=>{
+      return a+c.dayData.slice(0,cutoff+1).reduce((b,d)=>b+(d.type!=='OFF'?d.dayTotal:0),0);
+    },0);
+    const wtdCam=vis.reduce((a,c)=>a+c.dayData.slice(0,cutoff+1).reduce((b,d)=>b+d.cp,0),0);
+    const wtdNC=vis.reduce((a,c)=>a+c.dayData.slice(0,cutoff+1).reduce((b,d)=>b+d.pp+d.wp,0),0);
+    const wtdBTA=vis.reduce((a,c)=>a+c.dayData.slice(0,cutoff+1).reduce((b,d)=>b+d.bp,0),0);
+    const daysWorked=cutoff+1;
+    const projWeekly=wtdGross/daysWorked*6;
+    const wtdAppr=vis.filter(c=>c.dayData.slice(0,cutoff+1).every(d=>d.type==='OFF'||d.status==='approved')).length;
+    cards=[
+      {l:`WTD Gross (Mon–${DAYS_LABELS[cutoff]})`,v:fmtPS(wtdGross),s:`${daysWorked} days`,c:'var(--gold)'},
+      {l:'Projected Weekly Total',v:fmtPS(projWeekly),s:'extrapolated',c:'var(--green)'},
+      {l:'Camera OT (WTD)',v:fmtPS(wtdCam),s:'cam dept',c:'var(--red)'},
+      {l:'Non-Cam OT (WTD)',v:fmtPS(wtdNC),s:'pre-call + wrap',c:'var(--orange)'},
+      {l:'BTA (WTD)',v:fmtPS(wtdBTA),s:'§5.3',c:'var(--orange)'},
+      {l:'Avg Daily Cost',v:fmtPS(wtdGross/daysWorked),s:'per day so far',c:'var(--t1)'},
+      {l:'Fully Approved',v:wtdAppr,s:'of '+vis.length+' crew',c:'var(--green)'},
+      {l:'Days Remaining',v:5-cutoff,s:'in this week',c:'var(--t2)'},
+    ];
+  } else {
+    // Weekly
+    const vis=getVisible();
+    const gross=vis.reduce((a,c)=>a+c.wkGross,0);
+    const camOT=vis.reduce((a,c)=>a+c.wkCP,0);
+    const ncOT=vis.reduce((a,c)=>a+c.wkPP+c.wkWP,0);
+    const bta=vis.reduce((a,c)=>a+c.wkBP,0);
+    const meal=vis.reduce((a,c)=>a+c.wkMP,0);
+    const exc=vis.filter(c=>(overrides[c.id]||c.wkStatus)==='exception').length;
+    const appr=vis.filter(c=>(overrides[c.id]||c.wkStatus)==='approved').length;
+    const hetvc=vis.filter(c=>c.hetvc).reduce((a,c)=>a+c.wkBasic,0);
+    cards=[
+      {l:'Gross Payroll',v:fmtPS(gross),s:vis.length+' crew',c:'var(--gold)'},
+      {l:'Camera OT (2T)',v:fmtPS(camOT),s:'cam dept only',c:'var(--red)'},
+      {l:'Non-Cam OT (1.5T)',v:fmtPS(ncOT),s:'pre-call + wrap',c:'var(--orange)'},
+      {l:'BTA (§5.3)',v:fmtPS(bta),s:'below turnaround',c:'var(--orange)'},
+      {l:'Meal Delay (§5.4)',v:fmtPS(meal),s:'penalties',c:'var(--yellow)'},
+      {l:'Exceptions',v:exc,s:'require review',c:'var(--red)'},
+      {l:'Approved',v:appr,s:'of '+vis.length,c:'var(--green)'},
+      {l:'HETVC Qualifying',v:fmtPS(hetvc),s:'eligible spend',c:'var(--purple)'},
+    ];
+  }
+
+  bar.innerHTML=cards.map(c=>`<div class="ic">
+    <div class="ic-lbl">${c.l}</div>
+    <div class="ic-val" style="color:${c.c}">${c.v}</div>
+    <div class="ic-sub">${c.s}</div>
+  </div>`).join('');
+}
+
+// ── SIDEBAR CARD ───────────────────────────────────────────────
+function buildSideCard(){
+  const sc=document.getElementById('sideCard');
+  if(currentView==='daily'){
+    const dd=currentDay;
+    const vis=getVisible();
+    const daysOn=vis.filter(c=>c.dayData[dd]?.type!=='OFF');
+    const g=daysOn.reduce((a,c)=>a+c.dayData[dd].dayTotal,0);
+    sc.innerHTML=`<div class="sc-lbl">${DAYS_LABELS[dd]} ${DATES[dd]} Summary</div>
+    <div class="sc-row"><span class="sc-k">Crew working</span><span class="sc-v">${daysOn.length}</span></div>
+    <div class="sc-row"><span class="sc-k">Day gross</span><span class="sc-v gd">${fmtPS(g)}</span></div>
+    <div class="sc-row"><span class="sc-k">Cam OT</span><span class="sc-v rd">${fmtPS(daysOn.reduce((a,c)=>a+c.dayData[dd].cp,0))}</span></div>
+    <div class="sc-row"><span class="sc-k">Non-Cam OT</span><span class="sc-v or">${fmtPS(daysOn.reduce((a,c)=>a+c.dayData[dd].pp+c.dayData[dd].wp,0))}</span></div>
+    <div class="sc-row"><span class="sc-k">BTA</span><span class="sc-v rd">${fmtPS(daysOn.reduce((a,c)=>a+c.dayData[dd].bp,0))}</span></div>`;
+  } else if(currentView==='wtd'){
+    const c0=currentDay;
+    const vis=getVisible();
+    const g=vis.reduce((a,c)=>a+c.dayData.slice(0,c0+1).reduce((b,d)=>b+(d.type!=='OFF'?d.dayTotal:0),0),0);
+    sc.innerHTML=`<div class="sc-lbl">WTD Mon–${DAYS_LABELS[c0]}</div>
+    <div class="sc-row"><span class="sc-k">Days covered</span><span class="sc-v">${c0+1} of 6</span></div>
+    <div class="sc-row"><span class="sc-k">WTD Gross</span><span class="sc-v gd">${fmtPS(g)}</span></div>
+    <div class="sc-row"><span class="sc-k">OT Running</span><span class="sc-v or">${fmtPS(vis.reduce((a,c)=>a+c.dayData.slice(0,c0+1).reduce((b,d)=>b+d.cp+d.pp+d.wp,0),0))}</span></div>
+    <div class="sc-row"><span class="sc-k">BTA WTD</span><span class="sc-v rd">${fmtPS(vis.reduce((a,c)=>a+c.dayData.slice(0,c0+1).reduce((b,d)=>b+d.bp,0),0))}</span></div>
+    <div class="prog-w">
+      <div class="prog-l"><span>Week progress</span><span>${c0+1}/6</span></div>
+      <div class="prog-b"><div class="prog-f" style="width:${Math.round((c0+1)/6*100)}%"></div></div>
+    </div>`;
+  } else {
+    const vis=getVisible();
+    const g=vis.reduce((a,c)=>a+c.wkGross,0);
+    const proc=vis.filter(c=>(overrides[c.id]||c.wkStatus)==='approved').length;
+    sc.innerHTML=`<div class="sc-lbl">Week 14 Summary</div>
+    <div class="sc-row"><span class="sc-k">Total crew</span><span class="sc-v">${vis.length}</span></div>
+    <div class="sc-row"><span class="sc-k">Gross payroll</span><span class="sc-v gd">${fmtPS(g)}</span></div>
+    <div class="sc-row"><span class="sc-k">Approved</span><span class="sc-v gr">${proc}</span></div>
+    <div class="sc-row"><span class="sc-k">Camera OT</span><span class="sc-v rd">${fmtPS(vis.reduce((a,c)=>a+c.wkCP,0))}</span></div>
+    <div class="sc-row"><span class="sc-k">Non-Cam OT</span><span class="sc-v or">${fmtPS(vis.reduce((a,c)=>a+c.wkPP+c.wkWP,0))}</span></div>
+    <div class="sc-row"><span class="sc-k">BTA total</span><span class="sc-v rd">${fmtPS(vis.reduce((a,c)=>a+c.wkBP,0))}</span></div>
+    <div class="prog-w">
+      <div class="prog-l"><span>Processed</span><span>${proc}/${vis.length}</span></div>
+      <div class="prog-b"><div class="prog-f" style="width:${Math.round(proc/vis.length*100)}%"></div></div>
+    </div>`;
+  }
+}
+
+// ── UPDATE SIDEBAR COUNTS ──────────────────────────────────────
+function updateSBCounts(){
+  const vis=allCrew;
+  const dd=currentDay;
+  if(currentView==='daily'){
+    const working=vis.filter(c=>c.dayData[dd]?.type!=='OFF');
+    document.getElementById('sn-all').textContent=working.length;
+    document.getElementById('sn-pend').textContent=working.filter(c=>['pending','in-progress'].includes(c.dayData[dd].status)).length;
+    document.getElementById('sn-appr').textContent=working.filter(c=>c.dayData[dd].status==='approved').length;
+    document.getElementById('sn-exc').textContent=0;
+  } else {
+    document.getElementById('sn-all').textContent=vis.length;
+    document.getElementById('sn-pend').textContent=vis.filter(c=>(overrides[c.id]||c.wkStatus)==='pending').length;
+    document.getElementById('sn-appr').textContent=vis.filter(c=>(overrides[c.id]||c.wkStatus)==='approved').length;
+    document.getElementById('sn-exc').textContent=vis.filter(c=>['exception','hold'].includes(overrides[c.id]||c.wkStatus)).length;
+  }
+}
+
+// ── RENDER TABLE ───────────────────────────────────────────────
+function render(){
+  buildIntel();
+  buildSideCard();
+  updateSBCounts();
+  const thead=document.getElementById('thead');
+  const tbody=document.getElementById('tbody');
+
+  if(currentView==='daily') renderDaily(thead,tbody);
+  else if(currentView==='wtd') renderWTD(thead,tbody);
+  else renderWeekly(thead,tbody);
+}
+
+function getVisible(){
+  let rows=allCrew;
+  if(currentDept!=='all') rows=rows.filter(c=>c.dept===currentDept);
+  if(currentSearch) rows=rows.filter(c=>(c.name+c.role+c.deptName).toLowerCase().includes(currentSearch.toLowerCase()));
+  // Nav filter
+  const dd=currentDay;
+  if(currentNav==='pending'){
+    if(currentView==='daily') rows=rows.filter(c=>['pending','in-progress'].includes(c.dayData[dd]?.status));
+    else rows=rows.filter(c=>(overrides[c.id]||c.wkStatus)==='pending');
+  } else if(currentNav==='approved'){
+    if(currentView==='daily') rows=rows.filter(c=>c.dayData[dd]?.status==='approved');
+    else rows=rows.filter(c=>(overrides[c.id]||c.wkStatus)==='approved');
+  } else if(currentNav==='exception'){
+    rows=rows.filter(c=>['exception','hold'].includes(overrides[c.id]||c.wkStatus));
+  }
+  // Filt filter (from filter buttons)
+  if(currentFilt==='pending'){
+    if(currentView==='daily') rows=rows.filter(c=>['pending','in-progress'].includes(c.dayData[dd]?.status));
+    else rows=rows.filter(c=>(overrides[c.id]||c.wkStatus)==='pending');
+  } else if(currentFilt==='approved'){
+    if(currentView==='daily') rows=rows.filter(c=>c.dayData[dd]?.status==='approved');
+    else rows=rows.filter(c=>(overrides[c.id]||c.wkStatus)==='approved');
+  } else if(currentFilt==='exception'){
+    rows=rows.filter(c=>['exception','hold'].includes(overrides[c.id]||c.wkStatus));
+  }
+  return rows;
+}
+
+// ── STATUS CHIP HTML ───────────────────────────────────────────
+function spHtml(status){
+  const m={approved:['sp-appr','✓ Approved'],pending:['sp-pend','Pending'],'in-progress':['sp-prog','In Progress'],
+    lock:['sp-lock','Locked'],upcoming:['sp-upco','Upcoming'],off:['sp-off','Off'],
+    exception:['sp-exc','Exception'],hold:['sp-exc','On Hold']};
+  const [cls,lbl]=m[status]||['sp-pend',status];
+  return `<span class="sp ${cls}">${lbl}</span>`;
+}
+
+// ── DAY TYPE CHIP ──────────────────────────────────────────────
+function dcHtml(t){
+  const m={SWD:'dc-swd',CWD:'dc-cwd',SCWD:'dc-scwd',RIG:'dc-rig',TRVL:'dc-trvl',OFF:'dc-off'};
+  return `<span class="day-chip ${m[t]||'dc-off'}">${t}</span>`;
+}
+
+// ── DAILY VIEW ─────────────────────────────────────────────────
+function renderDaily(thead,tbody){
+  const dd=currentDay;
+  thead.innerHTML=`<tr>
+    <th><input type="checkbox" style="accent-color:var(--gold)" onchange="checkAll(this)"></th>
+    <th style="min-width:160px">Crew Member</th>
+    <th>Type</th>
+    <th>Crew Call</th><th>Unit Call</th><th>Unit Wrap</th><th>Release</th>
+    <th>Pre-Call OT</th><th>Camera OT</th><th>Wrap OT</th>
+    <th>BTA (§5.3)</th><th>Meal Delay</th><th>Night Prem</th>
+    <th>Day Total</th><th>Status</th><th></th>
+  </tr>`;
+
+  const rows=getVisible();
+  let html='';
+  let lastDept='';
+
+  rows.forEach(c=>{
+    const sel=selectedIds.has(c.id);
+    const d=c.dayData[dd];
+    const off=d.type==='OFF';
+
+    if(currentDept==='all' && c.dept!==lastDept){
+      lastDept=c.dept;
+      const dept=DEPTS.find(x=>x.id===c.dept);
+      const drows=rows.filter(x=>x.dept===c.dept);
+      const dayGross=drows.reduce((a,x)=>a+(x.dayData[dd].type!=='OFF'?x.dayData[dd].dayTotal:0),0);
+      const working=drows.filter(x=>x.dayData[dd].type!=='OFF').length;
+      html+=`<tr class="dept-hdr">
+        <td></td>
+        <td colspan="15">
+          <div class="dh-cell">
+            <div class="dh-dot" style="background:${dept.color}"></div>
+            <span>${dept.name}</span>
+            <span style="color:var(--t3);font-size:9px;font-weight:400">(${working}/${drows.length} working today)</span>
+            <span style="margin-left:10px;font-family:'DM Mono',monospace;font-size:10px;color:var(--gold)">${fmtPS(dayGross)}</span>
+          </div>
+        </td>
+      </tr>`;
+    }
+
+    const fds=[];
+    if(d.btaM>0) fds.push('<div class="fd bta" title="BTA"></div>');
+    if(d.mealM>0) fds.push('<div class="fd meal" title="Meal delay"></div>');
+    if(d.cp>0) fds.push('<div class="fd camot" title="Cam OT"></div>');
+    if(d.night) fds.push('<div class="fd night" title="Night premium"></div>');
+    if(!fds.length&&!off) fds.push('<div class="fd ok" title="Clean"></div>');
+
+    html+=`<tr class="${sel?'sel':''}" onclick="openPanel(${c.id})">
+      <td onclick="event.stopPropagation()"><input type="checkbox" ${sel?'checked':''} style="accent-color:var(--gold)" onchange="toggleSel(${c.id},this)"></td>
+      <td><div class="cc-w"><div class="av" style="background:${c.color}20;color:${c.color};border:1px solid ${c.color}40">${c.initials}</div>
+        <div><div class="cn">${c.name}</div><div class="cr-role">${c.role}</div></div></div></td>
+      <td>${dcHtml(d.type)}</td>
+      <td class="tc">${off?'—':d.crewCall}</td>
+      <td class="tc uc">${off?'—':d.unitCall}</td>
+      <td class="tc uc">${off?'—':d.unitWrap}</td>
+      <td class="tc rel">${off?'—':d.release}</td>
+      <td class="pay-cell" style="color:${d.pp>0?'var(--orange)':'var(--t3)'}">${fmtP(d.pp)}</td>
+      <td class="pay-cell" style="color:${d.cp>0?'var(--red)':'var(--t3)'}">${fmtP(d.cp)}</td>
+      <td class="pay-cell" style="color:${d.wp>0?'var(--orange)':'var(--t3)'}">${fmtP(d.wp)}</td>
+      <td class="pay-cell" style="color:${d.bp>0?'var(--red)':'var(--t3)'}">${d.bp>0?'<span style="font-size:8.5px;color:var(--t3)">'+fmtH(d.btaM)+'</span> '+fmtP(d.bp):'—'}</td>
+      <td class="pay-cell" style="color:${d.mp>0?'var(--yellow)':'var(--t3)'}">${fmtP(d.mp)}</td>
+      <td class="pay-cell" style="color:${d.np?'var(--blue)':'var(--t3)'}">${d.np?'£20.00':'—'}</td>
+      <td class="pay-cell" style="font-weight:700;color:${off?'var(--t3)':'var(--t1)'}">${off?'—':fmtP(d.dayTotal)}</td>
+      <td>${spHtml(d.status)}</td>
+      <td onclick="event.stopPropagation()">
+        ${!off&&d.status!=='approved'?`<button class="btn" style="background:var(--gr-g);color:var(--green);border:1px solid rgba(74,222,128,.2);font-size:8.5px" onclick="approveDay(${c.id},${dd})">✓</button>`:''}
+      </td>
+    </tr>`;
+  });
+  tbody.innerHTML=html;
+}
+
+// ── WTD VIEW ───────────────────────────────────────────────────
+function renderWTD(thead,tbody){
+  const cutoff=currentDay;
+  thead.innerHTML=`<tr>
+    <th><input type="checkbox" style="accent-color:var(--gold)" onchange="checkAll(this)"></th>
+    <th style="min-width:160px">Crew Member</th>
+    <th>Days Worked</th>
+    <th>Day Types</th>
+    <th>Basic Pay</th>
+    <th>Pre-Call OT</th>
+    <th>Camera OT</th>
+    <th>Wrap OT</th>
+    <th>BTA</th>
+    <th>Meal + Night</th>
+    <th>WTD Total</th>
+    <th>Proj. Weekly</th>
+    <th>WTD Progress</th>
+    <th>Status</th>
+  </tr>`;
+
+  const rows=getVisible();
+  let html='';
+  let lastDept='';
+
+  rows.forEach(c=>{
+    const sel=selectedIds.has(c.id);
+    const slice=c.dayData.slice(0,cutoff+1);
+    const wDays=slice.filter(d=>d.type!=='OFF');
+    const basic=wDays.reduce((a,d)=>a+d.basicPay,0);
+    const pp=wDays.reduce((a,d)=>a+d.pp,0);
+    const cp=wDays.reduce((a,d)=>a+d.cp,0);
+    const wp=wDays.reduce((a,d)=>a+d.wp,0);
+    const bp=wDays.reduce((a,d)=>a+d.bp,0);
+    const mp=wDays.reduce((a,d)=>a+d.mp+d.np,0);
+    const wtdTotal=basic+pp+cp+wp+bp+mp;
+    const projWeekly=wDays.length>0?wtdTotal/wDays.length*c.wkDaysWorked:0;
+    const types=[...new Set(slice.filter(d=>d.type!=='OFF').map(d=>d.type))];
+    const pct=Math.round(wtdTotal/c.wkGross*100);
+    const approvedCount=slice.filter(d=>d.type!=='OFF'&&d.status==='approved').length;
+    const wtdStatus=wDays.length===0?'off':approvedCount===wDays.length?'approved':approvedCount>0?'in-progress':'pending';
+
+    if(currentDept==='all' && c.dept!==lastDept){
+      lastDept=c.dept;
+      const dept=DEPTS.find(x=>x.id===c.dept);
+      const drows=rows.filter(x=>x.dept===c.dept);
+      const dSliceG=drows.reduce((a,x)=>{
+        const sl=x.dayData.slice(0,cutoff+1).filter(d=>d.type!=='OFF');
+        return a+sl.reduce((b,d)=>b+d.dayTotal,0);
+      },0);
+      html+=`<tr class="dept-hdr"><td></td><td colspan="13">
+        <div class="dh-cell">
+          <div class="dh-dot" style="background:${dept.color}"></div>
+          <span>${dept.name}</span>
+          <span style="color:var(--t3);font-size:9px;font-weight:400">(${drows.length} crew)</span>
+          <span style="margin-left:10px;font-family:'DM Mono',monospace;font-size:10px;color:var(--gold)">WTD ${fmtPS(dSliceG)}</span>
+        </div></td></tr>`;
+    }
+
+    html+=`<tr class="${sel?'sel':''}" onclick="openPanel(${c.id})">
+      <td onclick="event.stopPropagation()"><input type="checkbox" ${sel?'checked':''} style="accent-color:var(--gold)" onchange="toggleSel(${c.id},this)"></td>
+      <td><div class="cc-w"><div class="av" style="background:${c.color}20;color:${c.color};border:1px solid ${c.color}40">${c.initials}</div>
+        <div><div class="cn">${c.name}</div><div class="cr-role">${c.role}</div></div></div></td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--t2)">${wDays.length} day${wDays.length!==1?'s':''}</td>
+      <td>${types.map(t=>dcHtml(t)).join(' ')}</td>
+      <td class="pay-cell">${fmtP(basic)}</td>
+      <td class="pay-cell" style="color:${pp>0?'var(--orange)':'var(--t3)'}">${fmtP(pp)}</td>
+      <td class="pay-cell" style="color:${cp>0?'var(--red)':'var(--t3)'}">${fmtP(cp)}</td>
+      <td class="pay-cell" style="color:${wp>0?'var(--orange)':'var(--t3)'}">${fmtP(wp)}</td>
+      <td class="pay-cell" style="color:${bp>0?'var(--red)':'var(--t3)'}">${fmtP(bp)}</td>
+      <td class="pay-cell" style="color:${mp>0?'var(--yellow)':'var(--t3)'}">${fmtP(mp)}</td>
+      <td class="pay-cell" style="font-weight:700;color:var(--gold)">${fmtP(wtdTotal)}</td>
+      <td class="pay-cell" style="color:var(--t2);font-size:10px">${fmtP(projWeekly)}</td>
+      <td>
+        <div class="wtd-mini">
+          <div class="wtd-m-bar"><div class="wtd-m-fill" style="width:${Math.min(pct,100)}%;background:${pct>80?'var(--green)':pct>50?'var(--gold)':'var(--orange)'}"></div></div>
+          <div class="wtd-m-pct">${pct}%</div>
+        </div>
+      </td>
+      <td>${spHtml(wtdStatus)}</td>
+    </tr>`;
+  });
+  tbody.innerHTML=html;
+}
+
+// ── WEEKLY VIEW ────────────────────────────────────────────────
+function renderWeekly(thead,tbody){
+  thead.innerHTML=`<tr>
+    <th><input type="checkbox" style="accent-color:var(--gold)" onchange="checkAll(this)"></th>
+    <th style="min-width:160px">Crew Member</th>
+    <th>Days</th>
+    <th>Day Types</th>
+    <th>Basic Pay</th>
+    <th>Pre-Call OT</th>
+    <th>Camera OT</th>
+    <th>Wrap OT</th>
+    <th>BTA</th>
+    <th>Meal+Night</th>
+    <th>Gross Pay</th>
+    <th>HETVC</th>
+    <th>Flags</th>
+    <th>Status</th>
+    <th></th>
+  </tr>`;
+
+  const rows=getVisible();
+  let html='';
+  let lastDept='';
+
+  rows.forEach(c=>{
+    const sel=selectedIds.has(c.id);
+    const st=overrides[c.id]||c.wkStatus;
+    const types=[...new Set(c.dayData.filter(d=>d.type!=='OFF').map(d=>d.type))];
+
+    if(currentDept==='all' && c.dept!==lastDept){
+      lastDept=c.dept;
+      const dept=DEPTS.find(x=>x.id===c.dept);
+      const drows=rows.filter(x=>x.dept===c.dept);
+      const dg=drows.reduce((a,x)=>a+x.wkGross,0);
+      const de=drows.filter(x=>(overrides[x.id]||x.wkStatus)==='exception').length;
+      html+=`<tr class="dept-hdr"><td></td><td colspan="14">
+        <div class="dh-cell">
+          <div class="dh-dot" style="background:${dept.color}"></div>
+          <span>${dept.name}</span>
+          <span style="color:var(--t3);font-size:9px;font-weight:400">(${drows.length} crew)</span>
+          <span style="margin-left:10px;font-family:'DM Mono',monospace;font-size:10px;color:var(--gold)">${fmtPS(dg)}</span>
+          ${de>0?`<span style="margin-left:6px;font-size:8.5px;color:var(--orange);background:var(--or-g);border:1px solid rgba(251,146,60,.2);border-radius:3px;padding:1px 5px">${de} exc</span>`:''}
+        </div></td></tr>`;
+    }
+
+    const fds=[];
+    if(c.wkBP>0) fds.push('<div class="fd bta" title="BTA"></div>');
+    if(c.wkMP>0) fds.push('<div class="fd meal" title="Meal delay"></div>');
+    if(c.wkCP>0) fds.push('<div class="fd camot" title="Cam OT"></div>');
+    if(c.dayData.some(d=>d.night)) fds.push('<div class="fd night" title="Night premium"></div>');
+    if(!fds.length) fds.push('<div class="fd ok" title="Clean"></div>');
+
+    html+=`<tr class="${sel?'sel':''}" onclick="openPanel(${c.id})">
+      <td onclick="event.stopPropagation()"><input type="checkbox" ${sel?'checked':''} style="accent-color:var(--gold)" onchange="toggleSel(${c.id},this)"></td>
+      <td><div class="cc-w"><div class="av" style="background:${c.color}20;color:${c.color};border:1px solid ${c.color}40">${c.initials}</div>
+        <div><div class="cn">${c.name}</div><div class="cr-role">${c.role}</div></div></div></td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--t2)">${c.wkDaysWorked}d</td>
+      <td>${types.map(t=>dcHtml(t)).join(' ')}</td>
+      <td class="pay-cell">${fmtP(c.wkBasic)}</td>
+      <td class="pay-cell" style="color:${c.wkPP>0?'var(--orange)':'var(--t3)'}">${fmtP(c.wkPP)}</td>
+      <td class="pay-cell" style="color:${c.wkCP>0?'var(--red)':'var(--t3)'}">${fmtP(c.wkCP)}</td>
+      <td class="pay-cell" style="color:${c.wkWP>0?'var(--orange)':'var(--t3)'}">${fmtP(c.wkWP)}</td>
+      <td class="pay-cell" style="color:${c.wkBP>0?'var(--red)':'var(--t3)'}">${fmtP(c.wkBP)}</td>
+      <td class="pay-cell" style="color:${(c.wkMP+c.wkNP)>0?'var(--yellow)':'var(--t3)'}">${fmtP(c.wkMP+c.wkNP)}</td>
+      <td class="pay-cell" style="font-weight:700;color:var(--gold)">${fmtP(c.wkGross)}</td>
+      <td>${c.hetvc?'<div class="htv">HETVC</div>':'<span style="color:var(--t3)">—</span>'}</td>
+      <td><div class="fds">${fds.join('')}</div></td>
+      <td>${spHtml(st)}</td>
+      <td onclick="event.stopPropagation()">
+        ${st!=='approved'?`<button class="btn" style="background:var(--gr-g);color:var(--green);border:1px solid rgba(74,222,128,.2);font-size:8.5px" onclick="approveWeek(${c.id})">✓</button>`:''}
+        <button class="btn btn-ghost" style="font-size:8.5px" onclick="openPanel(${c.id});event.stopPropagation()">→</button>
+      </td>
+    </tr>`;
+  });
+  tbody.innerHTML=html;
+}
+
+// ── PANEL ──────────────────────────────────────────────────────
+function openPanel(id){
+  const c=allCrew.find(x=>x.id===id);
+  if(!c)return;
+  panelCrew=c;
+  document.getElementById('pAv').textContent=c.initials;
+  document.getElementById('pAv').style.cssText=`width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;background:${c.color}20;color:${c.color};border:1px solid ${c.color}40;flex-shrink:0`;
+  document.getElementById('pName').textContent=c.name;
+  document.getElementById('pMeta').textContent=`${c.role} · ${c.deptName} · PACT/BECTU MMP 2021 · £${c.dailyRate}/day`;
+
+  let body='';
+
+  if(currentView==='daily'){
+    const d=c.dayData[currentDay];
+    const off=d.type==='OFF';
+    body=`<div class="psec">
+      <div class="psl">${DAYS_LABELS[currentDay]} ${DATES[currentDay]} — ${off?'Rest Day':d.type+' · Contracted '+((d.type==='CWD'||d.type==='SCWD')?'10':'11')+'h'}</div>
+      ${off?'<div style="color:var(--t3);font-size:11px">Rest day — no call</div>':`
+      <div class="pg">
+        <div class="pgc"><div class="pgcl">Crew Call → Unit Call</div>
+          <div class="pgcv" style="font-size:13px">${d.crewCall} → ${d.unitCall}</div>
+          <div class="pgcs">${d.preM>0?'Pre-call '+fmtH(d.preM)+' = '+fmtP(d.pp)+' (NCam 1.5T)':'No pre-call OT'}</div></div>
+        <div class="pgc"><div class="pgcl">Unit Wrap → Release</div>
+          <div class="pgcv" style="font-size:13px">${d.unitWrap} → ${d.release}</div>
+          <div class="pgcs">${d.wrapOTM>0?`Wrap OT ${fmtH(d.wrapOTM)} = ${fmtP(d.wp)} (NCam 1.5T)`:'No wrap OT'}</div></div>
+        <div class="pgc"><div class="pgcl">Camera OT §3.3(a)(i)</div>
+          <div class="pgcv" style="color:var(--red)">${d.cp>0?fmtP(d.cp):'—'}</div>
+          <div class="pgcs">${d.cp>0?fmtH(d.camOTM)+' × £'+camOTRate(c.dailyRate).toFixed(2)+'/hr (cap £81.82)':'No camera OT today'}</div></div>
+        <div class="pgc"><div class="pgcl">BTA §5.3</div>
+          <div class="pgcv" style="color:var(--red)">${d.bp>0?fmtP(d.bp):'—'}</div>
+          <div class="pgcs">${d.bp>0?fmtH(d.btaM)+' below 11h min · £45/hr cap':'Turnaround OK'}</div></div>
+        <div class="pgc"><div class="pgcl">Meal Delay §5.4(b)(i)</div>
+          <div class="pgcv" style="color:var(--yellow)">${d.mp>0?fmtP(d.mp):'—'}</div>
+          <div class="pgcs">${d.mp>0?'30m past 6h window · £'+c.hr.toFixed(2)+'/hr basic':'Meal on time'}</div></div>
+        <div class="pgc"><div class="pgcl">Night Premium §5.2</div>
+          <div class="pgcv" style="color:var(--blue)">${d.np?'£20.00':'—'}</div>
+          <div class="pgcs">${d.np?'Shooting past midnight':'No night premium'}</div></div>
+        <div class="pgc" style="grid-column:1/-1;background:var(--gold-gg);border-color:rgba(232,184,75,.2)">
+          <div class="pgcl">Day Total</div>
+          <div class="pgcv" style="color:var(--gold);font-size:20px">${fmtP(d.dayTotal)}</div>
+          <div class="pgcs">Basic £${c.dailyRate} + OT/Pen £${(d.dayTotal-c.dailyRate).toFixed(2)}</div></div>
+      </div>`}
+    </div>`;
+    document.getElementById('pProcBtn').textContent=d.status==='approved'?'✓ Approved':'✓ Approve Day';
+    document.getElementById('pProcBtn').disabled=d.status==='approved';
+  } else {
+    // Full week breakdown table
+    body=`<div class="psec">
+      <div class="psl">Pay Summary</div>
+      <div class="pg">
+        <div class="pgc"><div class="pgcl">Basic (${c.wkDaysWorked} days)</div><div class="pgcv">${fmtP(c.wkBasic)}</div></div>
+        <div class="pgc"><div class="pgcl">Camera OT (2T)</div><div class="pgcv" style="color:var(--red)">${c.wkCP>0?fmtP(c.wkCP):'—'}</div></div>
+        <div class="pgc"><div class="pgcl">Pre-call OT (1.5T)</div><div class="pgcv" style="color:var(--orange)">${c.wkPP>0?fmtP(c.wkPP):'—'}</div></div>
+        <div class="pgc"><div class="pgcl">Wrap OT (1.5T)</div><div class="pgcv" style="color:var(--orange)">${c.wkWP>0?fmtP(c.wkWP):'—'}</div></div>
+        <div class="pgc"><div class="pgcl">BTA §5.3</div><div class="pgcv" style="color:var(--red)">${c.wkBP>0?fmtP(c.wkBP):'—'}</div></div>
+        <div class="pgc"><div class="pgcl">Meal+Night</div><div class="pgcv" style="color:var(--yellow)">${(c.wkMP+c.wkNP)>0?fmtP(c.wkMP+c.wkNP):'—'}</div></div>
+        <div class="pgc" style="grid-column:1/-1;background:var(--gold-gg);border-color:rgba(232,184,75,.2)">
+          <div class="pgcl">Gross Pay</div><div class="pgcv" style="color:var(--gold);font-size:20px">${fmtP(c.wkGross)}</div></div>
+      </div>
+    </div>
+    <div class="psec">
+      <div class="psl">Day-by-Day Breakdown</div>
+      <table class="dbt">
+        <thead><tr><th>Day</th><th>Type</th><th>Call</th><th>Wrap</th><th>Pre OT</th><th>Cam OT</th><th>Wk OT</th><th>BTA</th><th>Day £</th><th>Status</th></tr></thead>
+        <tbody>${c.dayData.map((d,i)=>`<tr${d.type==='OFF'?' style="opacity:.4"':''}>
+          <td style="font-weight:600;font-size:10px">${DAYS_LABELS[i]}</td>
+          <td>${dcHtml(d.type)}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:10px">${d.type==='OFF'?'—':d.unitCall}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:10px">${d.type==='OFF'?'—':d.unitWrap}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:10px;color:${d.pp>0?'var(--orange)':'var(--t3)'}">${fmtP(d.pp)}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:10px;color:${d.cp>0?'var(--red)':'var(--t3)'}">${fmtP(d.cp)}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:10px;color:${d.wp>0?'var(--orange)':'var(--t3)'}">${fmtP(d.wp)}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:10px;color:${d.bp>0?'var(--red)':'var(--t3)'}">${fmtP(d.bp)}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;color:${d.type==='OFF'?'var(--t3)':'var(--gold)'}">${d.type==='OFF'?'—':fmtP(d.dayTotal)}</td>
+          <td>${spHtml(d.status)}</td>
+        </tr>`).join('')}
+        <tr class="tot-r"><td colspan="4">TOTALS</td>
+          <td style="font-family:'DM Mono',monospace;font-size:10px">${fmtP(c.wkPP)}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:10px">${fmtP(c.wkCP)}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:10px">${fmtP(c.wkWP)}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:10px">${fmtP(c.wkBP)}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:10px">${fmtP(c.wkGross)}</td><td></td>
+        </tr></tbody>
+      </table>
+    </div>`;
+    const st=overrides[c.id]||c.wkStatus;
+    document.getElementById('pProcBtn').textContent=st==='approved'?'✓ Approved':'✓ Approve Week';
+    document.getElementById('pProcBtn').disabled=st==='approved';
+  }
+
+  document.getElementById('panelBody').innerHTML=body;
+  document.getElementById('panel').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closePanel(){
+  document.getElementById('panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+
+function approveFromPanel(){
+  if(!panelCrew)return;
+  if(currentView==='daily'){
+    approveDay(panelCrew.id,currentDay);
+    openPanel(panelCrew.id);
+  } else {
+    approveWeek(panelCrew.id);
+    openPanel(panelCrew.id);
+  }
+}
+
+function approveDay(id,dayIdx){
+  const c=allCrew.find(x=>x.id===id);
+  if(c&&c.dayData[dayIdx]&&c.dayData[dayIdx].status!=='approved'){
+    c.dayData[dayIdx].status='approved';
+    render();
+    toast(`${c.name} — ${DAYS_LABELS[dayIdx]} approved`);
+  }
+}
+
+function approveWeek(id){
+  overrides[id]='approved';
+  render();
+  const c=allCrew.find(x=>x.id===id);
+  if(c) toast(`${c.name} — week approved`);
+}
+
+function flagExc(){
+  if(!panelCrew)return;
+  overrides[panelCrew.id]='exception';
+  render(); closePanel();
+  toast(`${panelCrew.name} — flagged as exception`);
+}
+
+// ── FILTERS ────────────────────────────────────────────────────
+function setFilt(btn,f){ currentFilt=f; document.querySelectorAll('.fb').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); render(); }
+function filterSearch(v){ currentSearch=v; render(); }
+function setNav(el,v){ currentNav=v; document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('on')); el.classList.add('on'); render(); }
+function toggleSel(id,el){ if(el.checked)selectedIds.add(id);else selectedIds.delete(id); render(); }
+function checkAll(el){ const vis=getVisible(); if(el.checked)vis.forEach(c=>selectedIds.add(c.id));else selectedIds.clear(); render(); }
+function selectAll(){ const vis=getVisible(); if(selectedIds.size===vis.length)selectedIds.clear();else vis.forEach(c=>selectedIds.add(c.id)); render(); }
+
+function approveSelected(){
+  if(!selectedIds.size){toast('Select crew to approve');return;}
+  let n=0;
+  if(currentView==='daily'){
+    selectedIds.forEach(id=>{
+      const c=allCrew.find(x=>x.id===id);
+      if(c&&c.dayData[currentDay].status!=='approved'){c.dayData[currentDay].status='approved';n++;}
+    });
+  } else {
+    selectedIds.forEach(id=>{ if((overrides[id]||allCrew.find(x=>x.id===id)?.wkStatus)!=='approved'){overrides[id]='approved';n++;} });
+  }
+  selectedIds.clear(); render();
+  toast(`${n} timecards approved`);
+}
+
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; clearTimeout(t._to); t._to=setTimeout(()=>t.style.display='none',2800); }
+
+// ── INIT ──────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>

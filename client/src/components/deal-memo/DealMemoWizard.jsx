@@ -5,15 +5,14 @@ import { Button } from "@/components/ui/button";
 import { useMemo } from "react";
 import { isPayrollVisibleRole } from "@/lib/countryFieldConfig";
 
-// Full labels for all 10 steps
+// Full labels for all 9 steps (RTW after Deal)
 const ALL_STEP_LABELS = [
   "Entity & Territory",
   "Crew Details",
-  "Deal Structure",
-  "Rates",
+  "Deal & Rates",
+  "Right to Work",
   "Allowances",
   "Nominal Coding",
-  "Right to Work",
   "Documents",
   "Payroll Start",
   "Preview & Issue",
@@ -24,17 +23,16 @@ const ALL_STEP_SHORT = [
   "Entity",
   "Crew",
   "Deal",
-  "Rates",
+  "RTW",
   "Allow.",
   "Codes",
-  "RTW",
   "Docs",
   "Payroll",
   "Issue",
 ];
 
 // Payroll Start step index (0-based) in the full list
-const PAYROLL_STEP_INDEX = 8;
+const PAYROLL_STEP_INDEX = 7;
 
 // ---------------------------------------------------------------------------
 // Build step arrays based on user role

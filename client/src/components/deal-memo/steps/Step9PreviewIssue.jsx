@@ -1,4 +1,5 @@
 import { useRef, useCallback, useMemo } from "react";
+import { getEmploymentRules } from "@/lib/employmentTypeRules";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -94,17 +95,17 @@ export default function Step9PreviewIssue({
 
   // Weekly cost estimate
   const isUS = labels.territory === "US" || data.territory === "US";
+  const empCategory = getEmploymentRules(data.employmentStatus)?.category || 'employee';
   const costEstimate = useMemo(() => {
     const weekly = Math.round((Number(data.weeklyRate) || Number(data.dailyRate) * 5 || 0) * 100) / 100;
-    const hp = (!isUS && data.hpMode !== "incl" && data.hpMode !== "na") ? weekly * 0.1207 : 0;
+    const isCorporate = empCategory === 'corporate';
+    const hp = (!isCorporate && !isUS && data.hpMode !== "incl" && data.hpMode !== "na") ? weekly * (Number(data.holidayPayPct) || 12.07) / 100 : 0;
     const allowTotal = allowances.reduce((sum, a) => sum + (Number(a?.amount) || 0), 0);
-    // US: FICA (7.65%) + P&H/Fringe (~20%)  |  UK: Employer NIC (13.8%) + Pension (3%)
-    const employerTaxPct = isUS ? 0.0765 : 0.138;
-    const fringePct = isUS ? 0.20 : 0.03;
-    const onCosts = weekly * (employerTaxPct + fringePct);
+    // Corporate (Ltd, Loan-out) → zero on-costs
+    const onCosts = isCorporate ? 0 : weekly * ((Number(data.employerNiPct) || (isUS ? 7.65 : 13.8)) / 100 + (Number(data.pensionPct) || (isUS ? 0.20 : 0.03)) / 100);
     const total = weekly + hp + allowTotal + onCosts;
     return { weekly, hp, allowances: allowTotal, onCosts, total };
-  }, [data, allowances, isUS]);
+  }, [data, allowances, isUS, empCategory]);
 
   const handleDownloadPDF = useCallback(() => {
     if (!previewRef.current) return;
@@ -192,56 +193,69 @@ export default function Step9PreviewIssue({
           {/* Crew Details */}
           <SummarySection icon={Users} title="Crew Details">
             <SummaryRow label="Employment Status" value={labels.employmentStatus || data.employmentStatus} />
-            {data.rightToWork?.rtwDocType && (
-              <div className="flex justify-between py-1 px-2">
-                <span className="text-muted-foreground">Right to Work</span>
-                <span className="flex items-center gap-2">
-                  <span className="text-sm">{data.rightToWork.rtwDocType}</span>
-                  <RtwStatusBadge status={data.rightToWork?.status} />
-                </span>
-              </div>
-            )}
+            <SummaryRow label="NI Number" value={data.niNumber} />
+            <SummaryRow label="Tax Code" value={data.taxCode} />
+            <SummaryRow label="SSN" value={data.ssn} />
+            <SummaryRow label="Date of Birth" value={data.dateOfBirth} />
+            <SummaryRow label="Address" value={data.crewAddress} />
+            <SummaryRow label="Emergency Contact" value={data.emergencyContact} />
+            <SummaryRow label="Company Name" value={data.ltdCompanyName} />
+            <SummaryRow label="Company Reg" value={data.ltdCompanyReg} />
+            <SummaryRow label="VAT Number" value={data.vatNumber} />
+            <SummaryRow label="IR35 Status" value={data.ir35Status} />
+            <SummaryRow label="UTR Number" value={data.utrNumber} />
+            <SummaryRow label="Corp Name" value={data.corpName} />
+            <SummaryRow label="Corp EIN" value={data.corpEin} />
+            <SummaryRow label="Bank Sort Code" value={data.bankSortCode} />
+            <SummaryRow label="Bank Account" value={data.bankAccountNumber ? "****" + data.bankAccountNumber.slice(-4) : null} />
+            <SummaryRow label="W-4 Filing Status" value={data.w4FilingStatus} />
+            <SummaryRow label="State Withholding" value={data.stateWithholding} />
           </SummarySection>
 
           <Separator />
 
-          {/* Deal Structure */}
-          <SummarySection icon={CalendarDays} title="Deal Structure">
+          {/* Deal Structure & Rates */}
+          <SummarySection icon={CalendarDays} title="Deal & Rates">
             <SummaryRow label="Deal Type" value={data.dealType} />
+            <SummaryRow label="Rate Type" value={data.rateType} />
             <SummaryRow label="Start Date" value={data.startDate} />
             <SummaryRow label="End Date" value={data.endDate} />
+            <SummaryRow label="Guaranteed Weeks" value={data.guaranteedWeeks} />
             <SummaryRow label="Exclusivity" value={data.exclusivity} />
+            <SummaryRow label="Weekly Rate" value={data.weeklyRate ? `${cs}${Number(data.weeklyRate).toLocaleString()}` : null} />
+            <SummaryRow label="Daily Rate" value={data.dailyRate ? `${cs}${Number(data.dailyRate).toLocaleString()}` : null} />
+            <SummaryRow label="Hourly Rate" value={data.hourlyRate ? `${cs}${Number(data.hourlyRate).toFixed(2)}` : null} />
+            {data.hpMode && !isUS && <SummaryRow label="Holiday Pay Mode" value={data.hpMode === 'excl' ? 'HP Excluded' : data.hpMode === 'incl' ? 'HP Included' : 'N/A'} />}
+            <SummaryRow label="Overtime Applicable" value={data.overtimeApplicable === false ? 'No' : 'Yes'} />
+            <SummaryRow label="Night Premium" value={data.nightPremiumEnabled === false ? 'Disabled' : data.nightPremiumPct ? `${data.nightPremiumPct}%` : 'Enabled'} />
+            <SummaryRow label="Meal Penalty" value={data.mealPenaltyEnabled === false ? 'Disabled' : data.mealPenaltyRate ? `${cs}${data.mealPenaltyRate}` : 'Enabled'} />
+            <SummaryRow label="Turnaround Minimum" value={data.turnaroundMinHrs ? `${data.turnaroundMinHrs} hrs` : null} />
             {data.separateRates && (
               <>
-                <SummaryRow label="Prep Rate" value={data.prepRate != null ? `${cs}${Number(data.prepRate).toLocaleString()}` : null} />
-                <SummaryRow label="Shoot Rate" value={data.shootRate != null ? `${cs}${Number(data.shootRate).toLocaleString()}` : null} />
-                <SummaryRow label="Wrap Rate" value={data.wrapRate != null ? `${cs}${Number(data.wrapRate).toLocaleString()}` : null} />
+                <SummaryRow label="Prep Day Rate" value={data.prepRate != null ? `${cs}${Number(data.prepRate).toLocaleString()}` : null} />
+                <SummaryRow label="Shoot Day Rate" value={data.shootRate != null ? `${cs}${Number(data.shootRate).toLocaleString()}` : null} />
+                <SummaryRow label="Wrap Day Rate" value={data.wrapRate != null ? `${cs}${Number(data.wrapRate).toLocaleString()}` : null} />
+                <SummaryRow label="Travel Day Rate" value={data.travelRate != null ? `${cs}${Number(data.travelRate).toLocaleString()}` : null} />
               </>
             )}
+            <SummaryRow label="6th Day Multiplier" value={data.sixthDayMultiplier ? `${data.sixthDayMultiplier}x` : null} />
+            <SummaryRow label="7th Day Multiplier" value={data.seventhDayMultiplier ? `${data.seventhDayMultiplier}x` : null} />
           </SummarySection>
 
           <Separator />
 
-          {/* Rates */}
-          <SummarySection icon={Banknote} title="Rates">
-            <SummaryRow label="Rate Basis" value={data.rateBasis} />
-            {!data.separateRates && (
-              <SummaryRow
-                label="Rate Amount"
-                value={data.rateAmount != null ? `${cs}${Number(data.rateAmount).toLocaleString()}` : null}
-              />
-            )}
-            <SummaryRow label="Rate Type" value={data.rateType} />
-            <SummaryRow
-              label="Weekly Rate"
-              value={data.weeklyRate != null ? `${cs}${Number(data.weeklyRate).toLocaleString()}` : null}
-            />
-            <SummaryRow
-              label="Daily Rate"
-              value={data.dailyRate != null ? `${cs}${Number(data.dailyRate).toLocaleString()}` : null}
-            />
-            {data.hpMode && !isUS && <SummaryRow label="Holiday Pay Mode" value={data.hpMode} />}
-          </SummarySection>
+          {/* Fringes — hide for corporate types (Ltd, Loan-out, etc.) */}
+          {getEmploymentRules(data.employmentStatus)?.category !== 'corporate' && (
+            <SummarySection icon={Banknote} title="Fringes & On-Costs">
+              <SummaryRow label="Holiday Pay %" value={data.holidayPayPct ? `${data.holidayPayPct}%` : null} />
+              <SummaryRow label="Employer NIC %" value={data.employerNiPct ? `${data.employerNiPct}%` : null} />
+              <SummaryRow label="Pension %" value={data.pensionPct ? `${data.pensionPct}%` : null} />
+              <SummaryRow label="Apprenticeship Levy %" value={data.apprenticeshipLevyPct ? `${data.apprenticeshipLevyPct}%` : null} />
+              <SummaryRow label="Union Pension %" value={data.unionPensionPct ? `${data.unionPensionPct}%` : null} />
+              <SummaryRow label="Workers Comp %" value={data.workersCompPct ? `${data.workersCompPct}%` : null} />
+              <SummaryRow label="H&W Per Hour" value={data.hwPerHour ? `${cs}${data.hwPerHour}` : null} />
+            </SummarySection>
+          )}
 
           <Separator />
 
@@ -280,7 +294,21 @@ export default function Step9PreviewIssue({
                 {data.rightToWork?.rtwDocType || "Not yet configured"}
               </span>
             </div>
+            {data.rightToWork?.documents?.length > 0 && data.rightToWork.documents.map((doc, i) => (
+              <SummaryRow key={i} label={doc.docType} value={doc.status} badge={doc.required ? "Required" : "Optional"} />
+            ))}
           </SummarySection>
+
+          <Separator />
+
+          {/* Compliance Checklist */}
+          {data.complianceChecklist?.length > 0 && (
+            <SummarySection icon={ShieldCheck} title="Compliance Checklist">
+              {data.complianceChecklist.map((item, i) => (
+                <SummaryRow key={i} label={item.name} value={item.isChecked ? "Complete" : "Pending"} badge={item.responsibility} />
+              ))}
+            </SummarySection>
+          )}
 
           <Separator />
 

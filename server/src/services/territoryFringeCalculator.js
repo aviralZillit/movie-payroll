@@ -1,4 +1,18 @@
 import Decimal from 'decimal.js';
+import { getEmploymentCategory as getCategory, getEmploymentRules } from '../config/employmentTypeRules.js';
+
+// Re-export for backward compat
+export function getEmploymentCategory(employmentStatus) {
+  return getCategory(employmentStatus);
+}
+
+// Zero-fringe result template
+function zeroFringes(territory) {
+  return {
+    holidayPay: 0, employerNi: 0, employerPension: 0, hwContribution: 0,
+    totalFringes: 0, territory, note: 'Corporate entity — no employer fringes',
+  };
+}
 
 /**
  * Territory-aware fringe calculator.
@@ -8,24 +22,31 @@ import Decimal from 'decimal.js';
 export function calculateTerritoryFringes(grossPay, totalWorkedHrs, dealMemo) {
   const gross = new Decimal(grossPay || 0);
   const territory = dealMemo.territory || dealMemo.country || 'UK';
+  const empCategory = getEmploymentCategory(dealMemo.employmentStatus);
+
+  // Corporate entities (Ltd, Loan-out, GmbH, etc.) — zero fringes
+  if (empCategory === 'corporate') {
+    return zeroFringes(territory);
+  }
 
   switch (territory) {
-    case 'US': return calculateUSFringesV2(gross, totalWorkedHrs, dealMemo);
-    case 'CA': return calculateCAFringes(gross, dealMemo);
-    case 'AU': return calculateAUFringes(gross, dealMemo);
-    case 'DE': return calculateDEFringes(gross, dealMemo);
-    case 'FR': return calculateFRFringes(gross, dealMemo);
-    case 'IE': return calculateIEFringes(gross, dealMemo);
-    default: return calculateUKFringesV2(gross, dealMemo); // UK + fallback
+    case 'US': return calculateUSFringesV2(gross, totalWorkedHrs, dealMemo, empCategory);
+    case 'CA': return calculateCAFringes(gross, dealMemo, empCategory);
+    case 'AU': return calculateAUFringes(gross, dealMemo, empCategory);
+    case 'DE': return calculateDEFringes(gross, dealMemo, empCategory);
+    case 'FR': return calculateFRFringes(gross, dealMemo, empCategory);
+    case 'IE': return calculateIEFringes(gross, dealMemo, empCategory);
+    default: return calculateUKFringesV2(gross, dealMemo, empCategory); // UK + fallback
   }
 }
 
 // ─── UK ──────────────────────────────────────────────────────────────
-function calculateUKFringesV2(gross, dm) {
+function calculateUKFringesV2(gross, dm, empCategory = 'employee') {
   // DB stores percentages as whole numbers (12.07 = 12.07%, 0.5 = 0.5%)
   // Always divide DB values by 100; fallbacks are already decimals
   const pct = (dbVal, fallback) => dbVal != null ? dbVal / 100 : fallback;
 
+  // Holiday pay — applies to employees AND self-employed (statutory entitlement)
   const hpMode = dm.hpMode || 'excl';
   let holidayPay = new Decimal(0);
 
@@ -33,19 +54,29 @@ function calculateUKFringesV2(gross, dm) {
     const hpPct = pct(dm.holidayPayPct ?? dm.rfHolidayPayPct, 0.1207);
     holidayPay = gross.times(hpPct);
   }
-  // 'incl': HP already embedded in rate (basic = quoted/1.1207)
-  // 'na': no HP
 
-  const niPct = pct(dm.employerNiPct ?? dm.rfNicPct, 0.138);
-  const niThreshold = new Decimal(dm.employerNiThresholdWeekly ?? dm.rfNicThreshold ?? 967);
-  const niable = Decimal.max(gross.minus(niThreshold), 0);
-  const employerNi = niable.times(niPct);
+  // Employer NIC — employees only (self-employed pay their own NI)
+  let employerNi = new Decimal(0);
+  if (empCategory === 'employee') {
+    const niPct = pct(dm.employerNiPct ?? dm.rfNicPct, 0.138);
+    const niThreshold = new Decimal(dm.employerNiThresholdWeekly ?? dm.rfNicThreshold ?? 967);
+    const niable = Decimal.max(gross.minus(niThreshold), 0);
+    employerNi = niable.times(niPct);
+  }
 
-  const pensionPct = pct(dm.unionPensionPct ?? dm.pensionPct, 0.03);
-  const employerPension = gross.times(pensionPct);
+  // Pension — employees only
+  let employerPension = new Decimal(0);
+  if (empCategory === 'employee') {
+    const pensionPct = pct(dm.unionPensionPct ?? dm.pensionPct, 0.03);
+    employerPension = gross.times(pensionPct);
+  }
 
-  const levyPct = pct(dm.apprenticeshipLevyPct, 0);
-  const apprenticeshipLevy = gross.times(levyPct);
+  // Apprenticeship levy — employees only
+  let apprenticeshipLevy = new Decimal(0);
+  if (empCategory === 'employee') {
+    const levyPct = pct(dm.apprenticeshipLevyPct, 0);
+    apprenticeshipLevy = gross.times(levyPct);
+  }
 
   const totalFringes = holidayPay.plus(employerNi).plus(employerPension).plus(apprenticeshipLevy);
 
@@ -61,29 +92,32 @@ function calculateUKFringesV2(gross, dm) {
 }
 
 // ─── US ──────────────────────────────────────────────────────────────
-function calculateUSFringesV2(gross, totalWorkedHrs, dm) {
+function calculateUSFringesV2(gross, totalWorkedHrs, dm, empCategory = 'employee') {
+  // Self-employed (1099): no employer FICA/FUTA/WC, but union P&H may still apply
+  const isEmployee = empCategory === 'employee';
+
   // Union-specific pension (SAG:18.5%, WGA:21%, DGA:6%, IATSE:7.5%)
   const pensionPct = dm.unionPensionPct ?? dm.rfPensionPct ?? 0.20;
-  const pensionHealth = gross.times(pensionPct);
+  const pensionHealth = gross.times(pensionPct); // union P&H applies regardless
 
-  // Vacation & Holiday (8.583%)
+  // Vacation & Holiday (8.583%) — employees only
   const vacPct = dm.vacationHolidayPct ?? 0.08583;
-  const vacationHoliday = gross.times(vacPct);
+  const vacationHoliday = isEmployee ? gross.times(vacPct) : new Decimal(0);
 
-  // FICA - Social Security (6.2% employer on first $168,600/yr)
+  // FICA - Social Security (6.2% employer on first $168,600/yr) — employees only
   const ssThresholdWeekly = new Decimal(168600).div(52);
-  const socialSecurity = Decimal.min(gross, ssThresholdWeekly).times(0.062);
+  const socialSecurity = isEmployee ? Decimal.min(gross, ssThresholdWeekly).times(0.062) : new Decimal(0);
 
-  // Medicare (1.45% employer, no cap)
-  const medicare = gross.times(0.0145);
+  // Medicare (1.45% employer, no cap) — employees only
+  const medicare = isEmployee ? gross.times(0.0145) : new Decimal(0);
 
-  // FUTA (effective 0.6% on first $7,000/yr)
+  // FUTA (effective 0.6% on first $7,000/yr) — employees only
   const futaThresholdWeekly = new Decimal(7000).div(52);
-  const futa = Decimal.min(gross, futaThresholdWeekly).times(0.006);
+  const futa = isEmployee ? Decimal.min(gross, futaThresholdWeekly).times(0.006) : new Decimal(0);
 
-  // Workers Comp (CA film ~3.5%)
+  // Workers Comp (CA film ~3.5%) — employees only
   const wcPct = dm.workersCompPct ?? dm.rfWorkersCompPct ?? 0.035;
-  const workersComp = gross.times(wcPct);
+  const workersComp = isEmployee ? gross.times(wcPct) : new Decimal(0);
 
   // H&W per hour (IATSE $26-34/hr, Teamsters $28-34/hr)
   const hwRate = new Decimal(dm.hwPerHour ?? dm.rfHwPerHour ?? 0);
@@ -109,13 +143,14 @@ function calculateUSFringesV2(gross, totalWorkedHrs, dm) {
 }
 
 // ─── CANADA ──────────────────────────────────────────────────────────
-function calculateCAFringes(gross, dm) {
-  const cpp = gross.times(0.0595);      // CPP
-  const ei = gross.times(0.0237);       // EI
-  const vacPay = gross.times(0.04);     // 4% vacation
+function calculateCAFringes(gross, dm, empCategory = 'employee') {
+  const isEmployee = empCategory === 'employee';
+  const cpp = isEmployee ? gross.times(0.0595) : new Decimal(0);
+  const ei = isEmployee ? gross.times(0.0237) : new Decimal(0);
+  const vacPay = gross.times(0.04);     // 4% vacation — statutory, applies to all
   const pensionPct = dm.unionPensionPct ?? 0.05;
-  const pension = gross.times(pensionPct);
-  const wc = gross.times(dm.workersCompPct ?? 0.02);
+  const pension = isEmployee ? gross.times(pensionPct) : new Decimal(0);
+  const wc = isEmployee ? gross.times(dm.workersCompPct ?? 0.02) : new Decimal(0);
   const totalFringes = cpp.plus(ei).plus(vacPay).plus(pension).plus(wc);
 
   return {
@@ -129,10 +164,12 @@ function calculateCAFringes(gross, dm) {
 }
 
 // ─── AUSTRALIA ───────────────────────────────────────────────────────
-function calculateAUFringes(gross, dm) {
-  const superPct = dm.unionPensionPct ?? dm.rfPensionPct ?? 0.115; // 11.5%, rising to 12% July 2026
-  const superannuation = gross.times(superPct);
-  const wc = gross.times(dm.workersCompPct ?? 0.02);
+function calculateAUFringes(gross, dm, empCategory = 'employee') {
+  const isEmployee = empCategory === 'employee';
+  // Super is mandatory for employees; contractors may negotiate it
+  const superPct = dm.unionPensionPct ?? dm.rfPensionPct ?? 0.115;
+  const superannuation = isEmployee ? gross.times(superPct) : new Decimal(0);
+  const wc = isEmployee ? gross.times(dm.workersCompPct ?? 0.02) : new Decimal(0);
   const totalFringes = superannuation.plus(wc);
 
   return {
@@ -146,12 +183,15 @@ function calculateAUFringes(gross, dm) {
 }
 
 // ─── GERMANY ─────────────────────────────────────────────────────────
-function calculateDEFringes(gross, dm) {
-  const socialPct = dm.rfNicPct ?? 0.21;         // ~21% employer social
-  const social = gross.times(socialPct);
-  const pensionPct = dm.rfPensionPct ?? 0.04;    // 4% mandatory from Jan 2025
-  const pension = gross.times(pensionPct);
-  const ksk = gross.times(0.05);                  // KSK 5% on self-employed
+function calculateDEFringes(gross, dm, empCategory = 'employee') {
+  const isEmployee = empCategory === 'employee';
+  const isSelfEmployed = empCategory === 'self_employed';
+  const socialPct = dm.rfNicPct ?? 0.21;
+  const social = isEmployee ? gross.times(socialPct) : new Decimal(0);
+  const pensionPct = dm.rfPensionPct ?? 0.04;
+  const pension = isEmployee ? gross.times(pensionPct) : new Decimal(0);
+  // KSK 5% only for self-employed artists/creatives
+  const ksk = isSelfEmployed ? gross.times(0.05) : new Decimal(0);
   const totalFringes = social.plus(pension).plus(ksk);
 
   return {
@@ -166,9 +206,12 @@ function calculateDEFringes(gross, dm) {
 }
 
 // ─── FRANCE ──────────────────────────────────────────────────────────
-function calculateFRFringes(gross, dm) {
-  const employerCharges = gross.times(dm.rfNicPct ?? 0.45); // ~45% total
-  const holidayPay = gross.times(dm.rfHolidayPayPct ?? 0.10); // 10% congés payés
+function calculateFRFringes(gross, dm, empCategory = 'employee') {
+  const isEmployee = empCategory === 'employee';
+  // Employer charges — employees only; self-employed handle own cotisations
+  const employerCharges = isEmployee ? gross.times(dm.rfNicPct ?? 0.45) : new Decimal(0);
+  // Congés payés — statutory for all workers in France
+  const holidayPay = gross.times(dm.rfHolidayPayPct ?? 0.10);
   const totalFringes = employerCharges.plus(holidayPay);
 
   return {
@@ -182,13 +225,15 @@ function calculateFRFringes(gross, dm) {
 }
 
 // ─── IRELAND ─────────────────────────────────────────────────────────
-function calculateIEFringes(gross, dm) {
+function calculateIEFringes(gross, dm, empCategory = 'employee') {
+  const isEmployee = empCategory === 'employee';
   const hpMode = dm.hpMode || 'excl';
   let holidayPay = new Decimal(0);
   if (hpMode === 'excl') {
     holidayPay = gross.times(dm.rfHolidayPayPct ?? 0.1207);
   }
-  const prsi = gross.times(dm.rfNicPct ?? 0.1105);   // PRSI employer ~11.05%
+  // PRSI — employees only
+  const prsi = isEmployee ? gross.times(dm.rfNicPct ?? 0.1105) : new Decimal(0);
   const totalFringes = holidayPay.plus(prsi);
 
   return {

@@ -29,9 +29,9 @@ const FREQUENCY_OPTIONS = [
 ];
 
 const TAX_TREATMENT_OPTIONS = [
-  { value: "taxable", label: "Taxable" },
-  { value: "non_taxable", label: "Non-Taxable" },
-  { value: "reimbursement", label: "Reimbursement" },
+  { value: "taxable-paye", label: "Taxable (PAYE)" },
+  { value: "non-taxable", label: "Non-Taxable" },
+  { value: "partly-exempt", label: "Partly Exempt / Reimbursement" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -54,7 +54,7 @@ function CapSettings({ index, control }) {
       {expanded && (
         <div className="mt-2 grid gap-3 sm:grid-cols-3 rounded-md border p-3 bg-muted/30">
           <Controller
-            name={`allowances.${index}.weeklyCap`}
+            name={`allowances.${index}.caps.weeklyCap`}
             control={control}
             render={({ field }) => (
               <div className="space-y-1">
@@ -72,7 +72,7 @@ function CapSettings({ index, control }) {
             )}
           />
           <Controller
-            name={`allowances.${index}.dailyCap`}
+            name={`allowances.${index}.caps.dailyCap`}
             control={control}
             render={({ field }) => (
               <div className="space-y-1">
@@ -90,7 +90,7 @@ function CapSettings({ index, control }) {
             )}
           />
           <Controller
-            name={`allowances.${index}.maxDaysPerWeek`}
+            name={`allowances.${index}.caps.maxDaysPerWeek`}
             control={control}
             render={({ field }) => (
               <div className="space-y-1">
@@ -108,7 +108,7 @@ function CapSettings({ index, control }) {
             )}
           />
           <Controller
-            name={`allowances.${index}.excludeSundays`}
+            name={`allowances.${index}.caps.excludeSundays`}
             control={control}
             render={({ field }) => (
               <div className="flex items-center gap-2 col-span-1">
@@ -118,7 +118,7 @@ function CapSettings({ index, control }) {
             )}
           />
           <Controller
-            name={`allowances.${index}.payableOnTravel`}
+            name={`allowances.${index}.caps.payableOnTravelDays`}
             control={control}
             render={({ field }) => (
               <div className="flex items-center gap-2 col-span-1">
@@ -170,12 +170,14 @@ export default function Step4Allowances({ control, errors, watch, currencySymbol
                   name: "",
                   amount: 0,
                   frequency: "weekly",
-                  taxTreatment: "taxable",
-                  weeklyCap: null,
-                  dailyCap: null,
-                  maxDaysPerWeek: null,
-                  excludeSundays: false,
-                  payableOnTravel: false,
+                  taxTreatment: "non-taxable",
+                  caps: {
+                    weeklyCap: null,
+                    dailyCap: null,
+                    maxDaysPerWeek: null,
+                    excludeSundays: false,
+                    payableOnTravelDays: false,
+                  },
                 })
               }
             >
@@ -199,7 +201,7 @@ export default function Step4Allowances({ control, errors, watch, currencySymbol
                       name: s.name,
                       amount: 0,
                       frequency: s.frequency || "weekly",
-                      taxTreatment: "taxable",
+                      taxTreatment: "non-taxable",
                     })}
                   >
                     <Plus className="size-3" />
@@ -252,9 +254,9 @@ export default function Step4Allowances({ control, errors, watch, currencySymbol
                                 type="number"
                                 step="0.01"
                                 min="0"
-                                value={f.value ?? ""}
+                                value={f.value || ""}
                                 onChange={(e) =>
-                                  f.onChange(e.target.value === "" ? 0 : Number(e.target.value))
+                                  f.onChange(e.target.value === "" ? null : Number(e.target.value))
                                 }
                                 className="h-8 text-sm pl-6 tabular-nums"
                               />
@@ -334,25 +336,6 @@ export default function Step4Allowances({ control, errors, watch, currencySymbol
         </CardContent>
       </Card>
 
-      {unionFields?.length > 0 && (
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Union-Specific Allowances</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
-            {unionFields.map((field) => (
-              <UnionField
-                key={field.key}
-                field={field}
-                control={control}
-                errors={errors}
-                currencySymbol={currencySymbol}
-                watch={watch}
-              />
-            ))}
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

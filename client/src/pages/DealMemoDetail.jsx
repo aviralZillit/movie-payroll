@@ -31,6 +31,7 @@ import { Label } from "@/components/ui/label";
 import { useDealMemo, useTransitionDealMemo, useUpdateDealMemo } from "@/hooks/useDealMemos";
 import useAuthStore from "@/store/authStore";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
+import { getEmploymentRules } from "@/lib/employmentTypeRules";
 import {
   ChevronLeft,
   Film,
@@ -309,6 +310,8 @@ export default function DealMemoDetail() {
   const isAdmin = ADMIN_ROLES.includes(user?.role);
   const queryClient = useQueryClient();
   const { data: memo, isLoading, isError } = useDealMemo(id);
+  const isCrew = memo?.personId?._id?.toString() === (user?._id || user?.id)?.toString()
+    || memo?.personId?.toString() === (user?._id || user?.id)?.toString();
   const memoCountry = memo?.territory || memo?.country || memo?.productionId?.country || "UK";
   const fmt = (amount) => formatCurrency(amount || 0, memoCountry);
   const transitionMutation = useTransitionDealMemo();
@@ -555,6 +558,9 @@ export default function DealMemoDetail() {
             <DetailField label="Production" value={memo.productionId?.name || memo.production?.name} />
             <DetailField label="Deal Number" value={memo.dealNumber} />
             <DetailField label="Person" value={memo.personId?.fullName || `${memo.personId?.firstName || ''} ${memo.personId?.lastName || ''}`.trim() || memo.person?.name} />
+            <DetailField label="Contracting Entity" value={memo.contractingEntityId?.name} />
+            <DetailField label="Territory" value={memo.territory || memo.country} />
+            <DetailField label="Screen Credit" value={memo.screenCredit} />
             <DetailField label="Created" value={formatDate(memo.createdAt)} />
           </Section>
 
@@ -580,6 +586,47 @@ export default function DealMemoDetail() {
 
           <Separator />
 
+          {/* Deal Structure — conditionally show fields based on employment type */}
+          {(() => {
+            const empRules = getEmploymentRules(memo.employmentStatus);
+            const empCat = empRules?.category || 'employee';
+            const isFlatOrBuyout = ['flat', 'picture', 'per_film', 'flat_fee'].includes(memo.dealType) || memo.rateType === 'buyout' || memo.rateType === 'all_in';
+            const showOTFields = empCat === 'employee' && !isFlatOrBuyout;
+
+            return (
+              <Section icon={Banknote} title="Deal Structure">
+                <DetailField label="Employment Type" value={memo.employmentStatus} />
+                <DetailField label="Deal Type" value={memo.dealType} />
+                <DetailField label="Rate Type" value={memo.rateType} />
+                <DetailField label="Start Date" value={memo.startDate ? formatDate(memo.startDate) : null} />
+                <DetailField label="End Date" value={memo.endDate ? formatDate(memo.endDate) : null} />
+                <DetailField label="Guaranteed Weeks" value={memo.guaranteedWeeks} />
+                <DetailField label="Exclusivity" value={memo.exclusivity} />
+                {/* HP Mode — show for employee types only */}
+                {empCat === 'employee' && memo.hpMode && (
+                  <DetailField label="Holiday Pay Mode" value={memo.hpMode === 'excl' ? 'HP Excluded' : memo.hpMode === 'incl' ? 'HP Included' : 'N/A'} />
+                )}
+                {/* OT/Night/Meal — only for employee types with non-flat/buyout deals */}
+                {showOTFields && (
+                  <>
+                    <DetailField label="Overtime Applicable" value={memo.overtimeApplicable === false ? 'No' : 'Yes'} />
+                    <DetailField label="Night Premium" value={memo.nightPremiumEnabled === false ? 'Disabled' : memo.nightPremiumPct != null ? `${memo.nightPremiumPct}%` : 'Enabled'} />
+                    <DetailField label="Meal Penalty" value={memo.mealPenaltyEnabled === false ? 'Disabled' : 'Enabled'} />
+                  </>
+                )}
+                {/* For corporate/self-employed, show a note */}
+                {empCat === 'corporate' && (
+                  <DetailField label="Payroll Note" value="Ltd/Corporate — no fringes, OT, or penalties apply" />
+                )}
+                {empCat === 'self_employed' && (
+                  <DetailField label="Payroll Note" value="Self-employed — reduced fringes, no OT or penalties" />
+                )}
+              </Section>
+            );
+          })()}
+
+          <Separator />
+
           {/* Rates */}
           <Section icon={Banknote} title="Rates">
             <DetailField
@@ -601,50 +648,68 @@ export default function DealMemoDetail() {
               sourceUrl={rateSource?.url}
             />
             <DetailField label="Guaranteed Hours" value={(memo.guaranteedHoursPerWeek || memo.guaranteedHours) ? `${memo.guaranteedHoursPerWeek || memo.guaranteedHours} hrs/wk` : "--"} />
+            {memo.separateRates && (
+              <>
+                <DetailField label="Prep Day Rate" value={memo.prepRate ? fmt(memo.prepRate) : null} />
+                <DetailField label="Shoot Day Rate" value={memo.shootRate ? fmt(memo.shootRate) : null} />
+                <DetailField label="Wrap Day Rate" value={memo.wrapRate ? fmt(memo.wrapRate) : null} />
+                <DetailField label="Travel Day Rate" value={memo.travelRate ? fmt(memo.travelRate) : null} />
+              </>
+            )}
           </Section>
 
           <Separator />
 
-          {/* Fringes */}
-          <Section icon={Percent} title="Fringes">
-            <DetailField label="Holiday Pay" value={memo.holidayPayPct != null ? `${memo.holidayPayPct}%` : "--"} />
-            <DetailField label="Employer NI" value={memo.employerNiPct != null ? `${memo.employerNiPct}%` : "--"} />
-            <DetailField label="Pension" value={memo.pensionPct != null ? `${memo.pensionPct}%` : "--"} />
-            <DetailField label="Apprenticeship Levy" value={(memo.apprenticeshipLevyPct ?? memo.apprenticeLevyPct) != null ? `${memo.apprenticeshipLevyPct ?? memo.apprenticeLevyPct}%` : "--"} />
-            <DetailField
-              label="Total Fringe Rate"
-              value={`${(
-                (memo.holidayPayPct || 0) +
-                (memo.employerNiPct || 0) +
-                (memo.pensionPct || 0) +
-                (memo.apprenticeLevyPct || 0)
-              ).toFixed(2)}%`}
-            />
-          </Section>
+          {/* Fringes — hide for corporate types */}
+          {getEmploymentRules(memo.employmentStatus)?.category !== 'corporate' && (
+            <Section icon={Percent} title="Fringes">
+              <DetailField label="Holiday Pay" value={memo.holidayPayPct != null ? `${memo.holidayPayPct}%` : "--"} />
+              <DetailField label="Employer NI" value={memo.employerNiPct != null ? `${memo.employerNiPct}%` : "--"} />
+              <DetailField label="Pension" value={memo.pensionPct != null ? `${memo.pensionPct}%` : "--"} />
+              <DetailField label="Apprenticeship Levy" value={(memo.apprenticeshipLevyPct ?? memo.apprenticeLevyPct) != null ? `${memo.apprenticeshipLevyPct ?? memo.apprenticeLevyPct}%` : "--"} />
+              <DetailField
+                label="Total Fringe Rate"
+                value={`${(
+                  (memo.holidayPayPct || 0) +
+                  (memo.employerNiPct || 0) +
+                  (memo.pensionPct || 0) +
+                  (memo.apprenticeLevyPct || 0)
+                ).toFixed(2)}%`}
+              />
+            </Section>
+          )}
 
           <Separator />
 
-          {/* Overtime & Penalties */}
-          <Section icon={Clock} title="Overtime & Penalties">
-            <DetailField label="Standard Work Day" value={memo.standardWorkDayHrs ? `${memo.standardWorkDayHrs} hrs` : "--"} />
-            <DetailField label="Lunch Break" value={memo.lunchBreakHrs != null ? `${memo.lunchBreakHrs} hrs` : "--"} />
-            <DetailField label="6th Day Multiplier" value={memo.sixthDayMultiplier ? `${memo.sixthDayMultiplier}x` : "--"} />
-            <DetailField label="7th Day Multiplier" value={memo.seventhDayMultiplier ? `${memo.seventhDayMultiplier}x` : "--"} />
-            <DetailField label="Night Premium" value={memo.nightPremiumPct != null ? `${memo.nightPremiumPct}%` : "--"} />
-            <DetailField label="Turnaround Minimum" value={memo.turnaroundMinHrs ? `${memo.turnaroundMinHrs} hrs` : "--"} />
-            <DetailField
-              label="Meal Penalty"
-              value={
-                (memo.mealPenaltyRate > 0 || memo.mealPenaltyEnabled)
-                  ? `${fmt(memo.mealPenaltyRate || memo.mealPenaltyAmount || 0)} after ${memo.mealPenaltyAfterHrs || 6} hrs`
-                  : "Disabled"
-              }
-            />
-          </Section>
+          {/* Overtime & Penalties — hide for corporate (Ltd, Loan-out) and flat/buyout deals */}
+          {(() => {
+            const empCat = getEmploymentRules(memo.employmentStatus)?.category;
+            const isFlatOrBuyout = ['flat', 'picture', 'per_film', 'flat_fee'].includes(memo.dealType) || memo.rateType === 'buyout' || memo.rateType === 'all_in';
+            if (empCat === 'corporate' || isFlatOrBuyout) return null;
+            return (
+              <Section icon={Clock} title="Overtime & Penalties">
+                <DetailField label="Standard Work Day" value={memo.standardWorkDayHrs ? `${memo.standardWorkDayHrs} hrs` : "--"} />
+                <DetailField label="Lunch Break" value={memo.lunchBreakHrs != null ? `${memo.lunchBreakHrs} hrs` : "--"} />
+                <DetailField label="6th Day Multiplier" value={memo.sixthDayMultiplier ? `${memo.sixthDayMultiplier}x` : "--"} />
+                <DetailField label="7th Day Multiplier" value={memo.seventhDayMultiplier ? `${memo.seventhDayMultiplier}x` : "--"} />
+                <DetailField label="Night Premium" value={memo.nightPremiumEnabled === false ? "Disabled" : memo.nightPremiumPct != null ? `${memo.nightPremiumPct}%` : "--"} />
+                <DetailField label="Turnaround Minimum" value={memo.turnaroundMinHrs ? `${memo.turnaroundMinHrs} hrs` : "--"} />
+                <DetailField
+                  label="Meal Penalty"
+                  value={
+                    memo.mealPenaltyEnabled === false ? "Disabled"
+                      : (memo.mealPenaltyRate > 0 || memo.mealPenaltyEnabled)
+                        ? `${fmt(memo.mealPenaltyRate || memo.mealPenaltyAmount || 0)} after ${memo.mealPenaltyAfterHrs || 6} hrs`
+                        : "Disabled"
+                  }
+                />
+              </Section>
+            );
+          })()}
 
           <Separator />
 
-          {/* Allowances */}
+          {/* Allowances — v2 array first, v1 flat fields as fallback */}
           <Section icon={Briefcase} title="Allowances">
             {memo.productionFee > 0 && (
               <DetailField
@@ -658,33 +723,44 @@ export default function DealMemoDetail() {
                 value={`${memo.idleDays} days @ ${fmt(memo.idleDayRate)}/day`}
               />
             )}
-            <DetailField label="Kit" value={fmt(memo.kitAllowance)} />
-            <DetailField label="Travel" value={fmt(memo.travelAllowance)} />
-            <DetailField label="Per Diem" value={fmt(memo.perDiem)} />
-            <DetailField label="Phone" value={fmt(memo.phoneAllowance)} />
-            <DetailField label="Computer" value={fmt(memo.computerAllowance)} />
-            <DetailField label="Car" value={fmt(memo.carAllowance)} />
-            <DetailField label="Housing" value={fmt(memo.housingAllowance)} />
-            {memo.customAllowances?.length > 0 && memo.customAllowances.map((ca, i) => (
-              <DetailField
-                key={i}
-                label={ca.name || `Custom #${i + 1}`}
-                value={`${fmt(ca.amount)} (${(ca.period || "weekly").replace("_", " ")})`}
-              />
-            ))}
-            <DetailField
-              label="Total Weekly Allowances"
-              value={fmt(
-                (memo.kitAllowance || 0) +
-                (memo.travelAllowance || 0) +
-                (memo.perDiem || 0) +
-                (memo.phoneAllowance || 0) +
-                (memo.computerAllowance || 0) +
-                (memo.carAllowance || 0) +
-                (memo.housingAllowance || 0) +
-                ((memo.customAllowances || []).reduce((s, c) => s + (c.amount || 0), 0))
-              )}
-            />
+            {memo.allowances?.length > 0 ? (
+              <>
+                {memo.allowances.map((a, i) => (
+                  <DetailField
+                    key={i}
+                    label={a.name || `Allowance #${i + 1}`}
+                    value={`${fmt(a.amount)} (${(a.frequency || "weekly").replace("_", " ")}${a.taxTreatment === "non_taxable" ? ", non-taxable" : a.taxTreatment === "reimbursement" ? ", reimbursement" : ""})`}
+                  />
+                ))}
+                <DetailField
+                  label="Total Weekly Allowances"
+                  value={fmt(memo.allowances.reduce((s, a) => s + (Number(a.amount) || 0), 0))}
+                />
+              </>
+            ) : (
+              <>
+                {(memo.kitAllowance > 0) && <DetailField label="Kit" value={fmt(memo.kitAllowance)} />}
+                {(memo.travelAllowance > 0) && <DetailField label="Travel" value={fmt(memo.travelAllowance)} />}
+                {(memo.perDiem > 0) && <DetailField label="Per Diem" value={fmt(memo.perDiem)} />}
+                {(memo.phoneAllowance > 0) && <DetailField label="Phone" value={fmt(memo.phoneAllowance)} />}
+                {(memo.computerAllowance > 0) && <DetailField label="Computer" value={fmt(memo.computerAllowance)} />}
+                {(memo.carAllowance > 0) && <DetailField label="Car" value={fmt(memo.carAllowance)} />}
+                {(memo.housingAllowance > 0) && <DetailField label="Housing" value={fmt(memo.housingAllowance)} />}
+                {memo.customAllowances?.length > 0 && memo.customAllowances.map((ca, i) => (
+                  <DetailField
+                    key={i}
+                    label={ca.name || `Custom #${i + 1}`}
+                    value={`${fmt(ca.amount)} (${(ca.period || "weekly").replace("_", " ")})`}
+                  />
+                ))}
+                {(() => {
+                  const v1Total = (memo.kitAllowance || 0) + (memo.travelAllowance || 0) + (memo.perDiem || 0) +
+                    (memo.phoneAllowance || 0) + (memo.computerAllowance || 0) + (memo.carAllowance || 0) +
+                    (memo.housingAllowance || 0) + ((memo.customAllowances || []).reduce((s, c) => s + (c.amount || 0), 0));
+                  return v1Total > 0 ? <DetailField label="Total Weekly Allowances" value={fmt(v1Total)} /> : null;
+                })()}
+              </>
+            )}
           </Section>
         </CardContent>
       </Card>
@@ -867,19 +943,20 @@ export default function DealMemoDetail() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {memo.complianceChecklist.map((item, idx) => (
+              {memo.complianceChecklist.map((item, idx) => {
+                const canToggle = isAdmin;
+                return (
                 <div
                   key={idx}
                   className={cn(
                     "flex items-center justify-between rounded-md border px-3 py-2",
-                    item.responsibility === "PRODUCTION" && isAdmin && "cursor-pointer hover:bg-muted/30 transition-colors",
+                    canToggle && "cursor-pointer hover:bg-muted/30 transition-colors",
                   )}
                   onClick={() => {
-                    if (item.responsibility === "PRODUCTION" && isAdmin) {
+                    if (canToggle) {
                       api.patch(`/deal-memos/${id}/compliance/${idx}/toggle`)
                         .then(({ data: resp }) => {
                           toast.success(item.isChecked ? `"${item.name}" unchecked` : `"${item.name}" marked complete`, { duration: 2000 });
-                          // Instantly update the cache with the server response
                           queryClient.setQueryData(["deal-memos", "detail", id], resp.data);
                         })
                         .catch((err) => toast.error(err?.response?.data?.message || "Failed to update"));
@@ -889,13 +966,13 @@ export default function DealMemoDetail() {
                   <div className="flex items-center gap-2">
                     {item.isChecked ? (
                       <CheckCircle2 className="size-4 text-emerald-500" />
-                    ) : item.responsibility === "PRODUCTION" && isAdmin ? (
+                    ) : canToggle ? (
                       <div className="size-4 rounded-full border-2 border-primary/50 hover:border-primary" />
                     ) : (
                       <div className="size-4 rounded-full border-2 border-muted-foreground/30" />
                     )}
                     <span className={cn("text-sm", item.isChecked && "text-muted-foreground line-through")}>{item.name}</span>
-                    {item.responsibility === "PRODUCTION" && isAdmin && !item.isChecked && (
+                    {canToggle && !item.isChecked && (
                       <span className="text-[10px] text-muted-foreground">(click to complete)</span>
                     )}
                   </div>
@@ -908,8 +985,227 @@ export default function DealMemoDetail() {
                     </Badge>
                   </div>
                 </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Crew Onboarding Section (visible to assigned crew member) ── */}
+      {isCrew && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Users className="size-4 text-primary" />
+              <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Your Onboarding Details
+              </CardTitle>
+              <Badge variant="outline" className="ml-auto text-xs">
+                Fill in your details below
+              </Badge>
+            </div>
+            <CardDescription>
+              Complete your tax, bank, and personal details. This information is confidential and only visible to payroll administrators.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CrewOnboardingForm dealMemoId={id} memo={memo} territory={memo.territory || memo.country || 'UK'} employmentStatus={memo.employmentStatus} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Crew Document Signing (visible to assigned crew member) ── */}
+      {isCrew && memo.signingDocuments?.some(d => d.requiresSignature && d.status !== 'signed') && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="size-4 text-primary" />
+              <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Documents to Sign
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {memo.signingDocuments.filter(d => d.requiresSignature && d.status !== 'signed').map((doc, idx) => {
+                const actualIdx = memo.signingDocuments.indexOf(doc);
+                return (
+                  <div key={actualIdx} className="rounded-md border px-4 py-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">{doc.filename}</p>
+                      {doc.fileUrl && (
+                        <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                          Download & Review
+                        </a>
+                      )}
+                    </div>
+                    {doc.description && <p className="text-xs text-muted-foreground">{doc.description}</p>}
+                    <CrewSignButton dealMemoId={id} docIndex={actualIdx} docName={doc.filename} />
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Crew RTW Upload (visible to assigned crew member) ── */}
+      {isCrew && memo.rightToWork?.documents?.some(d => d.status === 'requested' || d.status === 'rejected') && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Shield className="size-4 text-primary" />
+              <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Right to Work — Upload Documents
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {memo.rightToWork.documents.filter(d => d.status === 'requested' || d.status === 'rejected').map((doc, idx) => {
+                const actualIdx = memo.rightToWork.documents.indexOf(doc);
+                return (
+                  <div key={actualIdx} className="rounded-md border px-4 py-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">{doc.docType}</p>
+                      <Badge variant="outline" className={cn("text-xs", doc.status === 'rejected' ? "text-red-600 border-red-500/30" : "text-amber-600 border-amber-500/30")}>
+                        {doc.status === 'rejected' ? 'Rejected — re-upload' : 'Upload Required'}
+                      </Badge>
+                    </div>
+                    {doc.rejectionNote && <p className="text-xs text-red-500">{doc.rejectionNote}</p>}
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                      className="text-xs"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        try {
+                          await api.post(`/deal-memos/${id}/rtw-documents/${actualIdx}/upload`, formData, {
+                            headers: { 'Content-Type': 'multipart/form-data' },
+                          });
+                          toast.success(`${doc.docType} uploaded successfully`);
+                          queryClient.invalidateQueries({ queryKey: ['deal-memos'] });
+                        } catch (err) {
+                          toast.error(err?.response?.data?.message || 'Upload failed');
+                        }
+                      }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Approval Status Timeline ── */}
+      {memo.approvalStatus?.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="size-4 text-primary" />
+              <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Approval Status
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {memo.approvalStatus.map((step, idx) => (
+                <div key={idx} className={cn("flex items-center justify-between rounded-md border px-3 py-2",
+                  step.status === 'approved' && "border-emerald-500/30 bg-emerald-500/5",
+                  step.status === 'rejected' && "border-red-500/30 bg-red-500/5",
+                )}>
+                  <div>
+                    <p className="text-sm font-medium">Step {step.step + 1}: {step.label || step.approverRole}</p>
+                    {step.approvedAt && <p className="text-xs text-muted-foreground">{formatDate(step.approvedAt)}</p>}
+                    {step.note && <p className="text-xs text-muted-foreground">{step.note}</p>}
+                  </div>
+                  <Badge variant="outline" className={cn("text-xs",
+                    step.status === 'approved' ? "bg-emerald-500/10 text-emerald-600" :
+                    step.status === 'rejected' ? "bg-red-500/10 text-red-600" :
+                    "bg-amber-500/10 text-amber-600"
+                  )}>
+                    {step.status}
+                  </Badge>
+                </div>
               ))}
             </div>
+            {/* Approve/Reject buttons for the current approver */}
+            {isAdmin && memo.status === 'pending_approval' && (
+              <div className="flex gap-2 mt-3">
+                <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={async () => {
+                  try {
+                    await api.patch(`/deal-memos/${id}/approve`, { action: 'approve' });
+                    toast.success('Deal memo approved');
+                    queryClient.invalidateQueries({ queryKey: ['deal-memos'] });
+                  } catch (err) { toast.error(err?.response?.data?.message || 'Failed'); }
+                }}>
+                  Approve
+                </Button>
+                <Button size="sm" variant="destructive" onClick={async () => {
+                  const note = prompt('Rejection reason:');
+                  if (!note) return;
+                  try {
+                    await api.patch(`/deal-memos/${id}/approve`, { action: 'reject', note });
+                    toast.success('Deal memo rejected');
+                    queryClient.invalidateQueries({ queryKey: ['deal-memos'] });
+                  } catch (err) { toast.error(err?.response?.data?.message || 'Failed'); }
+                }}>
+                  Reject
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Counter-Signatures */}
+      {(memo.counterSignatures?.length > 0 || isAdmin) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="size-4 text-primary" />
+              <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Counter-Signatures
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {memo.counterSignatures?.length > 0 && (
+              <div className="space-y-2 mb-3">
+                {memo.counterSignatures.map((cs, idx) => (
+                  <div key={idx} className="flex items-center justify-between rounded-md border border-emerald-500/30 bg-emerald-500/5 px-3 py-2">
+                    <div>
+                      <p className="text-sm font-medium">{cs.signatureText}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {cs.signedAt && formatDate(cs.signedAt)}
+                        {cs.note && ` — ${cs.note}`}
+                      </p>
+                    </div>
+                    <Badge className="bg-emerald-500 text-white text-xs">Signed</Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+            {isAdmin && ['issued', 'active', 'signed'].includes(memo.status) && (
+              <Button size="sm" variant="outline" onClick={async () => {
+                const name = prompt('Enter your full name to counter-sign:');
+                if (!name?.trim()) return;
+                const note = prompt('Add a note (optional):') || '';
+                try {
+                  await api.post(`/deal-memos/${id}/countersign`, { signatureText: name.trim(), note });
+                  toast.success('Counter-signature recorded');
+                  queryClient.invalidateQueries({ queryKey: ['deal-memos'] });
+                } catch (err) { toast.error(err?.response?.data?.message || 'Failed'); }
+              }}>
+                Add Counter-Signature
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
@@ -1093,5 +1389,185 @@ export default function DealMemoDetail() {
         </DialogContent>
       </Dialog>
     </motion.div>
+  );
+}
+
+// ── Crew Onboarding Form (inline in DealMemoDetail) ─────────────────
+function CrewOnboardingForm({ dealMemoId, memo, territory, employmentStatus }) {
+  const queryClient = useQueryClient();
+  const [fields, setFields] = useState(() => {
+    const initial = {};
+    const fieldDefs = getCrewFieldsForTerritory(territory, employmentStatus);
+    fieldDefs.forEach((f) => { initial[f.name] = memo?.[f.name] || ""; });
+    return initial;
+  });
+  const [saving, setSaving] = useState(false);
+
+  const fieldDefs = getCrewFieldsForTerritory(territory, employmentStatus);
+  const requiredKeys = new Set((memo?.crewRequiredFields || []).map(f => f.fieldKey));
+  const requiredCount = requiredKeys.size;
+  const completedCount = [...requiredKeys].filter(k => fields[k] && fields[k].trim() !== "").length;
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await api.patch(`/deal-memos/${dealMemoId}/crew-complete`, fields);
+      toast.success("Details saved successfully");
+      queryClient.invalidateQueries({ queryKey: ["deal-memos"] });
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to save");
+    }
+    setSaving(false);
+  };
+
+  if (fieldDefs.length === 0) return <p className="text-sm text-muted-foreground">No onboarding fields required for this territory.</p>;
+
+  return (
+    <div className="space-y-4">
+      {/* Progress bar */}
+      {requiredCount > 0 && (
+        <div className="space-y-1.5">
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>{completedCount}/{requiredCount} required fields completed</span>
+            {completedCount === requiredCount && <span className="text-emerald-500 font-medium">All complete</span>}
+          </div>
+          <div className="h-2 rounded-full bg-muted overflow-hidden">
+            <div
+              className={cn("h-full rounded-full transition-all", completedCount === requiredCount ? "bg-emerald-500" : "bg-primary")}
+              style={{ width: `${requiredCount > 0 ? (completedCount / requiredCount) * 100 : 0}%` }}
+            />
+          </div>
+        </div>
+      )}
+      <div className="grid gap-3 sm:grid-cols-2">
+        {fieldDefs.map((f) => {
+          const isRequired = requiredKeys.has(f.name);
+          return (
+            <div key={f.name} className="space-y-1">
+              <Label className="text-sm">
+                {f.label}
+                {isRequired && <span className="text-destructive ml-0.5">*</span>}
+              </Label>
+              <Input
+                type={f.type || "text"}
+                placeholder={f.placeholder || ""}
+                value={fields[f.name] || ""}
+                onChange={(e) => setFields((prev) => ({ ...prev, [f.name]: e.target.value }))}
+                className={cn("h-9", isRequired && !fields[f.name] && "border-amber-500/50")}
+              />
+            </div>
+          );
+        })}
+      </div>
+      <Button size="sm" onClick={handleSave} disabled={saving}>
+        {saving ? "Saving..." : "Save Details"}
+      </Button>
+    </div>
+  );
+}
+
+// Helper: get crew fields for territory + employment status
+function getCrewFieldsForTerritory(territory, employmentStatus) {
+  // Import from countryFieldConfig would be ideal, but inline for now
+  const FIELD_MAP = {
+    paye: [
+      { name: "niNumber", label: "NI Number", placeholder: "AB 12 34 56 C" },
+      { name: "taxCode", label: "Tax Code", placeholder: "1257L" },
+      { name: "bankSortCode", label: "Sort Code", placeholder: "00-00-00" },
+      { name: "bankAccountNumber", label: "Account Number", placeholder: "12345678" },
+    ],
+    ltd: [
+      { name: "ltdCompanyName", label: "Company Name", placeholder: "Company Ltd" },
+      { name: "ltdCompanyReg", label: "Company Reg Number", placeholder: "12345678" },
+      { name: "vatNumber", label: "VAT Number", placeholder: "GB 123 4567 89" },
+    ],
+    sole_trader: [
+      { name: "niNumber", label: "NI Number", placeholder: "AB 12 34 56 C" },
+      { name: "utrNumber", label: "UTR Number", placeholder: "1234567890" },
+    ],
+    w2: [
+      { name: "ssn", label: "SSN", placeholder: "XXX-XX-XXXX" },
+      { name: "achRoutingNumber", label: "ACH Routing", placeholder: "123456789" },
+      { name: "achAccountNumber", label: "ACH Account", placeholder: "1234567890" },
+    ],
+    loanout: [
+      { name: "corpName", label: "Corp Name", placeholder: "My Corp Inc" },
+      { name: "corpEin", label: "Corp EIN", placeholder: "12-3456789" },
+    ],
+    "1099": [
+      { name: "ssn", label: "SSN / ITIN", placeholder: "XXX-XX-XXXX" },
+    ],
+  };
+
+  const common = [
+    { name: "dateOfBirth", label: "Date of Birth", type: "date" },
+    { name: "crewAddress", label: "Address", placeholder: "Full postal address" },
+    { name: "emergencyContact", label: "Emergency Contact", placeholder: "Name + phone" },
+  ];
+
+  return [...(FIELD_MAP[employmentStatus] || []), ...common];
+}
+
+// ── Crew Sign Button ─────────────────────────────────────────────────
+function CrewSignButton({ dealMemoId, docIndex, docName }) {
+  const queryClient = useQueryClient();
+  const [signatureText, setSignatureText] = useState("");
+  const [agreed, setAgreed] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [signing, setSigning] = useState(false);
+
+  const handleSign = async () => {
+    if (!signatureText.trim() || !agreed) return;
+    setSigning(true);
+    try {
+      await api.post(`/deal-memos/${dealMemoId}/documents/${docIndex}/sign`, {
+        signatureText: signatureText.trim(),
+        signatureMethod: "typed",
+        agreed: true,
+      });
+      toast.success(`"${docName}" signed successfully`);
+      queryClient.invalidateQueries({ queryKey: ["deal-memos"] });
+      setOpen(false);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to sign");
+    }
+    setSigning(false);
+  };
+
+  return (
+    <>
+      <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
+        Sign Document
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sign: {docName}</DialogTitle>
+            <DialogDescription>Type your full name to electronically sign this document.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1">
+              <Label>Your Full Name</Label>
+              <Input
+                placeholder="Type your full legal name"
+                value={signatureText}
+                onChange={(e) => setSignatureText(e.target.value)}
+                className="text-lg"
+              />
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="rounded" />
+              I confirm I have read and agree to the terms of this document
+            </label>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button onClick={handleSign} disabled={!signatureText.trim() || !agreed || signing}>
+              {signing ? "Signing..." : "Sign"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

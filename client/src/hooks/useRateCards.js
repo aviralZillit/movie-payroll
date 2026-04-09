@@ -24,7 +24,7 @@ export function useDepartments(unionId) {
       const { data } = await api.get(
         `/rate-cards/unions/${unionId}/departments`
       );
-      return data.data;
+      return (data.data || []).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     },
     enabled: !!unionId,
     staleTime: STALE_TIME,
@@ -38,7 +38,7 @@ export function useDesignations(departmentId) {
       const { data } = await api.get(
         `/rate-cards/departments/${departmentId}/designations`
       );
-      return data.data;
+      return (data.data || []).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     },
     enabled: !!departmentId,
     staleTime: STALE_TIME,

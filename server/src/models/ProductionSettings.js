@@ -92,6 +92,26 @@ const productionSettingsSchema = new mongoose.Schema(
       isCustom: { type: Boolean, default: false },
     }],
 
+    // Admin-configurable mandatory deal memo fields
+    mandatoryDealMemoFields: [{
+      fieldKey: { type: String, required: true },   // e.g. 'employmentStatus', 'taxCode', 'startDate'
+      label: String,
+      isRequired: { type: Boolean, default: true },
+    }],
+
+    // Payroll responsibility assignments — who manages what
+    payrollResponsibilities: [{
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      personName: String,
+      responsibility: { type: String, enum: ['payroll_manager', 'petty_cash', 'payroll_admin', 'production_accountant', 'cost_controller', 'custom'], default: 'custom' },
+      customResponsibility: String,
+      departments: [String],
+      notes: String,
+    }],
+
+    // Meal penalty toggle
+    mealPenaltyEnabled: { type: Boolean, default: true },
+
     // Flexible approval chain (configurable per production)
     approvalChain: [{
       step: { type: Number, required: true },

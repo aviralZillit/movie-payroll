@@ -10,16 +10,20 @@ import TimeInput from "./TimeInput";
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const DEFAULT_DAY_TYPES = [
-  { name: 'Shoot', color: '#3b82f6' },
-  { name: 'Prep', color: '#f59e0b' },
-  { name: 'Wrap', color: '#8b5cf6' },
-  { name: 'Travel', color: '#6b7280' },
-  { name: '6th Day', color: '#ea580c' },
-  { name: '7th Day', color: '#dc2626' },
-  { name: 'Rest', color: '#d1d5db' },
+  { name: 'SWD', color: '#3b82f6', isWorkDay: true },     // Standard Work Day
+  { name: 'CWD', color: '#14b8a6', isWorkDay: true },     // Camera Work Day
+  { name: 'SCWD', color: '#a855f7', isWorkDay: true },    // Special Camera Work Day
+  { name: 'Shoot', color: '#3b82f6', isWorkDay: true },
+  { name: 'Prep', color: '#f59e0b', isWorkDay: true },
+  { name: 'Wrap', color: '#8b5cf6', isWorkDay: true },
+  { name: 'RIG', color: '#f97316', isWorkDay: true },     // Rigging
+  { name: 'TRVL', color: '#eab308', isWorkDay: false },   // Travel
+  { name: 'HOL', color: '#22c55e', isWorkDay: false },    // Holiday
+  { name: 'SICK', color: '#ef4444', isWorkDay: false },   // Sick
+  { name: 'OFF', color: '#6b7280', isWorkDay: false },    // Day Off / Rest
 ];
 
-const NON_WORK_DAY_TYPES = ['Rest', 'Travel'];
+const NON_WORK_DAY_TYPES = ['OFF', 'TRVL', 'HOL', 'SICK', 'Rest', 'Travel'];
 
 function TimecardDayRow({
   entry,
@@ -175,7 +179,7 @@ function TimecardDayRow({
         })()}
       </td>
 
-      {/* Call Time */}
+      {/* Crew Call — editable by crew */}
       <td className="px-1.5 py-2">
         <TimeInput
           value={entry?.callTime || ""}
@@ -185,33 +189,36 @@ function TimecardDayRow({
         />
       </td>
 
-      {/* Lunch Start */}
+      {/* Unit Call — locked (set by AD/production), amend with reason */}
       <td className="px-1.5 py-2">
         <TimeInput
-          value={entry?.lunchStart || ""}
-          onChange={(v) => handleFieldChange("lunchStart", v)}
+          value={entry?.unitCall || ""}
+          onChange={(v) => handleFieldChange("unitCall", v)}
           disabled={disabled || isOff}
-          placeholder="12:00"
+          placeholder="07:00"
         />
       </td>
 
-      {/* Lunch End */}
+      {/* Unit Wrap — locked (set by AD/production), amend with reason */}
       <td className="px-1.5 py-2">
         <TimeInput
-          value={entry?.lunchEnd || ""}
-          onChange={(v) => handleFieldChange("lunchEnd", v)}
-          disabled={disabled || isOff}
-          placeholder="12:30"
-        />
-      </td>
-
-      {/* Wrap Time */}
-      <td className="px-1.5 py-2">
-        <TimeInput
-          value={entry?.wrapTime || ""}
-          onChange={(v) => handleFieldChange("wrapTime", v)}
+          value={entry?.unitWrap || entry?.lunchEnd || ""}
+          onChange={(v) => handleFieldChange("unitWrap", v)}
           disabled={disabled || isOff}
           placeholder="18:00"
+        />
+      </td>
+
+      {/* Release — crew's actual departure */}
+      <td className="px-1.5 py-2">
+        <TimeInput
+          value={entry?.release || entry?.wrapTime || ""}
+          onChange={(v) => {
+            handleFieldChange("release", v);
+            handleFieldChange("wrapTime", v); // backward compat
+          }}
+          disabled={disabled || isOff}
+          placeholder="19:00"
         />
       </td>
 
@@ -229,17 +236,24 @@ function TimecardDayRow({
         </span>
       </td>
 
-      {/* OT 1.5x */}
+      {/* Pre-Call OT */}
       <td className="px-2 py-2 text-right tabular-nums">
-        <span className={cn("text-sm", hours.ot15 > 0 && "font-medium text-amber-600 dark:text-amber-400")}>
-          {hours.ot15 > 0 ? hours.ot15.toFixed(1) : "-"}
+        <span className={cn("text-sm", (entry?.preCallOTMins > 0 || hours.ot15 > 0) && "font-medium text-teal-600 dark:text-teal-400")}>
+          {entry?.preCallOTMins > 0 ? (entry.preCallOTMins / 60).toFixed(1) : hours.ot15 > 0 ? hours.ot15.toFixed(1) : "-"}
         </span>
       </td>
 
-      {/* OT 2x */}
+      {/* Filming OT */}
       <td className="px-2 py-2 text-right tabular-nums">
-        <span className={cn("text-sm", hours.ot20 > 0 && "font-medium text-red-600 dark:text-red-400")}>
-          {hours.ot20 > 0 ? hours.ot20.toFixed(1) : "-"}
+        <span className={cn("text-sm", entry?.filmingOTMins > 0 && "font-medium text-amber-600 dark:text-amber-400")}>
+          {entry?.filmingOTMins > 0 ? (entry.filmingOTMins / 60).toFixed(1) : "-"}
+        </span>
+      </td>
+
+      {/* Wrap OT */}
+      <td className="px-2 py-2 text-right tabular-nums">
+        <span className={cn("text-sm", (entry?.wrapOTMins > 0 || hours.ot20 > 0) && "font-medium text-red-600 dark:text-red-400")}>
+          {entry?.wrapOTMins > 0 ? (entry.wrapOTMins / 60).toFixed(1) : hours.ot20 > 0 ? hours.ot20.toFixed(1) : "-"}
         </span>
       </td>
 
@@ -260,9 +274,25 @@ function TimecardDayRow({
           {hasTurnaroundWarning && (
             <Tooltip>
               <TooltipTrigger>
-                <AlertCircle className="h-4 w-4 text-orange-500" />
+                <div className="flex items-center gap-0.5">
+                  <AlertCircle className="h-4 w-4 text-orange-500" />
+                  {entry?.turnaroundHrs != null && (
+                    <span className="text-[10px] font-medium text-orange-500 tabular-nums">{entry.turnaroundHrs.toFixed(1)}h</span>
+                  )}
+                </div>
               </TooltipTrigger>
-              <TooltipContent>Turnaround warning - insufficient rest from previous day</TooltipContent>
+              <TooltipContent>
+                Turnaround: {entry?.turnaroundHrs != null ? `${entry.turnaroundHrs.toFixed(1)}hrs rest` : 'insufficient rest'}
+                {entry?.turnaroundShortfallHrs > 0 && ` (${entry.turnaroundShortfallHrs.toFixed(1)}hrs short)`}
+              </TooltipContent>
+            </Tooltip>
+          )}
+          {!hasTurnaroundWarning && entry?.turnaroundHrs > 0 && (
+            <Tooltip>
+              <TooltipTrigger>
+                <span className="text-[10px] text-muted-foreground tabular-nums">{entry.turnaroundHrs.toFixed(1)}h</span>
+              </TooltipTrigger>
+              <TooltipContent>Turnaround: {entry.turnaroundHrs.toFixed(1)}hrs rest from previous wrap</TooltipContent>
             </Tooltip>
           )}
         </div>

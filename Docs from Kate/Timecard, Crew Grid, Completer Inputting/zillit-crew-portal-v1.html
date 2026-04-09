@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Zillit Coda — My Timecards · The Gilded Hour S2</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0e0f12;--bg-s:#14161c;--bg-e:#1a1d27;--bg-h:#21242f;
+  --b:#252836;--bm:#2e3245;--bl:#383d54;
+  --gold:#e8b84b;--gold-g:rgba(232,184,75,0.10);--gold-gg:rgba(232,184,75,0.05);
+  --t1:#eeeef3;--t2:#8b90aa;--t3:#555a72;
+  --green:#4ade80;--green-g:rgba(74,222,128,0.10);
+  --red:#f87171;--red-g:rgba(248,113,113,0.10);
+  --orange:#fb923c;--orange-g:rgba(251,146,60,0.10);
+  --blue:#60a5fa;--blue-g:rgba(96,165,250,0.10);
+  --teal:#2dd4bf;--teal-g:rgba(45,212,191,0.10);
+  --yellow:#fbbf24;--yellow-g:rgba(251,191,36,0.10);
+  --purple:#c084fc;--purple-g:rgba(192,132,252,0.10);
+  --r:5px;--rl:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--t1);font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.5;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+
+/* TOPBAR */
+.topbar{height:50px;background:var(--bg-s);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 18px;gap:12px;flex-shrink:0;z-index:100;}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:var(--gold);padding-right:12px;border-right:1px solid var(--b);}
+.breadcrumb{font-size:12px;color:var(--t3);}
+.breadcrumb span{color:var(--t2);}
+.breadcrumb .cur{color:var(--gold);}
+.topbar-r{margin-left:auto;display:flex;align-items:center;gap:8px;}
+
+/* LAYOUT */
+.main{display:flex;flex:1;overflow:hidden;}
+.content{flex:1;overflow-y:auto;display:flex;flex-direction:column;}
+.aside{width:280px;flex-shrink:0;background:var(--bg-s);border-left:1px solid var(--b);overflow-y:auto;display:flex;flex-direction:column;}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;font-family:'Syne',sans-serif;font-size:10.5px;font-weight:700;letter-spacing:.3px;border:none;border-radius:var(--r);cursor:pointer;transition:all .14s;white-space:nowrap;}
+.btn-gold{background:var(--gold);color:#0e0f12;}.btn-gold:hover{opacity:.85;}
+.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--bm);}.btn-ghost:hover{border-color:var(--bl);color:var(--t1);}
+.btn-sm{padding:4px 8px;font-size:10px;}
+
+/* PILLS */
+.pill{display:inline-flex;align-items:center;gap:3px;padding:1.5px 7px;border-radius:20px;font-family:'Syne',sans-serif;font-size:9px;font-weight:700;letter-spacing:.2px;}
+.pg{background:var(--gold-g);color:var(--gold);border:1px solid rgba(232,184,75,.2);}
+.pgreen{background:var(--green-g);color:var(--green);border:1px solid rgba(74,222,128,.2);}
+.pblue{background:var(--blue-g);color:var(--blue);border:1px solid rgba(96,165,250,.2);}
+.porange{background:var(--orange-g);color:var(--orange);border:1px solid rgba(251,146,60,.2);}
+.pred{background:var(--red-g);color:var(--red);border:1px solid rgba(248,113,113,.2);}
+.pteal{background:var(--teal-g);color:var(--teal);border:1px solid rgba(45,212,191,.2);}
+.pgrey{background:var(--bg-h);color:var(--t3);border:1px solid var(--b);}
+.ppurple{background:var(--purple-g);color:var(--purple);border:1px solid rgba(192,132,252,.2);}
+.pyellow{background:var(--yellow-g);color:var(--yellow);border:1px solid rgba(251,191,36,.2);}
+
+/* CREW HERO CARD */
+.crew-hero{background:var(--bg-e);border-bottom:1px solid var(--b);padding:18px 20px;flex-shrink:0;display:flex;gap:18px;align-items:flex-start;}
+.hero-av{width:52px;height:52px;border-radius:50%;background:var(--gold-g);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--gold);flex-shrink:0;}
+.hero-name{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;margin-bottom:2px;}
+.hero-role{font-size:12px;color:var(--t2);margin-bottom:8px;}
+.hero-meta{display:flex;gap:6px;flex-wrap:wrap;}
+.hero-stats{margin-left:auto;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;}
+.hs{background:var(--bg-s);border:1px solid var(--b);border-radius:var(--r);padding:10px 14px;text-align:center;}
+.hs-lbl{font-family:'Syne',sans-serif;font-size:8px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--t3);margin-bottom:3px;}
+.hs-val{font-family:'DM Mono',monospace;font-size:17px;font-weight:500;}
+
+/* PHASE TIMELINE */
+.phase-bar{background:var(--bg-s);border-bottom:1px solid var(--b);padding:10px 20px;display:flex;gap:0;flex-shrink:0;overflow-x:auto;}
+.phase{display:flex;flex-direction:column;align-items:center;flex-shrink:0;min-width:64px;}
+.phase-dot{width:10px;height:10px;border-radius:50%;background:var(--b);border:1.5px solid var(--bm);margin-bottom:4px;position:relative;}
+.phase-dot.done{background:var(--green);border-color:var(--green);}
+.phase-dot.active{background:var(--gold);border-color:var(--gold);box-shadow:0 0 8px rgba(232,184,75,.5);}
+.phase-dot.upcoming{background:var(--bg-h);}
+.phase-line{position:absolute;top:4px;left:10px;width:54px;height:1px;background:var(--b);}
+.phase-line.done{background:var(--green);}
+.phase-label{font-family:'Syne',sans-serif;font-size:8px;font-weight:700;color:var(--t3);letter-spacing:.4px;text-transform:uppercase;text-align:center;}
+.phase-label.active{color:var(--gold);}
+.phase-label.done{color:var(--green);}
+.phase-weeks{font-size:9px;color:var(--t3);font-family:'DM Mono',monospace;margin-top:1px;}
+
+/* FILTER BAR */
+.filter-bar{display:flex;align-items:center;gap:8px;padding:10px 20px;background:var(--bg-s);border-bottom:1px solid var(--b);flex-shrink:0;}
+.filter-lbl{font-size:11px;color:var(--t3);}
+.filter-pills{display:flex;gap:4px;}
+.fp{padding:3px 10px;border-radius:20px;font-family:'Syne',sans-serif;font-size:9px;font-weight:700;border:1px solid var(--bm);background:var(--bg-h);color:var(--t3);cursor:pointer;transition:all .12s;}
+.fp:hover{border-color:var(--bl);color:var(--t2);}
+.fp.on{border-color:var(--gold);background:var(--gold-g);color:var(--gold);}
+.filter-r{margin-left:auto;display:flex;gap:6px;align-items:center;}
+.search-box{background:var(--bg-e);border:1px solid var(--bm);border-radius:var(--r);padding:4px 10px;font-size:12px;color:var(--t1);font-family:'DM Sans',sans-serif;width:160px;outline:none;}
+.search-box:focus{border-color:var(--gold);}
+.search-box::placeholder{color:var(--t3);}
+
+/* WEEK LIST */
+.week-list{flex:1;padding:0;}
+
+/* WEEK GROUP HEADER */
+.wg-header{display:flex;align-items:center;gap:8px;padding:8px 20px 5px;background:var(--bg);border-bottom:1px solid var(--b);position:sticky;top:0;z-index:5;}
+.wg-lbl{font-family:'Syne',sans-serif;font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--t3);}
+.wg-line{flex:1;height:1px;background:var(--b);}
+.wg-total{font-family:'DM Mono',monospace;font-size:11px;color:var(--t2);}
+
+/* WEEK ROW */
+.week-row{border-bottom:1px solid var(--b);transition:background .07s;}
+.week-row:hover>.wr-top{background:rgba(255,255,255,.012);}
+.week-row.expanded>.wr-top{background:var(--bg-e);}
+.week-row.queried{border-left:3px solid var(--red);}
+.week-row.attention{border-left:3px solid var(--yellow);}
+.week-row.current-wk{border-left:3px solid var(--gold);}
+.wr-top{display:flex;align-items:center;padding:10px 20px;cursor:pointer;gap:12px;transition:background .07s;}
+
+/* Week number badge */
+.wk-num{width:36px;height:36px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;border:1px solid var(--b);}
+.wk-num.paid{background:var(--green-g);border-color:rgba(74,222,128,.2);}
+.wk-num.approved{background:var(--teal-g);border-color:rgba(45,212,191,.2);}
+.wk-num.submitted{background:var(--blue-g);border-color:rgba(96,165,250,.2);}
+.wk-num.queried{background:var(--red-g);border-color:rgba(248,113,113,.2);}
+.wk-num.draft{background:var(--bg-h);border-color:var(--b);}
+.wk-num.current{background:var(--gold-g);border-color:rgba(232,184,75,.3);}
+.wk-num-n{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;line-height:1;}
+.wk-num-lbl{font-family:'Syne',sans-serif;font-size:7px;font-weight:700;letter-spacing:.4px;color:var(--t3);text-transform:uppercase;}
+
+/* Week info */
+.wk-info{flex:1;min-width:0;}
+.wk-dates{font-family:'DM Mono',monospace;font-size:11.5px;font-weight:500;}
+.wk-meta{display:flex;gap:5px;margin-top:2px;flex-wrap:wrap;align-items:center;}
+.wk-type-chip{font-size:9px;color:var(--t3);background:var(--bg-h);border:1px solid var(--b);border-radius:3px;padding:1px 5px;font-family:'Syne',sans-serif;font-weight:700;}
+
+/* Week figures */
+.wk-figures{display:flex;gap:6px;flex-shrink:0;align-items:center;}
+.wf{display:flex;flex-direction:column;align-items:flex-end;min-width:56px;}
+.wf-lbl{font-size:9px;color:var(--t3);font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.3px;text-transform:uppercase;}
+.wf-val{font-family:'DM Mono',monospace;font-size:12.5px;}
+
+/* Status badge */
+.status-badge{display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:var(--r);font-family:'Syne',sans-serif;font-size:9px;font-weight:700;letter-spacing:.3px;flex-shrink:0;white-space:nowrap;}
+.sb-paid{background:var(--green-g);color:var(--green);border:1px solid rgba(74,222,128,.2);}
+.sb-approved{background:var(--teal-g);color:var(--teal);border:1px solid rgba(45,212,191,.2);}
+.sb-submitted{background:var(--blue-g);color:var(--blue);border:1px solid rgba(96,165,250,.2);}
+.sb-queried{background:var(--red-g);color:var(--red);border:1px solid rgba(248,113,113,.2);}
+.sb-draft{background:var(--bg-h);color:var(--t3);border:1px solid var(--b);}
+.sb-current{background:var(--gold-g);color:var(--gold);border:1px solid rgba(232,184,75,.25);}
+.chev{font-size:10px;color:var(--t3);transition:transform .2s;margin-left:4px;}
+.week-row.expanded .chev{transform:rotate(180deg);}
+
+/* WEEK DETAIL EXPAND */
+.week-detail{display:none;padding:12px 20px 16px;background:rgba(0,0,0,.2);border-top:1px solid var(--b);}
+.week-row.expanded .week-detail{display:block;}
+.wd-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px;}
+.wd-card{background:var(--bg-s);border:1px solid var(--b);border-radius:var(--r);padding:10px 12px;}
+.wd-card-lbl{font-family:'Syne',sans-serif;font-size:8px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--t3);margin-bottom:6px;}
+.wd-row{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;padding:3px 0;border-bottom:1px solid rgba(37,40,54,.3);}
+.wd-row:last-child{border-bottom:none;}
+.wd-k{color:var(--t2);}
+.wd-v{font-family:'DM Mono',monospace;font-size:11px;}
+.wd-v.gold{color:var(--gold);}
+.wd-v.or{color:var(--orange);}
+.wd-v.re{color:var(--red);}
+.wd-v.gr{color:var(--green);}
+.wd-v.te{color:var(--teal);}
+.wd-v.ye{color:var(--yellow);}
+.wd-v.bl{color:var(--blue);}
+
+/* Timeline pipeline */
+.pipeline{display:flex;align-items:center;gap:0;margin-top:10px;background:var(--bg-s);border:1px solid var(--b);border-radius:var(--r);overflow:hidden;}
+.pp-step{flex:1;padding:6px 8px;display:flex;flex-direction:column;align-items:center;border-right:1px solid var(--b);font-size:10px;transition:background .1s;}
+.pp-step:last-child{border-right:none;}
+.pp-step.done{background:rgba(74,222,128,.05);}
+.pp-step.active{background:rgba(232,184,75,.06);}
+.pp-step.blocked{background:rgba(248,113,113,.05);}
+.pp-icon{font-size:12px;margin-bottom:2px;}
+.pp-lbl{font-family:'Syne',sans-serif;font-size:8.5px;font-weight:700;color:var(--t3);text-align:center;line-height:1.2;}
+.pp-lbl.done{color:var(--green);}
+.pp-lbl.active{color:var(--gold);}
+.pp-lbl.blocked{color:var(--red);}
+.pp-date{font-family:'DM Mono',monospace;font-size:8px;color:var(--t3);margin-top:1px;}
+
+/* Query notice */
+.query-notice{display:flex;gap:8px;padding:8px 10px;background:var(--red-g);border:1px solid rgba(248,113,113,.2);border-radius:var(--r);font-size:12px;margin-bottom:10px;line-height:1.5;}
+.qn-actions{display:flex;gap:6px;margin-top:6px;}
+
+/* Week actions */
+.wd-actions{display:flex;gap:6px;margin-top:10px;justify-content:flex-end;}
+
+/* ASIDE */
+.aside-sec{padding:14px 16px;border-bottom:1px solid var(--b);}
+.as-ttl{font-family:'Syne',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--t3);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.as-ttl::after{content:'';flex:1;height:1px;background:var(--b);}
+
+/* Earnings breakdown */
+.earn-total{text-align:center;padding:14px 0 10px;}
+.earn-total-lbl{font-family:'Syne',sans-serif;font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--t3);margin-bottom:4px;}
+.earn-total-val{font-family:'DM Mono',monospace;font-size:28px;font-weight:500;color:var(--gold);}
+.earn-total-sub{font-size:11px;color:var(--t3);margin-top:2px;}
+.earn-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(37,40,54,.3);font-size:12px;}
+.earn-row:last-child{border-bottom:none;}
+.earn-k{color:var(--t2);display:flex;align-items:center;gap:5px;}
+.earn-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.earn-v{font-family:'DM Mono',monospace;font-size:11.5px;}
+
+/* Progress bar */
+.prog-bar{height:4px;background:var(--b);border-radius:2px;overflow:hidden;margin:6px 0;}
+.prog-fill{height:100%;border-radius:2px;transition:width .4s;}
+
+/* Production calendar strip */
+.cal-strip{display:grid;grid-template-columns:repeat(11,1fr);gap:3px;margin-top:4px;}
+.cal-wk{height:20px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:8px;cursor:pointer;transition:all .1s;border:1px solid transparent;}
+.cal-wk:hover{transform:scale(1.05);}
+.cal-wk.paid{background:rgba(74,222,128,.2);color:var(--green);border-color:rgba(74,222,128,.15);}
+.cal-wk.approved{background:rgba(45,212,191,.2);color:var(--teal);border-color:rgba(45,212,191,.15);}
+.cal-wk.submitted{background:rgba(96,165,250,.2);color:var(--blue);border-color:rgba(96,165,250,.15);}
+.cal-wk.queried{background:rgba(248,113,113,.2);color:var(--red);border-color:rgba(248,113,113,.15);}
+.cal-wk.current{background:var(--gold-g);color:var(--gold);border-color:rgba(232,184,75,.3);}
+.cal-wk.draft{background:var(--bg-h);color:var(--t3);border-color:var(--b);}
+.cal-wk.upcoming{background:rgba(37,40,54,.3);color:var(--t3);border-color:transparent;}
+
+/* Status summary */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.stat-card{background:var(--bg-e);border:1px solid var(--b);border-radius:var(--r);padding:8px 10px;}
+.stat-val{font-family:'DM Mono',monospace;font-size:18px;font-weight:500;}
+.stat-lbl{font-size:10px;color:var(--t3);margin-top:1px;}
+
+/* Day-type legend */
+.dt-legend{display:flex;flex-direction:column;gap:4px;}
+.dt-row{display:flex;align-items:center;justify-content:space-between;font-size:12px;}
+.dt-k{color:var(--t2);}
+.dt-v{font-family:'DM Mono',monospace;font-size:11.5px;color:var(--t1);}
+.dt-bar{flex:1;mx-2px;height:3px;background:var(--b);border-radius:2px;margin:0 8px;overflow:hidden;}
+.dt-fill{height:100%;border-radius:2px;}
+
+/* Modal */
+.modal{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;}
+.modal.open{display:flex;}
+.modal-ov{position:absolute;inset:0;background:rgba(0,0,0,.65);}
+.modal-panel{position:relative;background:var(--bg-s);border:1px solid var(--bm);border-radius:var(--rl);padding:20px;width:460px;max-width:calc(100vw - 32px);box-shadow:0 20px 60px rgba(0,0,0,.6);}
+.modal-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;margin-bottom:4px;}
+.modal-sub{font-size:12px;color:var(--t2);margin-bottom:14px;line-height:1.5;}
+.field label{display:block;font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--t3);margin-bottom:4px;}
+.field input,.field textarea,.field select{width:100%;background:var(--bg-e);border:1px solid var(--bm);border-radius:var(--r);padding:8px 10px;color:var(--t1);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;}
+.field input:focus,.field textarea:focus{border-color:var(--gold);}
+.field{margin-bottom:10px;}
+
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--bg-h);border:1px solid var(--bm);border-radius:var(--rl);padding:9px 16px;font-size:12px;color:var(--t1);z-index:500;max-width:400px;text-align:center;line-height:1.4;box-shadow:0 4px 20px rgba(0,0,0,.5);display:none;}
+
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--b);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">Zillit</div>
+  <div class="breadcrumb">Coda · <span>The Gilded Hour S2</span> · <span class="cur">My Timecards</span></div>
+  <div class="topbar-r">
+    <button class="btn btn-ghost btn-sm" onclick="openDispute()">⚑ Raise Dispute</button>
+    <button class="btn btn-ghost btn-sm" onclick="toast('Downloading PDF statement…')">↓ Download Statement</button>
+    <span class="pill ppurple">⚡ PACT/BECTU MMP 2021</span>
+  </div>
+</div>
+
+<div class="main">
+<div class="content">
+
+  <!-- CREW HERO -->
+  <div class="crew-hero">
+    <div class="hero-av">JW</div>
+    <div>
+      <div class="hero-name">James Whitfield</div>
+      <div class="hero-role">1st Assistant Camera · Camera Department</div>
+      <div class="hero-meta">
+        <span class="pill pgrey">Direct Hire Sch. D</span>
+        <span class="pill pgrey">£700/day · £63.64/hr</span>
+        <span class="pill pgrey">Sargent-Disc</span>
+        <span class="pill pgreen">Active engagement</span>
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="hs">
+        <div class="hs-lbl">Weeks worked</div>
+        <div class="hs-val" style="color:var(--gold)">14</div>
+      </div>
+      <div class="hs">
+        <div class="hs-lbl">Shoot days</div>
+        <div class="hs-val" style="color:var(--t1)">68</div>
+      </div>
+      <div class="hs">
+        <div class="hs-lbl">Total paid</div>
+        <div class="hs-val" style="color:var(--green)">£52,840</div>
+      </div>
+      <div class="hs">
+        <div class="hs-lbl">Outstanding</div>
+        <div class="hs-val" style="color:var(--teal)">£6,210</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRODUCTION PHASE TIMELINE -->
+  <div class="phase-bar" id="phase-bar"></div>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <span class="filter-lbl">Show:</span>
+    <div class="filter-pills">
+      <span class="fp on" onclick="setFilter('all',this)">All weeks</span>
+      <span class="fp" onclick="setFilter('paid',this)">Paid</span>
+      <span class="fp" onclick="setFilter('pending',this)">Pending</span>
+      <span class="fp" onclick="setFilter('queried',this)">⚑ Queried</span>
+      <span class="fp" onclick="setFilter('draft',this)">Draft</span>
+    </div>
+    <div class="filter-r">
+      <input class="search-box" placeholder="Search weeks…" oninput="filterSearch(this.value)">
+      <button class="btn btn-ghost btn-sm" onclick="toggleSort()">↕ Sort</button>
+    </div>
+  </div>
+
+  <!-- WEEK LIST -->
+  <div class="week-list" id="week-list"></div>
+
+</div><!-- /content -->
+
+<!-- ASIDE -->
+<div class="aside">
+
+  <div class="aside-sec">
+    <div class="as-ttl">Production Calendar</div>
+    <div class="cal-strip" id="cal-strip"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--t3);"><div style="width:8px;height:8px;border-radius:2px;background:rgba(74,222,128,.2);"></div>Paid</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--t3);"><div style="width:8px;height:8px;border-radius:2px;background:rgba(45,212,191,.2);"></div>Approved</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--t3);"><div style="width:8px;height:8px;border-radius:2px;background:rgba(96,165,250,.2);"></div>Submitted</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--t3);"><div style="width:8px;height:8px;border-radius:2px;background:var(--gold-g);"></div>Current</div>
+    </div>
+  </div>
+
+  <div class="aside-sec">
+    <div class="as-ttl">Earnings to Date</div>
+    <div class="earn-total">
+      <div class="earn-total-lbl">Total Gross Earned</div>
+      <div class="earn-total-val">£59,050</div>
+      <div class="earn-total-sub">Weeks 1–14 · incl. allowances</div>
+    </div>
+    <div class="earn-row"><span class="earn-k"><div class="earn-dot" style="background:var(--gold)"></div>Basic (daily rate)</span><span class="earn-v" style="color:var(--gold)">£49,000</span></div>
+    <div class="earn-row"><span class="earn-k"><div class="earn-dot" style="background:var(--t2)"></div>Holiday pay (12.07%)</span><span class="earn-v">£5,914</span></div>
+    <div class="earn-row"><span class="earn-k"><div class="earn-dot" style="background:var(--teal)"></div>Pre-call OT</span><span class="earn-v" style="color:var(--teal)">£572</span></div>
+    <div class="earn-row"><span class="earn-k"><div class="earn-dot" style="background:var(--teal)"></div>Wrap OT</span><span class="earn-v" style="color:var(--teal)">£409</span></div>
+    <div class="earn-row"><span class="earn-k"><div class="earn-dot" style="background:var(--red)"></div>Camera OT (2T)</span><span class="earn-v" style="color:var(--red)">£1,718</span></div>
+    <div class="earn-row"><span class="earn-k"><div class="earn-dot" style="background:var(--yellow)"></div>Meal delay pen.</span><span class="earn-v" style="color:var(--yellow)">£191</span></div>
+    <div class="earn-row"><span class="earn-k"><div class="earn-dot" style="background:var(--blue)"></div>Night premiums</span><span class="earn-v" style="color:var(--blue)">£160</span></div>
+    <div class="earn-row"><span class="earn-k"><div class="earn-dot" style="background:var(--orange)"></div>BTA payments</span><span class="earn-v" style="color:var(--orange)">£90</span></div>
+    <div class="earn-row"><span class="earn-k"><div class="earn-dot" style="background:var(--teal)"></div>Allowances</span><span class="earn-v" style="color:var(--teal)">£996</span></div>
+  </div>
+
+  <div class="aside-sec">
+    <div class="as-ttl">Payment Status</div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-val" style="color:var(--green)">£52,840</div><div class="stat-lbl">Paid to bank</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--teal)">£4,502</div><div class="stat-lbl">Approved, pending</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--blue)">£1,708</div><div class="stat-lbl">Submitted</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--yellow)">£0</div><div class="stat-lbl">Queried / held</div></div>
+    </div>
+    <div class="prog-bar" style="margin-top:10px;"><div class="prog-fill" style="width:89%;background:var(--green);"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t3);margin-top:2px;"><span>89% paid</span><span>£59,050 total</span></div>
+  </div>
+
+  <div class="aside-sec">
+    <div class="as-ttl">Day Type Breakdown</div>
+    <div class="dt-legend">
+      <div class="dt-row"><span class="dt-k">SWD</span><div class="dt-bar"><div class="dt-fill" style="width:72%;background:var(--blue);"></div></div><span class="dt-v">49</span></div>
+      <div class="dt-row"><span class="dt-k">CWD</span><div class="dt-bar"><div class="dt-fill" style="width:22%;background:var(--teal);"></div></div><span class="dt-v">15</span></div>
+      <div class="dt-row"><span class="dt-k">SCWD</span><div class="dt-bar"><div class="dt-fill" style="width:6%;background:var(--purple);"></div></div><span class="dt-v">4</span></div>
+      <div class="dt-row"><span class="dt-k">Night</span><div class="dt-bar"><div class="dt-fill" style="width:12%;background:var(--blue);"></div></div><span class="dt-v">8</span></div>
+    </div>
+  </div>
+
+  <div class="aside-sec">
+    <div class="as-ttl">Production Info</div>
+    <div style="display:flex;flex-direction:column;gap:5px;font-size:12px;">
+      <div style="display:flex;justify-content:space-between;"><span style="color:var(--t3)">Production</span><span>The Gilded Hour S2</span></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:var(--t3)">Company</span><span>Gilded Hour Productions</span></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:var(--t3)">Started</span><span style="font-family:'DM Mono',monospace">06 Jan 2026</span></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:var(--t3)">Est. wrap</span><span style="font-family:'DM Mono',monospace">29 May 2026</span></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:var(--t3)">Weeks total</span><span style="font-family:'DM Mono',monospace">22</span></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:var(--t3)">Week current</span><span style="font-family:'DM Mono',monospace;color:var(--gold)">14 of 22</span></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:var(--t3)">Payroll bureau</span><span>Sargent-Disc</span></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:var(--t3)">Pay schedule</span><span>Weekly (Thu)</span></div>
+    </div>
+  </div>
+
+</div><!-- /aside -->
+</div><!-- /main -->
+
+<!-- DISPUTE MODAL -->
+<div class="modal" id="dispute-modal">
+  <div class="modal-ov" onclick="closeModal('dispute-modal')"></div>
+  <div class="modal-panel">
+    <div class="modal-title">Raise a Dispute</div>
+    <div class="modal-sub">If you believe a timecard contains an error or discrepancy, raise it here. Your HOD, producer and production accounts will be notified.</div>
+    <div class="field"><label>Week</label><select><option>Week 14 · 07–13 Apr 2026 (current)</option><option>Week 13 · 31 Mar – 06 Apr 2026</option><option>Week 12 · 24–30 Mar 2026</option></select></div>
+    <div class="field"><label>Type of issue</label><select><option>Incorrect time recorded</option><option>Missing overtime</option><option>Wrong day type</option><option>Allowance not included</option><option>Other</option></select></div>
+    <div class="field"><label>Description</label><textarea rows="4" placeholder="Describe the discrepancy and what the correct values should be…"></textarea></div>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('dispute-modal')">Cancel</button>
+      <button class="btn btn-gold" style="flex:2;" onclick="closeModal('dispute-modal');toast('Dispute raised — notified T. Walsh (Producer) and M. Rodriguez (Accountant).')">Submit Dispute</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+// Full 22-week production. Weeks 1-13 historical, 14 = current, 15-22 upcoming.
+const WEEKS = [
+  // ── PRE-PRODUCTION (wks 1-3, smaller days)
+  {n:1, dates:'06–10 Jan', phase:'prep', status:'paid', paidDate:'15 Jan',
+   days:5, types:['SWD','SWD','SWD','SWD','SWD'], nightShoots:0, camOT:'—', bta:0,
+   basic:3500, holPay:423, preCall:81, wrapOT:41, camOTPay:0, mealPen:0, night:0, btaPay:0, allows:375,
+   payRunDate:'15 Jan', approvedBy:'T. Walsh', queryNote:null,
+   pipeline:['submitted_10','approved_12','payroll_13','paid_15']},
+  {n:2, dates:'13–17 Jan', phase:'prep', status:'paid', paidDate:'22 Jan',
+   days:5, types:['SWD','SWD','SWD','SWD','SWD'], nightShoots:0, camOT:'—', bta:0,
+   basic:3500, holPay:423, preCall:122, wrapOT:82, camOTPay:0, mealPen:0, night:0, btaPay:0, allows:375,
+   payRunDate:'22 Jan', approvedBy:'T. Walsh', queryNote:null,
+   pipeline:['submitted_17','approved_19','payroll_20','paid_22']},
+  {n:3, dates:'20–24 Jan', phase:'prep', status:'paid', paidDate:'29 Jan',
+   days:5, types:['SWD','SWD','SWD','SWD','SWD'], nightShoots:0, camOT:'—', bta:0,
+   basic:3500, holPay:423, preCall:82, wrapOT:122, camOTPay:0, mealPen:64, night:0, btaPay:0, allows:375,
+   payRunDate:'29 Jan', approvedBy:'T. Walsh', queryNote:null,
+   pipeline:['submitted_24','approved_26','payroll_27','paid_29']},
+  // ── SHOOT BLOCK 1 (wks 4-8)
+  {n:4, dates:'27–31 Jan', phase:'shoot1', status:'paid', paidDate:'05 Feb',
+   days:5, types:['SWD','SWD','CWD','SWD','SWD'], nightShoots:0, camOT:'30m', bta:0,
+   basic:3500, holPay:423, preCall:245, wrapOT:163, camOTPay:41, mealPen:32, night:0, btaPay:0, allows:450,
+   payRunDate:'05 Feb', approvedBy:'T. Walsh', queryNote:null,
+   pipeline:['submitted_31','approved_02','payroll_03','paid_05']},
+  {n:5, dates:'03–07 Feb', phase:'shoot1', status:'paid', paidDate:'12 Feb',
+   days:5, types:['SWD','SWD','SWD','SCWD','SWD'], nightShoots:0, camOT:'1h', bta:1,
+   basic:3500, holPay:423, preCall:245, wrapOT:245, camOTPay:82, mealPen:64, night:0, btaPay:45, allows:450,
+   payRunDate:'12 Feb', approvedBy:'T. Walsh', queryNote:null,
+   pipeline:['submitted_07','approved_09','payroll_10','paid_12']},
+  {n:6, dates:'10–14 Feb', phase:'shoot1', status:'paid', paidDate:'19 Feb',
+   days:5, types:['CWD','SWD','SWD','SWD','CWD'], nightShoots:2, camOT:'1h 30m', bta:0,
+   basic:3500, holPay:423, preCall:163, wrapOT:163, camOTPay:123, mealPen:0, night:40, btaPay:0, allows:450,
+   payRunDate:'19 Feb', approvedBy:'T. Walsh', queryNote:null,
+   pipeline:['submitted_14','approved_16','payroll_17','paid_19']},
+  {n:7, dates:'17–21 Feb', phase:'shoot1', status:'paid', paidDate:'26 Feb',
+   days:5, types:['SWD','SWD','SWD','SWD','SCWD'], nightShoots:0, camOT:'45m', bta:1,
+   basic:3500, holPay:423, preCall:327, wrapOT:204, camOTPay:61, mealPen:96, night:0, btaPay:22, allows:450,
+   payRunDate:'26 Feb', approvedBy:'T. Walsh', queryNote:null,
+   pipeline:['submitted_21','approved_23','payroll_24','paid_26']},
+  {n:8, dates:'24–28 Feb', phase:'shoot1', status:'paid', paidDate:'05 Mar',
+   days:5, types:['SWD','CWD','SWD','SWD','SWD'], nightShoots:0, camOT:'2h', bta:0,
+   basic:3500, holPay:423, preCall:204, wrapOT:163, camOTPay:164, mealPen:32, night:0, btaPay:0, allows:450,
+   payRunDate:'05 Mar', approvedBy:'T. Walsh', queryNote:null,
+   pipeline:['submitted_28','approved_02','payroll_03','paid_05']},
+  // ── HIATUS (wk 9)
+  {n:9, dates:'03–07 Mar', phase:'hiatus', status:'paid', paidDate:'12 Mar',
+   days:3, types:['SWD','SWD','SWD'], nightShoots:0, camOT:'—', bta:0,
+   basic:2100, holPay:254, preCall:82, wrapOT:41, camOTPay:0, mealPen:0, night:0, btaPay:0, allows:225,
+   payRunDate:'12 Mar', approvedBy:'T. Walsh', queryNote:null,
+   pipeline:['submitted_07','approved_09','payroll_10','paid_12']},
+  // ── SHOOT BLOCK 2 (wks 10-12)
+  {n:10, dates:'10–14 Mar', phase:'shoot2', status:'paid', paidDate:'19 Mar',
+   days:5, types:['SWD','SWD','CWD','SWD','SWD'], nightShoots:1, camOT:'1h', bta:0,
+   basic:3500, holPay:423, preCall:245, wrapOT:204, camOTPay:82, mealPen:64, night:20, btaPay:0, allows:450,
+   payRunDate:'19 Mar', approvedBy:'T. Walsh', queryNote:null,
+   pipeline:['submitted_14','approved_16','payroll_17','paid_19']},
+  {n:11, dates:'17–21 Mar', phase:'shoot2', status:'paid', paidDate:'26 Mar',
+   days:5, types:['SWD','SWD','SWD','SWD','CWD'], nightShoots:0, camOT:'30m', bta:1,
+   basic:3500, holPay:423, preCall:163, wrapOT:245, camOTPay:41, mealPen:32, night:0, btaPay:45, allows:450,
+   payRunDate:'26 Mar', approvedBy:'T. Walsh', queryNote:null,
+   pipeline:['submitted_21','approved_23','payroll_24','paid_26']},
+  {n:12, dates:'24–28 Mar', phase:'shoot2', status:'approved', approvedDate:'06 Apr',
+   days:5, types:['SWD','SWD','SWD','SCWD','SWD'], nightShoots:2, camOT:'2h', bta:0,
+   basic:3500, holPay:423, preCall:245, wrapOT:245, camOTPay:164, mealPen:96, night:40, btaPay:0, allows:450,
+   approvedBy:'T. Walsh', queryNote:null,
+   pipeline:['submitted_28','approved_06','payroll_07','paid_—']},
+  {n:13, dates:'31 Mar–04 Apr', phase:'shoot2', status:'submitted', submittedDate:'04 Apr',
+   days:5, types:['CWD','SWD','SWD','SWD','SWD'], nightShoots:1, camOT:'1h 30m', bta:1,
+   basic:3500, holPay:423, preCall:245, wrapOT:163, camOTPay:123, mealPen:64, night:20, btaPay:22, allows:450,
+   queryNote:null,
+   pipeline:['submitted_04','approved_—','payroll_—','paid_—']},
+  {n:14, dates:'07–13 Apr', phase:'shoot2', status:'current', 
+   days:5, types:['CWD','SWD','SCWD','SWD','CWD'], nightShoots:1, camOT:'1h 30m', bta:2,
+   basic:3500, holPay:423, preCall:327, wrapOT:245, camOTPay:123, mealPen:32, night:20, btaPay:90, allows:510,
+   queryNote:null,
+   pipeline:['submitted_—','approved_—','payroll_—','paid_—']},
+  // ── UPCOMING (wks 15-22)
+  {n:15, dates:'14–18 Apr', phase:'shoot3', status:'upcoming', days:5, types:[], nightShoots:0, camOT:'—', bta:0, basic:0,holPay:0,preCall:0,wrapOT:0,camOTPay:0,mealPen:0,night:0,btaPay:0,allows:0, queryNote:null, pipeline:[]},
+  {n:16, dates:'22–26 Apr', phase:'shoot3', status:'upcoming', days:5, types:[], nightShoots:0, camOT:'—', bta:0, basic:0,holPay:0,preCall:0,wrapOT:0,camOTPay:0,mealPen:0,night:0,btaPay:0,allows:0, queryNote:null, pipeline:[]},
+  {n:17, dates:'28 Apr–02 May', phase:'shoot3', status:'upcoming', days:5, types:[], nightShoots:0, camOT:'—', bta:0, basic:0,holPay:0,preCall:0,wrapOT:0,camOTPay:0,mealPen:0,night:0,btaPay:0,allows:0, queryNote:null, pipeline:[]},
+  {n:18, dates:'05–09 May', phase:'shoot3', status:'upcoming', days:5, types:[], nightShoots:0, camOT:'—', bta:0, basic:0,holPay:0,preCall:0,wrapOT:0,camOTPay:0,mealPen:0,night:0,btaPay:0,allows:0, queryNote:null, pipeline:[]},
+  {n:19, dates:'12–16 May', phase:'shoot3', status:'upcoming', days:5, types:[], nightShoots:0, camOT:'—', bta:0, basic:0,holPay:0,preCall:0,wrapOT:0,camOTPay:0,mealPen:0,night:0,btaPay:0,allows:0, queryNote:null, pipeline:[]},
+  {n:20, dates:'19–23 May', phase:'shoot3', status:'upcoming', days:5, types:[], nightShoots:0, camOT:'—', bta:0, basic:0,holPay:0,preCall:0,wrapOT:0,camOTPay:0,mealPen:0,night:0,btaPay:0,allows:0, queryNote:null, pipeline:[]},
+  {n:21, dates:'26–30 May', phase:'shoot3', status:'upcoming', days:4, types:[], nightShoots:0, camOT:'—', bta:0, basic:0,holPay:0,preCall:0,wrapOT:0,camOTPay:0,mealPen:0,night:0,btaPay:0,allows:0, queryNote:null, pipeline:[]},
+  {n:22, dates:'02–06 Jun', phase:'wrap', status:'upcoming', days:3, types:[], nightShoots:0, camOT:'—', bta:0, basic:0,holPay:0,preCall:0,wrapOT:0,camOTPay:0,mealPen:0,night:0,btaPay:0,allows:0, queryNote:null, pipeline:[]},
+];
+
+const PHASES = [
+  {id:'prep',   label:'Pre-Prod',  weeks:[1,2,3],          wkRange:'W1–3',   done:true},
+  {id:'shoot1', label:'Shoot Blk 1',weeks:[4,5,6,7,8],     wkRange:'W4–8',   done:true},
+  {id:'hiatus', label:'Hiatus',    weeks:[9],              wkRange:'W9',     done:true},
+  {id:'shoot2', label:'Shoot Blk 2',weeks:[10,11,12,13,14],wkRange:'W10–14', done:false, active:true},
+  {id:'shoot3', label:'Shoot Blk 3',weeks:[15,16,17,18,19,20,21],wkRange:'W15–21',done:false},
+  {id:'wrap',   label:'Wrap',      weeks:[22],             wkRange:'W22',    done:false},
+];
+
+let currentFilter='all';
+let expandedWeeks=new Set([14]);
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function fmtP(v){return v>0?'£'+v.toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
+
+function weekGross(w){
+  return w.basic+w.holPay+w.preCall+w.wrapOT+w.camOTPay+w.mealPen+w.night+w.btaPay+w.allows;
+}
+
+function statusBadge(s){
+  const m={
+    paid:'<span class="status-badge sb-paid">✓ Paid</span>',
+    approved:'<span class="status-badge sb-approved">✓ Approved</span>',
+    submitted:'<span class="status-badge sb-submitted">⟳ Submitted</span>',
+    queried:'<span class="status-badge sb-queried">⚑ Queried</span>',
+    current:'<span class="status-badge sb-current">✎ In Progress</span>',
+    draft:'<span class="status-badge sb-draft">Draft</span>',
+    upcoming:'<span class="status-badge sb-draft">Upcoming</span>',
+  };
+  return m[s]||'';
+}
+
+function typeChips(types){
+  if(!types||!types.length)return'<span style="color:var(--t3);font-size:11px;">—</span>';
+  const counts={};
+  types.forEach(t=>counts[t]=(counts[t]||0)+1);
+  return Object.entries(counts).map(([t,c])=>`<span class="wk-type-chip">${t}${c>1?' ×'+c:''}</span>`).join('');
+}
+
+function pipelineHtml(w){
+  if(!w.pipeline||!w.pipeline.length)return'<div style="font-size:11px;color:var(--t3);padding:6px 0;">Timecard not yet started for this week.</div>';
+  const steps = [
+    {key:'submitted', label:'Submitted', icon:'📋'},
+    {key:'approved',  label:'Approved',  icon:'✓'},
+    {key:'payroll',   label:'Payroll',   icon:'⚙'},
+    {key:'paid',      label:'Paid',      icon:'£'},
+  ];
+  const pMap={};
+  w.pipeline.forEach(p=>{const[k,d]=p.split('_');pMap[k]=d;});
+  let h='<div class="pipeline">';
+  steps.forEach(s=>{
+    const d=pMap[s.key];
+    const isDone=d&&d!=='—';
+    const isActive=s.key==='submitted'&&w.status==='current';
+    const isBlocked=w.queryNote&&s.key!=='submitted';
+    let cls=isDone?'done':(isActive?'active':(isBlocked?'blocked':''));
+    h+=`<div class="pp-step ${cls}">
+      <div class="pp-icon">${s.icon}</div>
+      <div class="pp-lbl ${cls}">${s.label}</div>
+      <div class="pp-date">${isDone?d:isActive?'Pending':'—'}</div>
+    </div>`;
+  });
+  h+='</div>';
+  return h;
+}
+
+function renderWeeks(){
+  const list=document.getElementById('week-list');
+  list.innerHTML='';
+
+  const filtered=WEEKS.filter(w=>{
+    if(currentFilter==='all')return true;
+    if(currentFilter==='paid')return w.status==='paid';
+    if(currentFilter==='pending')return['approved','submitted'].includes(w.status);
+    if(currentFilter==='queried')return w.status==='queried';
+    if(currentFilter==='draft')return['draft','current','upcoming'].includes(w.status);
+    return true;
+  });
+
+  // Group by phase
+  const groups=[
+    {label:'Wrap-Up',phases:['wrap'],filter:w=>w.phase==='wrap'},
+    {label:'Shoot Block 3 — Upcoming',phases:['shoot3'],filter:w=>w.phase==='shoot3'},
+    {label:'Shoot Block 2 — Current',phases:['shoot2'],filter:w=>w.phase==='shoot2'},
+    {label:'Hiatus',phases:['hiatus'],filter:w=>w.phase==='hiatus'},
+    {label:'Shoot Block 1 — Complete',phases:['shoot1'],filter:w=>w.phase==='shoot1'},
+    {label:'Pre-Production — Complete',phases:['prep'],filter:w=>w.phase==='prep'},
+  ];
+
+  groups.forEach(g=>{
+    const gWeeks=filtered.filter(g.filter);
+    if(!gWeeks.length)return;
+    const totalGross=gWeeks.reduce((a,w)=>a+weekGross(w),0);
+    
+    const header=document.createElement('div');
+    header.className='wg-header';
+    header.innerHTML=`<span class="wg-lbl">${g.label}</span><div class="wg-line"></div>${totalGross>0?`<span class="wg-total">${fmtP(totalGross)}</span>`:''}`;
+    list.appendChild(header);
+
+    gWeeks.reverse().forEach(w=>{
+      const gross=weekGross(w);
+      const isUpcoming=w.status==='upcoming';
+      const isCurrent=w.status==='current';
+      const rowClass='week-row'+(w.status==='queried'?' queried':'')+(isCurrent?' current-wk':'');
+
+      const row=document.createElement('div');
+      row.className=rowClass;
+      row.id='wr-'+w.n;
+      if(expandedWeeks.has(w.n))row.classList.add('expanded');
+
+      const numClass=w.status==='paid'?'paid':w.status==='approved'?'approved':w.status==='submitted'?'submitted':w.status==='queried'?'queried':isCurrent?'current':'draft';
+      
+      const flagChips=[
+        w.camOT&&w.camOT!=='—'?`<span class="pill pred">Cam OT ${w.camOT}</span>`:'',
+        w.bta>0?`<span class="pill porange">${w.bta} BTA</span>`:'',
+        w.nightShoots>0?`<span class="pill pblue">${w.nightShoots}× Night</span>`:'',
+        w.mealPen>0?`<span class="pill pyellow">Meal delay</span>`:'',
+      ].filter(Boolean).join('');
+
+      row.innerHTML=`<div class="wr-top" onclick="toggleWeek(${w.n})">
+        <div class="wk-num ${numClass}">
+          <div class="wk-num-n">${w.n}</div>
+          <div class="wk-num-lbl">WK</div>
+        </div>
+        <div class="wk-info">
+          <div class="wk-dates">${w.dates} 2026</div>
+          <div class="wk-meta">
+            <span style="font-size:11px;color:var(--t3);">${w.days} days</span>
+            ${typeChips(w.types)}
+            ${flagChips}
+          </div>
+        </div>
+        ${!isUpcoming?`<div class="wk-figures">
+          <div class="wf">
+            <div class="wf-lbl">Basic</div>
+            <div class="wf-val" style="color:var(--t2)">${fmtP(w.basic)}</div>
+          </div>
+          ${w.camOTPay>0||w.preCall>0||w.wrapOT>0?`<div class="wf">
+            <div class="wf-lbl">OT</div>
+            <div class="wf-val" style="color:var(--teal)">${fmtP(w.preCall+w.wrapOT+w.camOTPay)}</div>
+          </div>`:''}
+          <div class="wf">
+            <div class="wf-lbl">Gross</div>
+            <div class="wf-val" style="color:var(--gold);font-weight:600">${fmtP(gross)}</div>
+          </div>
+        </div>`:''}
+        ${statusBadge(w.status)}
+        <span class="chev">▾</span>
+      </div>
+      <div class="week-detail">
+        ${buildWeekDetail(w)}
+      </div>`;
+
+      list.appendChild(row);
+    });
+  });
+}
+
+function buildWeekDetail(w){
+  const gross=weekGross(w);
+  if(w.status==='upcoming'){
+    return`<div style="display:flex;align-items:center;gap:10px;padding:4px 0;font-size:12px;color:var(--t3);">
+      <span style="font-size:20px">🗓</span>
+      <div>This week hasn't started yet. Your timecard will be auto-populated from GPS, call sheet, and back pages once the week begins.</div>
+    </div>`;
+  }
+  if(w.status==='current'){
+    return`<div style="font-size:12px;color:var(--t2);margin-bottom:10px;">Currently in progress — times being auto-filled as days complete.</div>
+    ${buildPayGrid(w)}
+    ${pipelineHtml(w)}
+    <div class="wd-actions">
+      <button class="btn btn-ghost btn-sm" onclick="toast('Opening week 14 timecard…')">View Full Timecard →</button>
+      <button class="btn btn-gold btn-sm" onclick="toast('Submit timecard to T. Walsh for approval?')">Submit for Approval</button>
+    </div>`;
+  }
+  return`${w.queryNote?`<div class="query-notice"><div>⚑</div><div><strong style="color:var(--red)">Query raised:</strong> ${w.queryNote}<div class="qn-actions"><button class="btn btn-ghost btn-sm" onclick="toast('Opening dispute thread…')">View thread</button><button class="btn btn-ghost btn-sm" onclick="toast('Marking as resolved…')">Mark resolved</button></div></div></div>`:''}
+  ${buildPayGrid(w)}
+  ${pipelineHtml(w)}
+  <div class="wd-actions">
+    <button class="btn btn-ghost btn-sm" onclick="toast('Opening Week ${w.n} timecard…')">View Full Timecard →</button>
+    ${w.status!=='paid'?`<button class="btn btn-ghost btn-sm" onclick="openDispute()">⚑ Raise Dispute</button>`:''}
+    ${w.status==='paid'?`<button class="btn btn-ghost btn-sm" onclick="toast('Downloading payslip…')">↓ Payslip</button>`:''}
+  </div>`;
+}
+
+function buildPayGrid(w){
+  return`<div class="wd-grid">
+    <div class="wd-card">
+      <div class="wd-card-lbl">Core Pay</div>
+      <div class="wd-row"><span class="wd-k">Days worked</span><span class="wd-v">${w.days}</span></div>
+      <div class="wd-row"><span class="wd-k">Basic (daily rate)</span><span class="wd-v gold">${fmtP(w.basic)}</span></div>
+      <div class="wd-row"><span class="wd-k">Holiday pay (12.07%)</span><span class="wd-v">${fmtP(w.holPay)}</span></div>
+    </div>
+    <div class="wd-card">
+      <div class="wd-card-lbl">Overtime (§3.3)</div>
+      <div class="wd-row"><span class="wd-k">Pre-call OT (1.5T→£81.82)</span><span class="wd-v te">${fmtP(w.preCall)}</span></div>
+      <div class="wd-row"><span class="wd-k">Wrap OT (1.5T→£81.82)</span><span class="wd-v te">${fmtP(w.wrapOT)}</span></div>
+      <div class="wd-row"><span class="wd-k">Camera OT (2T→£81.82)</span><span class="wd-v re">${fmtP(w.camOTPay)}</span></div>
+    </div>
+    <div class="wd-card">
+      <div class="wd-card-lbl">Penalties &amp; Premiums</div>
+      <div class="wd-row"><span class="wd-k">Meal delay (§5.4)</span><span class="wd-v ye">${fmtP(w.mealPen)}</span></div>
+      <div class="wd-row"><span class="wd-k">Night premium (§5.2)</span><span class="wd-v bl">${w.night>0?`£${w.night} (${w.nightShoots}× £20)`:'—'}</span></div>
+      <div class="wd-row"><span class="wd-k">BTA (§5.3 · £45/hr cap)</span><span class="wd-v" style="color:var(--orange)">${fmtP(w.btaPay)}</span></div>
+    </div>
+    <div class="wd-card">
+      <div class="wd-card-lbl">Allowances &amp; Gross</div>
+      <div class="wd-row"><span class="wd-k">Kit / mileage / per diem</span><span class="wd-v te">${fmtP(w.allows)}</span></div>
+      <div class="wd-row"><span class="wd-k">Day types</span><span class="wd-v" style="font-family:'DM Sans',sans-serif;font-size:10px">${w.types.join(' · ')||'—'}</span></div>
+      <div class="wd-row" style="border-top:1px solid var(--b);margin-top:2px;padding-top:4px;"><span class="wd-k" style="font-weight:600">Est. Gross</span><span class="wd-v gold" style="font-size:13px">${fmtP(weekGross(w))}</span></div>
+    </div>
+  </div>`;
+}
+
+function renderPhaseBar(){
+  const bar=document.getElementById('phase-bar');
+  bar.innerHTML=PHASES.map((p,pi)=>`
+    <div class="phase">
+      <div class="phase-dot ${p.done?'done':p.active?'active':'upcoming'}">
+        ${pi<PHASES.length-1?`<div class="phase-line ${p.done?'done':''}"></div>`:''}
+      </div>
+      <div class="phase-label ${p.done?'done':p.active?'active':''}">${p.label}</div>
+      <div class="phase-weeks">${p.wkRange}</div>
+    </div>`).join('');
+}
+
+function renderCalStrip(){
+  const strip=document.getElementById('cal-strip');
+  strip.innerHTML=WEEKS.map(w=>`<div class="cal-wk ${w.status}" onclick="scrollToWeek(${w.n})" title="Week ${w.n} · ${w.dates}">${w.n}</div>`).join('');
+}
+
+// ─── INTERACTIONS ─────────────────────────────────────────────────────────────
+function toggleWeek(n){
+  if(expandedWeeks.has(n))expandedWeeks.delete(n);else expandedWeeks.add(n);
+  const row=document.getElementById('wr-'+n);
+  if(row)row.classList.toggle('expanded',expandedWeeks.has(n));
+}
+
+function scrollToWeek(n){
+  const row=document.getElementById('wr-'+n);
+  if(row){row.scrollIntoView({behavior:'smooth',block:'center'});expandedWeeks.add(n);row.classList.add('expanded');}
+}
+
+function setFilter(f,btn){
+  currentFilter=f;
+  document.querySelectorAll('.fp').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderWeeks();
+}
+
+function filterSearch(q){
+  document.querySelectorAll('.week-row').forEach(r=>{
+    const txt=r.textContent.toLowerCase();
+    r.style.display=txt.includes(q.toLowerCase())?'':'none';
+  });
+}
+
+let sortAsc=false;
+function toggleSort(){
+  sortAsc=!sortAsc;
+  const list=document.getElementById('week-list');
+  const rows=[...list.querySelectorAll('.week-row')];
+  const headers=[...list.querySelectorAll('.wg-header')];
+  // simple reverse within each group
+  headers.forEach(h=>{
+    const siblings=[];let s=h.nextElementSibling;
+    while(s&&s.classList.contains('week-row')){siblings.push(s);s=s.nextElementSibling;}
+    if(sortAsc)siblings.reverse().forEach(el=>h.after(el));
+    else siblings.reverse().forEach(el=>h.after(el));
+  });
+  toast(sortAsc?'Sorted oldest → newest':'Sorted newest → oldest');
+}
+
+function openDispute(){document.getElementById('dispute-modal').classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';clearTimeout(t._to);t._to=setTimeout(()=>t.style.display='none',3200);}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+renderPhaseBar();
+renderCalStrip();
+renderWeeks();
+
+// Auto-scroll to current week
+setTimeout(()=>scrollToWeek(14),200);
+</script>
+</body>
+</html>

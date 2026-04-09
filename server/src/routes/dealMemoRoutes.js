@@ -19,6 +19,7 @@ import {
   addRtwDocumentRequest,
   uploadRtwDocument,
   verifyRtwDocument,
+  countersignDealMemo,
 } from '../controllers/dealMemoController.js';
 import { upload } from '../middleware/upload.js';
 import auth from '../middleware/auth.js';
@@ -50,6 +51,7 @@ router.put(
 router.patch('/:id/crew-complete', crewComplete);
 router.patch('/:id/approve', approveDealMemo);
 router.patch('/:id/reject-approval', rejectApproval);
+router.post('/:id/countersign', countersignDealMemo);
 router.patch('/:id/compliance/:itemIndex/toggle', toggleComplianceItem);
 router.patch(
   '/:id/transition',

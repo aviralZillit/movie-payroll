@@ -134,7 +134,8 @@ export const create = asyncHandler(async (req, res) => {
     .populate('unionId', 'code name')
     .populate('departmentId', 'code name')
     .populate('designationId', 'code name')
-    .populate('budgetTierId', 'code name');
+    .populate('budgetTierId', 'code name')
+    .populate('contractingEntityId', 'name');
 
   res.status(201).json({ success: true, data: populated });
 });
@@ -253,6 +254,7 @@ export const getById = asyncHandler(async (req, res) => {
     .populate('departmentId', 'code name')
     .populate('designationId', 'code name')
     .populate('budgetTierId', 'code name')
+    .populate('contractingEntityId', 'name')
     .populate('rateCardId')
     .populate('statusHistory.changedBy', 'firstName lastName email');
 
@@ -733,9 +735,12 @@ export const toggleComplianceItem = asyncHandler(async (req, res) => {
 
   const item = deal.complianceChecklist[itemIndex];
 
-  // Only PRODUCTION items can be toggled by admins
-  if (item.responsibility !== 'PRODUCTION') {
-    throw new AppError('Only PRODUCTION items can be toggled manually. CREW items auto-complete via Crew Portal.', 403);
+  // Admins can toggle any item. Crew can toggle CREW UPLOADS items on their own deal.
+  const isAdmin = ['super_admin', 'payroll_admin', 'production_accountant'].includes(req.user.role);
+  const isCrewOnOwnDeal = deal.personId.toString() === req.user._id.toString();
+  const canToggle = isAdmin || (isCrewOnOwnDeal && item.responsibility === 'CREW UPLOADS');
+  if (!canToggle) {
+    throw new AppError('You do not have permission to toggle this item.', 403);
   }
 
   item.isChecked = !item.isChecked;
@@ -872,4 +877,29 @@ export const verifyRtwDocument = asyncHandler(async (req, res) => {
 
   await deal.save();
   res.json({ success: true, data: { document: doc, rtwStatus: deal.rightToWork.status } });
+});
+
+/**
+ * POST /api/deal-memos/:id/countersign
+ * Record a counter-signature on the deal memo.
+ * Body: { signatureText, note }
+ */
+export const countersignDealMemo = asyncHandler(async (req, res) => {
+  const { signatureText, note } = req.body;
+  const deal = await DealMemo.findById(req.params.id);
+  if (!deal) throw new AppError('Deal memo not found.', 404);
+
+  if (!signatureText) throw new AppError('Signature text is required.', 400);
+
+  // Record counter-signature
+  if (!deal.counterSignatures) deal.counterSignatures = [];
+  deal.counterSignatures.push({
+    signedBy: req.user._id,
+    signatureText,
+    signedAt: new Date(),
+    note: note || '',
+  });
+
+  await deal.save();
+  res.json({ success: true, data: deal, message: 'Counter-signature recorded.' });
 });

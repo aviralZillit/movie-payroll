@@ -35,7 +35,7 @@ const v2AllowanceSchema = new mongoose.Schema({
   key: String,                       // e.g. 'kit', 'car', 'phone', 'custom_1'
   name: { type: String, required: true },
   amount: { type: Number, required: true },
-  taxTreatment: { type: String, enum: ['non-taxable', 'taxable-paye', 'partly-exempt'], default: 'non-taxable' },
+  taxTreatment: { type: String, enum: ['non-taxable', 'taxable-paye', 'partly-exempt', 'taxable', 'reimbursement'], default: 'non-taxable' },
   nominalCode: { type: String, default: '2340' },
   isVisible: { type: Boolean, default: true }, // visible to crew on timecard
   caps: { type: allowanceCapSchema, default: () => ({}) },
@@ -286,9 +286,11 @@ const dealMemoSchema = new mongoose.Schema(
     sixthDayMultiplier: { type: Number, default: 1.5 },
     seventhDayMultiplier: { type: Number, default: 2.0 },
     nightPremiumPct: { type: Number, default: 0.5 },
+    nightPremiumEnabled: { type: Boolean, default: true },
     nightStartTime: { type: String, default: '23:00' },
 
     // Meal & turnaround (existing)
+    mealPenaltyEnabled: { type: Boolean, default: true },
     mealPenaltyRate: Number,
     mealPenaltyIncrementMin: { type: Number, default: 15 },
     mealPenaltyAfterHrs: { type: Number, default: 6 },
@@ -296,6 +298,26 @@ const dealMemoSchema = new mongoose.Schema(
     mealPaidStatus: { type: String, enum: ['paid', 'unpaid', 'non-deductible', null], default: null },
     turnaroundMinHrs: { type: Number, default: 11 },
     turnaroundPenaltyMultiplier: { type: Number, default: 1.5 },
+
+    // Below Turnaround Allowance (BTA)
+    btaEnabled: { type: Boolean, default: false },
+    btaRate: { type: Number, default: 0 },           // £/hr for BTA (e.g., £45 UK)
+
+    // Night premium flat amount (alternative to percentage)
+    nightPremiumFlat: { type: Number, default: 0 },   // e.g., £20 UK flat
+
+    // Contracted hours per day type (from territory defaults)
+    contractedHoursPerDayType: {
+      SWD: { type: Number, default: 11 },
+      CWD: { type: Number, default: 10 },
+      SCWD: { type: Number, default: 10 },
+      default: { type: Number, default: 11 },
+    },
+
+    // Camera dept flag (affects OT rate: 2T vs 1.5T)
+    isCameraDept: { type: Boolean, default: false },
+    // OT multiplier (1.5 for non-camera, 2.0 for camera)
+    otMultiplier: { type: Number, default: 1.5 },
 
     // Working day type
     workingDayType: { type: String, enum: ['SWD', 'CWD', 'SCWD', null], default: null },
@@ -371,6 +393,36 @@ const dealMemoSchema = new mongoose.Schema(
     signedDocumentUrl: String,
     notes: String,
     statusHistory: [statusHistorySchema],
+
+    // Per-deal mandatory fields for crew member to fill
+    crewRequiredFields: [{
+      fieldKey: String,
+      label: String,
+      isCompleted: { type: Boolean, default: false },
+      completedAt: Date,
+    }],
+
+    // Counter-signatures
+    counterSignatures: [{
+      signedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      signatureText: String,
+      signedAt: Date,
+      note: String,
+    }],
+
+    // Bonuses
+    bonuses: [{
+      description: String,
+      amount: Number,
+      splitPercentages: [{
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        personName: String,
+        percentage: Number,
+      }],
+      approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      approvedAt: Date,
+    }],
+
     schemaVersion: { type: Number, default: 1 },
   },
   { timestamps: true }

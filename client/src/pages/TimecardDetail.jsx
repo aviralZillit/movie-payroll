@@ -390,6 +390,8 @@ export default function TimecardDetail() {
             disabled={!isEditable}
             standardDayHrs={timecard.dealMemoId?.standardWorkDayHrs}
             dayTypes={timecard.productionId?.dayTypes}
+            dealMemo={timecard.dealMemoId || {}}
+            dealType={timecard.dealMemoId?.dealType}
           />
         </div>
 

@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zillit Coda — Camera Dept Timecards · Completer View</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c0d11;--bg-s:#111318;--bg-e:#171a22;--bg-h:#1d2130;
+  --b:#252a3a;--bm:#2e3550;--bl:#3c4565;
+  --gold:#e8b84b;--gold-g:rgba(232,184,75,.10);--gold-gg:rgba(232,184,75,.05);
+  --red:#ef4444;--red-g:rgba(239,68,68,.10);
+  --green:#22c55e;--gr-g:rgba(34,197,94,.10);
+  --orange:#f97316;--or-g:rgba(249,115,22,.10);
+  --blue:#3b82f6;--bl-g:rgba(59,130,246,.10);
+  --amber:#f59e0b;--am-g:rgba(245,158,11,.10);
+  --teal:#14b8a6;--tl-g:rgba(20,184,166,.10);
+  --slate:#94a3b8;
+  --t1:#e8eaf2;--t2:#7c82a0;--t3:#454c68;
+  /* IATSE red accent */
+  --iatse:#c41230;--iatse-g:rgba(196,18,48,.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--t1);font-family:'DM Sans',sans-serif;font-size:12px;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── TOPBAR ── */
+.topbar{height:50px;background:var(--bg-s);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0;}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:var(--gold);}
+.tb-divider{width:1px;height:22px;background:var(--b);}
+.tb-prod{font-size:11.5px;color:var(--t2);}
+.tb-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:4px;font-family:'Syne',sans-serif;font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;}
+.badge-iatse{background:var(--iatse-g);border:1px solid rgba(196,18,48,.3);color:#ff6b6b;}
+.badge-role{background:var(--gold-g);border:1px solid rgba(232,184,75,.25);color:var(--gold);}
+.badge-lock{background:var(--bg-h);border:1px solid var(--b);color:var(--t3);}
+.tb-r{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.week-chip{background:var(--gold-g);border:1px solid rgba(232,184,75,.2);color:var(--gold);border-radius:4px;padding:3px 9px;font-size:10px;font-family:'DM Mono',monospace;}
+.me-chip{display:flex;align-items:center;gap:7px;background:var(--bg-e);border:1px solid var(--b);border-radius:20px;padding:3px 11px 3px 4px;}
+.me-av{width:24px;height:24px;border-radius:50%;background:var(--gold-g);border:1px solid rgba(232,184,75,.3);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--gold);}
+.me-name{font-size:11px;font-weight:500;}
+.me-role{font-size:9.5px;color:var(--t3);}
+
+/* ── RATE PRIVACY BANNER ── */
+.privacy-banner{background:linear-gradient(90deg,rgba(196,18,48,.12) 0%,rgba(17,19,24,.0) 100%);border-bottom:1px solid rgba(196,18,48,.2);padding:6px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.pb-icon{font-size:14px;}
+.pb-text{font-size:10.5px;color:var(--t2);line-height:1.4;}
+.pb-text strong{color:var(--t1);}
+.pb-own{margin-left:auto;display:flex;align-items:center;gap:6px;background:var(--gold-g);border:1px solid rgba(232,184,75,.2);border-radius:5px;padding:4px 10px;font-size:10.5px;color:var(--gold);}
+
+/* ── LAYOUT ── */
+.layout{display:flex;flex:1;overflow:hidden;}
+
+/* ── CREW PANEL (left) ── */
+.crew-panel{width:240px;flex-shrink:0;background:var(--bg-s);border-right:1px solid var(--b);display:flex;flex-direction:column;overflow:hidden;}
+.cp-header{padding:12px 12px 8px;border-bottom:1px solid var(--b);flex-shrink:0;}
+.cp-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--t1);letter-spacing:.3px;margin-bottom:2px;}
+.cp-sub{font-size:9.5px;color:var(--t3);}
+.cp-progress{margin-top:8px;}
+.cp-prog-l{display:flex;justify-content:space-between;font-size:9px;color:var(--t3);margin-bottom:3px;}
+.cp-prog-b{height:3px;background:var(--b);border-radius:2px;overflow:hidden;}
+.cp-prog-f{height:100%;background:var(--gold);border-radius:2px;transition:width .3s;}
+.crew-list{flex:1;overflow-y:auto;padding:6px;}
+
+/* Crew card */
+.crew-card{padding:8px 10px;border-radius:6px;cursor:pointer;transition:all .12s;margin-bottom:3px;border:1px solid transparent;position:relative;}
+.crew-card:hover{background:var(--bg-e);border-color:var(--b);}
+.crew-card.active{background:var(--gold-gg);border-color:rgba(232,184,75,.25);}
+.crew-card.is-me{border-color:rgba(232,184,75,.15);}
+.cc-top{display:flex;align-items:center;gap:7px;margin-bottom:4px;}
+.cc-av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;}
+.cc-name{font-size:11.5px;font-weight:600;line-height:1.2;}
+.cc-role{font-size:9.5px;color:var(--t3);line-height:1.2;}
+.me-tag{position:absolute;top:6px;right:8px;font-size:7.5px;font-family:'Syne',sans-serif;font-weight:700;color:var(--gold);letter-spacing:.3px;background:var(--gold-g);border:1px solid rgba(232,184,75,.2);border-radius:3px;padding:1px 4px;}
+
+/* Week status dots */
+.cc-week{display:flex;gap:3px;margin-top:5px;}
+.wd{width:14px;height:5px;border-radius:2px;transition:all .15s;}
+.wd-appr{background:var(--green);}
+.wd-prog{background:var(--amber);}
+.wd-pend{background:var(--b);}
+.wd-off{background:var(--b);opacity:.3;}
+.wd-flag{background:var(--red);}
+.wd-label{font-size:8.5px;color:var(--t3);margin-left:auto;font-family:'DM Mono',monospace;}
+
+/* Batch submit footer */
+.cp-footer{padding:10px 12px;border-top:1px solid var(--b);flex-shrink:0;}
+.submit-btn{width:100%;padding:8px;background:var(--gold);color:#0c0d11;font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.4px;border:none;border-radius:5px;cursor:pointer;transition:opacity .12s;}
+.submit-btn:hover{opacity:.87;}
+.submit-btn:disabled{opacity:.4;cursor:not-allowed;}
+.submit-note{font-size:9px;color:var(--t3);text-align:center;margin-top:5px;}
+
+/* ── MAIN TIMECARD AREA ── */
+.tc-main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+/* Crew header strip */
+.tc-crew-hdr{background:var(--bg-e);border-bottom:1px solid var(--b);padding:10px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.tch-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+.tch-name{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;}
+.tch-meta{font-size:10.5px;color:var(--t2);}
+.tch-r{margin-left:auto;display:flex;align-items:center;gap:8px;}
+
+/* Rate card — only shown for self */
+.rate-card{background:var(--gold-g);border:1px solid rgba(232,184,75,.25);border-radius:6px;padding:7px 12px;text-align:right;}
+.rc-lbl{font-size:8.5px;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;font-family:'Syne',sans-serif;}
+.rc-rate{font-family:'DM Mono',monospace;font-size:16px;font-weight:500;color:var(--gold);line-height:1;}
+.rc-tiers{font-size:9px;color:var(--t2);margin-top:1px;}
+
+/* Rate locked card — shown for others */
+.rate-locked{background:var(--bg-h);border:1px solid var(--b);border-radius:6px;padding:7px 12px;text-align:right;opacity:.6;}
+.rl-icon{font-size:14px;margin-bottom:1px;}
+.rl-text{font-size:9px;color:var(--t3);}
+
+/* Summary strip */
+.wk-summary{background:var(--bg-s);border-bottom:1px solid var(--b);padding:8px 16px;display:flex;gap:10px;flex-shrink:0;overflow-x:auto;}
+.ws-card{background:var(--bg-e);border:1px solid var(--b);border-radius:5px;padding:6px 10px;flex-shrink:0;min-width:90px;}
+.wsc-lbl{font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;font-family:'Syne',sans-serif;font-weight:600;margin-bottom:2px;}
+.wsc-val{font-family:'DM Mono',monospace;font-size:15px;font-weight:500;line-height:1;}
+.wsc-sub{font-size:8.5px;color:var(--t3);margin-top:1px;}
+
+/* Timecard scroll area */
+.tc-scroll{flex:1;overflow-y:auto;padding:12px 16px;}
+
+/* Day section */
+.day-section{margin-bottom:10px;border:1px solid var(--b);border-radius:8px;overflow:hidden;background:var(--bg-s);}
+.day-section.active-day{border-color:rgba(232,184,75,.3);}
+.day-section.forced-day{border-color:rgba(239,68,68,.35);}
+.day-section.sixth-day{border-color:rgba(245,158,11,.35);}
+.day-section.day-off{opacity:.5;}
+
+.day-hdr{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg-e);border-bottom:1px solid var(--b);cursor:pointer;user-select:none;}
+.day-hdr.active-day-hdr{background:rgba(232,184,75,.06);}
+.day-hdr.forced-hdr{background:rgba(239,68,68,.07);}
+.day-hdr.sixth-hdr{background:rgba(245,158,11,.06);}
+.dh-name{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;width:80px;flex-shrink:0;}
+.dh-date{font-size:10px;color:var(--t3);width:60px;flex-shrink:0;}
+.dh-badge{display:inline-flex;align-items:center;gap:3px;padding:1.5px 7px;border-radius:3px;font-family:'Syne',sans-serif;font-size:8px;font-weight:700;letter-spacing:.3px;}
+.dhb-swd{background:var(--bl-g);color:var(--blue);}
+.dhb-6th{background:var(--am-g);color:var(--amber);}
+.dhb-off{background:var(--bg-h);color:var(--t3);}
+.dh-ta{font-size:9px;flex:1;text-align:center;}
+.ta-ok{color:var(--green);}
+.ta-warn{color:var(--amber);}
+.ta-viol{color:var(--red);font-weight:600;}
+.dh-hrs{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;min-width:100px;text-align:right;}
+.dh-status{min-width:80px;text-align:right;}
+.dh-chevron{color:var(--t3);font-size:10px;margin-left:4px;transition:transform .2s;flex-shrink:0;}
+.dh-chevron.open{transform:rotate(90deg);}
+
+/* Day body — time fields */
+.day-body{padding:10px 12px;}
+
+/* Time grid */
+.time-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:8px;}
+.tg-field{}
+.tg-lbl{font-size:8.5px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;font-family:'Syne',sans-serif;font-weight:600;margin-bottom:3px;white-space:nowrap;}
+.tg-lbl .tg-note{color:var(--t3);font-weight:400;font-family:'DM Sans',sans-serif;text-transform:none;letter-spacing:0;}
+.time-input{width:100%;background:var(--bg-h);border:1px solid var(--b);border-radius:4px;padding:5px 6px;font-family:'DM Mono',monospace;font-size:12px;color:var(--t1);text-align:center;outline:none;transition:all .12s;}
+.time-input:hover{border-color:var(--bm);}
+.time-input:focus{border-color:var(--gold);background:var(--bg-e);box-shadow:0 0 0 2px rgba(232,184,75,.12);}
+.time-input.locked{background:rgba(37,42,58,.4);color:var(--t3);border-color:var(--b);cursor:not-allowed;}
+.time-input.flagged{border-color:rgba(239,68,68,.5);background:rgba(239,68,68,.06);}
+.time-input.warn{border-color:rgba(245,158,11,.5);background:rgba(245,158,11,.05);}
+
+/* Hours breakdown */
+.hrs-breakdown{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg-h);border-radius:4px;margin-bottom:8px;}
+.hrb-item{display:flex;flex-direction:column;align-items:center;flex:1;}
+.hrb-lbl{font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;font-family:'Syne',sans-serif;font-weight:600;margin-bottom:1px;}
+.hrb-val{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;}
+.hrb-val.st{color:var(--t1);}
+.hrb-val.ot{color:var(--amber);}
+.hrb-val.dt{color:var(--red);}
+.hrb-val.total{color:var(--gold);}
+.hrb-sep{width:1px;height:24px;background:var(--b);}
+.hrb-pay{font-family:'DM Mono',monospace;font-size:13px;color:var(--gold);font-weight:500;}
+
+/* Pay hidden card */
+.pay-hidden{display:flex;align-items:center;gap:7px;background:var(--bg-h);border:1px solid var(--b);border-radius:4px;padding:6px 10px;color:var(--t3);font-size:10.5px;}
+
+/* Alerts */
+.alert-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
+.alert-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:4px;font-size:10px;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.2px;}
+.al-forced{background:var(--red-g);border:1px solid rgba(239,68,68,.3);color:var(--red);}
+.al-meal{background:var(--am-g);border:1px solid rgba(245,158,11,.3);color:var(--amber);}
+.al-ndm{background:var(--bl-g);border:1px solid rgba(59,130,246,.2);color:var(--blue);}
+.al-6th{background:var(--am-g);border:1px solid rgba(245,158,11,.3);color:var(--amber);}
+.al-ok{background:var(--gr-g);border:1px solid rgba(34,197,94,.2);color:var(--green);}
+.al-ta{background:var(--am-g);border:1px solid rgba(245,158,11,.3);color:var(--amber);}
+
+/* Signature line */
+.sig-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--b);margin-top:4px;}
+.sig-lbl{font-size:9.5px;color:var(--t3);flex:1;}
+.sig-btn{padding:3px 10px;font-size:9px;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.3px;border-radius:4px;cursor:pointer;border:none;transition:all .12s;}
+.sig-approve{background:var(--gr-g);color:var(--green);border:1px solid rgba(34,197,94,.25);}
+.sig-approve:hover{background:rgba(34,197,94,.18);}
+.sig-approved{background:var(--bg-h);color:var(--t3);border:1px solid var(--b);cursor:default;}
+.sig-save{background:var(--gold-g);color:var(--gold);border:1px solid rgba(232,184,75,.25);}
+.sig-save:hover{background:rgba(232,184,75,.18);}
+
+/* Status pills */
+.sp{display:inline-flex;align-items:center;gap:2px;padding:2px 7px;border-radius:10px;font-family:'Syne',sans-serif;font-size:8.5px;font-weight:700;letter-spacing:.2px;}
+.sp-appr{background:var(--gr-g);color:var(--green);border:1px solid rgba(34,197,94,.2);}
+.sp-prog{background:var(--am-g);color:var(--amber);border:1px solid rgba(245,158,11,.2);}
+.sp-pend{background:var(--bg-h);color:var(--t3);border:1px solid var(--b);}
+.sp-upco{background:var(--bg-h);color:var(--t3);border:1px solid var(--b);opacity:.5;}
+.sp-forc{background:var(--red-g);color:var(--red);border:1px solid rgba(239,68,68,.2);}
+.sp-off{background:var(--bg-h);color:var(--t3);border:1px solid var(--b);}
+
+/* Rule reference tooltip-ish */
+.rule-ref{font-size:8.5px;color:var(--t3);font-family:'DM Mono',monospace;margin-left:4px;}
+
+/* Toast */
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--bg-h);border:1px solid var(--bm);border-radius:7px;padding:8px 16px;font-size:11px;z-index:400;display:none;max-width:400px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.4);}
+#toast.success{border-color:rgba(34,197,94,.3);color:var(--green);}
+#toast.error{border-color:rgba(239,68,68,.3);color:var(--red);}
+
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--b);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">Zillit Coda</div>
+  <div class="tb-divider"></div>
+  <div class="tb-prod">Midnight Meridian · Apex Pictures / Netflix · Atlanta GA</div>
+  <div class="tb-badge badge-iatse">⚡ IATSE Local 479</div>
+  <div class="tb-badge badge-role">📋 Completer View</div>
+  <div class="tb-r">
+    <div class="week-chip">Week 14 · w/c Mon 7 Apr 2026</div>
+    <div class="me-chip">
+      <div class="me-av">SC</div>
+      <div>
+        <div class="me-name">Sarah Chen</div>
+        <div class="me-role">Camera Operator · Completer</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PRIVACY BANNER -->
+<div class="privacy-banner">
+  <div class="pb-icon">🔒</div>
+  <div class="pb-text">
+    <strong>Rate Confidentiality:</strong> You can see times and hours for all camera department crew.
+    Pay rates and earnings are <strong>only visible for your own timecard</strong> per IATSE §32 confidentiality provisions.
+  </div>
+  <div class="pb-own">🟡 Your rate: <strong>$52.00/hr scale</strong> · ST×1.0 · OT×1.5 · DT×2.0</div>
+</div>
+
+<div class="layout">
+
+  <!-- CREW PANEL -->
+  <div class="crew-panel">
+    <div class="cp-header">
+      <div class="cp-title">Camera Department</div>
+      <div class="cp-sub">11 crew · You are completing</div>
+      <div class="cp-progress">
+        <div class="cp-prog-l">
+          <span>Week completion</span>
+          <span id="progressLabel">0 / 11 submitted</span>
+        </div>
+        <div class="cp-prog-b"><div class="cp-prog-f" id="progressFill" style="width:0%"></div></div>
+      </div>
+    </div>
+    <div class="crew-list" id="crewList"></div>
+    <div class="cp-footer">
+      <button class="submit-btn" id="submitAllBtn" onclick="submitAll()">Submit All Completed Cards →</button>
+      <div class="submit-note" id="submitNote">3 of 11 ready to submit</div>
+    </div>
+  </div>
+
+  <!-- MAIN TIMECARD -->
+  <div class="tc-main">
+    <!-- Crew header -->
+    <div class="tc-crew-hdr" id="tcCrewHdr"></div>
+
+    <!-- Week summary -->
+    <div class="wk-summary" id="wkSummary"></div>
+
+    <!-- Timecard scroll -->
+    <div class="tc-scroll" id="tcScroll">
+      <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--t3)">
+        ← Select a crew member to complete their timecard
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+// ── IATSE Basic Agreement 2024 · Local 479 ─────────────────────
+const SCALE = 52.00;
+const OT_RATE = 78.00;    // ×1.5
+const DT_RATE = 104.00;   // ×2.0
+const MIN_CALL = 8;       // 8-hour minimum call
+const MEAL_WINDOW = 360;  // 6 hours in minutes
+const MEAL_PEN_UNIT = 7.50; // per 15 min
+const MIN_TA = 600;       // 10-hour turnaround in minutes
+const NDM_NOTE = 'NDM — hours run through meals per IATSE §8(C)';
+
+// The completer's own crew ID
+const MY_ID = 1; // Sarah Chen
+
+// ── CREW DATA ─────────────────────────────────────────────────
+// Rates only stored for display — never shown for non-self
+const CREW = [
+  { id:1, name:'Sarah Chen',      role:'Camera Operator',   initials:'SC', color:'#e8b84b', rate:52.00, isSelf:true },
+  { id:2, name:'Marcus Webb',     role:'DP',                initials:'MW', color:'#60a5fa', rate:74.00, isSelf:false },
+  { id:3, name:'James Whitfield', role:'1st AC',            initials:'JW', color:'#a78bfa', rate:60.00, isSelf:false },
+  { id:4, name:'Priya Patel',     role:'1st AC',            initials:'PP', color:'#34d399', rate:60.00, isSelf:false },
+  { id:5, name:'Tom Richards',    role:'2nd AC',            initials:'TR', color:'#f97316', rate:52.00, isSelf:false },
+  { id:6, name:'Rosa Vasquez',    role:'2nd AC',            initials:'RV', color:'#f472b6', rate:52.00, isSelf:false },
+  { id:7, name:'Owen Franklin',   role:'DIT',               initials:'OF', color:'#14b8a6', rate:58.00, isSelf:false },
+  { id:8, name:'Nina Torres',     role:'Camera Loader',     initials:'NT', color:'#6366f1', rate:48.00, isSelf:false },
+  { id:9, name:'Lee Park',        role:'Steadicam Op',      initials:'LP', color:'#ec4899', rate:65.00, isSelf:false },
+  { id:10,name:'Sam Walsh',       role:'Camera PA',         initials:'SW', color:'#22c55e', rate:34.00, isSelf:false },
+  { id:11,name:'Alex Nolan',      role:'Video Assist',      initials:'AN', color:'#f59e0b', rate:45.00, isSelf:false },
+];
+
+const DAYS = [
+  { label:'MONDAY',    date:'Apr 7',  isSixth:false },
+  { label:'TUESDAY',   date:'Apr 8',  isSixth:false },
+  { label:'WEDNESDAY', date:'Apr 9',  isSixth:false, isToday:true },
+  { label:'THURSDAY',  date:'Apr 10', isSixth:false },
+  { label:'FRIDAY',    date:'Apr 11', isSixth:false },
+  { label:'SATURDAY',  date:'Apr 12', isSixth:true },
+];
+
+// Pre-populated timecard data per crew per day
+// Fields: crewCall, setCall, m1Out, m1In, m2Out, m2In, wrap, approved, dayOff
+function makeDay(cc, sc, m1o, m1i, m2o, m2i, wr, approved=false, dayOff=false){
+  return {crewCall:cc, setCall:sc, m1Out:m1o, m1In:m1i, m2Out:m2o, m2In:m2i, wrap:wr, approved, dayOff};
+}
+
+// Generate a timecard state per crew member
+const STATE = {};
+CREW.forEach(c => {
+  STATE[c.id] = {
+    collapsed: [false, false, false, false, false, true], // day collapsed state
+    days: [
+      // MON - all approved, clean
+      makeDay('06:30','07:00','12:30','13:00','','','20:30', true),
+      // TUE - approved, meal penalty for some
+      makeDay('07:00','07:30','14:00','14:30','','','22:00', c.id <= 4),
+      // WED - today, in progress
+      makeDay('06:30','07:00','12:00','12:30','','','18:45', false),
+      // THU - upcoming, preset
+      makeDay('07:00','07:30','','','','','', false),
+      // FRI - upcoming, blank
+      makeDay('','','','','','','', false),
+      // SAT - 6th day, blank
+      makeDay('','','','','','','', false),
+    ],
+    submitted: c.id <= 3,
+  };
+  // Special: forced call on Wed for crew 6 (Rosa)
+  if(c.id === 6){
+    STATE[c.id].days[2].crewCall = '06:30';
+    STATE[c.id].days[2].setCall  = '07:00';
+    // Tuesday wrapped at 23:30, Wednesday call is 06:30 = only 7h turnaround
+    STATE[c.id].days[1].wrap = '23:30';
+  }
+  // Late meal on Tuesday for crew 7 (Owen)
+  if(c.id === 7){
+    STATE[c.id].days[1].m1Out = '14:30'; // 7.5h after 07:00 call
+    STATE[c.id].days[1].approved = true;
+  }
+});
+
+let currentCrewId = null;
+
+// ── TIME UTILITIES ────────────────────────────────────────────
+function parseTime(str){
+  if(!str || !str.includes(':')) return null;
+  const [h,m] = str.split(':').map(Number);
+  if(isNaN(h)||isNaN(m)) return null;
+  return h*60+m;
+}
+function fmtTime(mins){
+  if(mins==null) return '';
+  const m=((mins%1440)+1440)%1440;
+  return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+}
+function fmtH(mins){
+  if(!mins||mins<=0) return '—';
+  const h=Math.floor(mins/60), m=mins%60;
+  return m ? `${h}h${String(m).padStart(2,'0')}m` : `${h}h`;
+}
+function fmtP(v){
+  if(!v||v===0) return '—';
+  return '$'+v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+}
+
+// ── IATSE CALCULATION ─────────────────────────────────────────
+function calcDay(day, isSixth, rate){
+  const cc  = parseTime(day.crewCall);
+  const sc  = parseTime(day.setCall);
+  const wr  = parseTime(day.wrap);
+  const m1o = parseTime(day.m1Out);
+  const m1i = parseTime(day.m1In);
+
+  if(day.dayOff) return null;
+  if(cc==null || wr==null) return null;
+
+  // NDM: hours run through meal breaks (no deductions)
+  let totalMins = wr - cc;
+  if(totalMins < 0) totalMins += 1440; // overnight
+
+  // Apply minimum call guarantee
+  const workedMins = Math.max(totalMins, MIN_CALL * 60);
+
+  // OT tiers (IATSE §3)
+  let st, ot, dt;
+  if(!isSixth){
+    st = Math.min(workedMins, 480);       // 0–8h
+    ot = Math.max(0, Math.min(workedMins-480, 240)); // 8–12h
+    dt = Math.max(0, workedMins - 720);   // 12h+
+  } else {
+    // 6th day: hours 1-8 at 1.5×, hours 9+ at 2.0×
+    st = 0;
+    ot = Math.min(workedMins, 480);       // hrs 1-8 at ×1.5
+    dt = Math.max(0, workedMins - 480);   // hrs 9+ at ×2.0
+  }
+
+  // Meal penalty (§8): first meal must be called within 6h of crew call
+  let mealPenaltyMins = 0;
+  let mealPenaltyAmt = 0;
+  let mealStatus = 'ok';
+  let mealWindowClose = cc + MEAL_WINDOW;
+
+  if(m1o != null){
+    if(m1o > mealWindowClose){
+      const overage = m1o - mealWindowClose;
+      const increments = Math.ceil(overage / 15);
+      mealPenaltyMins = overage;
+      mealPenaltyAmt = increments * MEAL_PEN_UNIT;
+      mealStatus = 'late';
+    }
+  } else if(totalMins > MEAL_WINDOW){
+    // No meal called within 6h
+    const overage = totalMins - MEAL_WINDOW;
+    const increments = Math.ceil(overage / 15);
+    mealPenaltyMins = overage;
+    mealPenaltyAmt = increments * MEAL_PEN_UNIT;
+    mealStatus = 'none';
+  }
+
+  // Pay (only meaningful for self)
+  const stPay  = isSixth ? 0 : (st/60)*rate;
+  const otPay  = (ot/60)*(isSixth ? DT_RATE : OT_RATE); // on 6th, ot is actually 1.5×
+  const dtPay  = (dt/60)*DT_RATE;
+  const mpPay  = mealPenaltyAmt;
+  const dayPay = stPay + otPay + dtPay + mpPay;
+
+  return {
+    totalMins:workedMins, st, ot, dt, isSixth,
+    stPay, otPay, dtPay, mpPay, dayPay,
+    mealStatus, mealPenaltyMins, mealPenaltyAmt,
+    overnight: totalMins < 0 || (wr < cc),
+  };
+}
+
+function getTurnaround(dayA_wrap, dayB_call){
+  const w = parseTime(dayA_wrap);
+  const c = parseTime(dayB_call);
+  if(w==null || c==null) return null;
+  let ta = c - w;
+  if(ta < 0) ta += 1440;
+  return ta; // minutes
+}
+
+// ── CREW LIST RENDER ──────────────────────────────────────────
+function renderCrewList(){
+  const list = document.getElementById('crewList');
+  let submitted = 0;
+
+  list.innerHTML = CREW.map(c => {
+    const st = STATE[c.id];
+    if(st.submitted) submitted++;
+
+    // Week dots: one per day
+    const dots = DAYS.map((d,i) => {
+      const day = st.days[i];
+      if(day.dayOff) return `<div class="wd wd-off" title="${d.label} — Off"></div>`;
+      if(day.approved) return `<div class="wd wd-appr" title="${d.label} — Approved"></div>`;
+      if(d.isToday && day.crewCall) return `<div class="wd wd-prog" title="${d.label} — In Progress"></div>`;
+      if(day.crewCall) return `<div class="wd wd-pend" style="background:var(--t3)" title="${d.label} — Entered"></div>`;
+      return `<div class="wd wd-pend" title="${d.label} — Pending"></div>`;
+    }).join('');
+
+    const readyCount = st.days.filter((d,i)=>!d.dayOff && d.crewCall && d.wrap && !d.approved).length;
+    const submitTag = st.submitted
+      ? '<span style="font-size:8px;color:var(--green);font-family:\'Syne\',sans-serif;font-weight:700">✓ Submitted</span>'
+      : readyCount > 0
+        ? `<span style="font-size:8px;color:var(--amber);font-family:'Syne',sans-serif;font-weight:700">${readyCount} ready</span>`
+        : '';
+
+    return `<div class="crew-card${c.isSelf?' is-me':''}${currentCrewId===c.id?' active':''}" onclick="selectCrew(${c.id})">
+      ${c.isSelf?'<div class="me-tag">YOU</div>':''}
+      <div class="cc-top">
+        <div class="cc-av" style="background:${c.color}20;color:${c.color};border:1px solid ${c.color}40">${c.initials}</div>
+        <div>
+          <div class="cc-name">${c.name}</div>
+          <div class="cc-role">${c.role}</div>
+        </div>
+      </div>
+      <div class="cc-week">${dots}${submitTag}</div>
+    </div>`;
+  }).join('');
+
+  // Progress
+  const pct = Math.round(submitted/CREW.length*100);
+  document.getElementById('progressFill').style.width = pct+'%';
+  document.getElementById('progressLabel').textContent = `${submitted} / ${CREW.length} submitted`;
+
+  const readyAll = CREW.filter(c=>!STATE[c.id].submitted && STATE[c.id].days.some((d,i)=>!d.dayOff&&d.crewCall&&d.wrap&&!d.approved)).length;
+  document.getElementById('submitNote').textContent = `${readyAll} crew ready to submit`;
+}
+
+// ── CREW HEADER ───────────────────────────────────────────────
+function renderCrewHeader(crew){
+  const isSelf = crew.isSelf;
+  const hdr = document.getElementById('tcCrewHdr');
+  hdr.innerHTML = `
+    <div class="tch-av" style="background:${crew.color}20;color:${crew.color};border:1px solid ${crew.color}40">${crew.initials}</div>
+    <div>
+      <div class="tch-name">${crew.name}${crew.isSelf?' <span style="font-size:10px;color:var(--gold);font-family:\'DM Sans\',sans-serif;font-weight:400">(you)</span>':''}</div>
+      <div class="tch-meta">${crew.role} · Camera Department · Midnight Meridian · IATSE Local 479</div>
+    </div>
+    <div class="tch-r">
+      ${isSelf ? `
+        <div class="rate-card">
+          <div class="rc-lbl">Your Scale Rate</div>
+          <div class="rc-rate">$${crew.rate.toFixed(2)}<span style="font-size:11px;color:var(--t2)">/hr</span></div>
+          <div class="rc-tiers">ST $${SCALE} · OT $${OT_RATE} · DT $${DT_RATE}</div>
+        </div>` : `
+        <div class="rate-locked">
+          <div class="rl-icon">🔒</div>
+          <div class="rl-text">Rate confidential<br>§32 IATSE Basic</div>
+        </div>`}
+      <button class="sig-btn sig-save" onclick="saveAll()">💾 Save Draft</button>
+    </div>`;
+}
+
+// ── WEEK SUMMARY ──────────────────────────────────────────────
+function renderWeekSummary(crew){
+  const isSelf = crew.isSelf;
+  const rate = crew.rate;
+  const days = STATE[crew.id].days;
+
+  let totalST=0, totalOT=0, totalDT=0, totalMins=0;
+  let totalPay=0, totalMealPen=0;
+  let daysWorked=0, mealFlags=0;
+
+  days.forEach((d,i)=>{
+    const calc = calcDay(d, DAYS[i].isSixth, rate);
+    if(!calc) return;
+    totalST += calc.st; totalOT += calc.ot; totalDT += calc.dt;
+    totalMins += calc.totalMins;
+    totalPay += calc.dayPay; totalMealPen += calc.mealPenaltyAmt;
+    daysWorked++; if(calc.mealStatus !== 'ok') mealFlags++;
+  });
+
+  const summary = document.getElementById('wkSummary');
+  summary.innerHTML = `
+    <div class="ws-card">
+      <div class="wsc-lbl">Days Worked</div>
+      <div class="wsc-val" style="color:var(--t1)">${daysWorked}</div>
+      <div class="wsc-sub">of 6 days</div>
+    </div>
+    <div class="ws-card">
+      <div class="wsc-lbl">ST Hours</div>
+      <div class="wsc-val" style="color:var(--t1)">${fmtH(totalST)}</div>
+      <div class="wsc-sub">×1.0 base</div>
+    </div>
+    <div class="ws-card">
+      <div class="wsc-lbl">OT Hours</div>
+      <div class="wsc-val" style="color:var(--amber)">${fmtH(totalOT)}</div>
+      <div class="wsc-sub">×1.5 hrs 9–12</div>
+    </div>
+    <div class="ws-card">
+      <div class="wsc-lbl">DT Hours</div>
+      <div class="wsc-val" style="color:var(--red)">${fmtH(totalDT)}</div>
+      <div class="wsc-sub">×2.0 hrs 13+</div>
+    </div>
+    <div class="ws-card">
+      <div class="wsc-lbl">Meal Flags</div>
+      <div class="wsc-val" style="color:${mealFlags>0?'var(--red)':'var(--green)'}">${mealFlags||'0'}</div>
+      <div class="wsc-sub">${mealFlags>0?'penalties apply':'clean'}</div>
+    </div>
+    ${isSelf ? `
+    <div class="ws-card" style="background:var(--gold-gg);border-color:rgba(232,184,75,.2)">
+      <div class="wsc-lbl">Meal Penalties</div>
+      <div class="wsc-val" style="color:var(--amber)">${totalMealPen>0?fmtP(totalMealPen):'$0'}</div>
+      <div class="wsc-sub">§8 IATSE</div>
+    </div>
+    <div class="ws-card" style="background:var(--gold-gg);border-color:rgba(232,184,75,.2)">
+      <div class="wsc-lbl">Est. Week Gross</div>
+      <div class="wsc-val" style="color:var(--gold)">${fmtP(totalPay)}</div>
+      <div class="wsc-sub">excl. vacation</div>
+    </div>` : `
+    <div class="ws-card" style="opacity:.5">
+      <div class="wsc-lbl">Week Pay</div>
+      <div class="wsc-val" style="color:var(--t3);font-size:11px">🔒 Hidden</div>
+      <div class="wsc-sub">§32 confidential</div>
+    </div>`}`;
+}
+
+// ── TIMECARD RENDER ───────────────────────────────────────────
+function renderTimecard(crew){
+  const isSelf = crew.isSelf;
+  const rate = crew.rate;
+  const st = STATE[crew.id];
+  const scroll = document.getElementById('tcScroll');
+
+  let html = '';
+
+  DAYS.forEach((dayDef, di) => {
+    const day = st.days[di];
+    const isSixth = dayDef.isSixth;
+    const isToday = dayDef.isToday;
+    const isCollapsed = st.collapsed[di];
+    const isOff = day.dayOff;
+
+    const calc = calcDay(day, isSixth, rate);
+
+    // Turnaround from previous day
+    let taHtml = '';
+    let taClass = '';
+    if(di > 0){
+      const prevDay = st.days[di-1];
+      if(!prevDay.dayOff && prevDay.wrap && day.crewCall){
+        const ta = getTurnaround(prevDay.wrap, day.crewCall);
+        if(ta !== null){
+          const taForced = ta < MIN_TA;
+          const taWarn = ta < MIN_TA + 60;
+          const taHrs = fmtH(ta);
+          if(taForced){
+            taHtml = `<span class="ta-viol">⚡ FORCED CALL — ${taHrs} TA (min 10h) · DT from last wrap</span>`;
+            taClass = 'ta-viol';
+          } else if(taWarn){
+            taHtml = `<span class="ta-warn">⚠ ${taHrs} turnaround</span>`;
+          } else {
+            taHtml = `<span class="ta-ok">✓ ${taHrs} TA</span>`;
+          }
+        }
+      }
+    }
+
+    // Hours display for header
+    let hrsText = '—';
+    if(calc) {
+      const parts = [];
+      if(!isSixth && calc.st>0) parts.push(`${fmtH(calc.st)} ST`);
+      if(calc.ot>0) parts.push(`<span style="color:var(--amber)">${fmtH(calc.ot)} ${isSixth?'×1.5':'OT'}</span>`);
+      if(calc.dt>0) parts.push(`<span style="color:var(--red)">${fmtH(calc.dt)} ${isSixth?'×2.0':'DT'}</span>`);
+      hrsText = parts.join(' · ');
+    }
+
+    // Day status
+    let dayStatus = 'upcoming';
+    if(isOff) dayStatus = 'off';
+    else if(day.approved) dayStatus = 'approved';
+    else if(isToday) dayStatus = 'in-progress';
+    else if(di < 2 && day.crewCall) dayStatus = 'pending';
+
+    const spHtml_map = {
+      approved:`<span class="sp sp-appr">✓ Approved</span>`,
+      'in-progress':`<span class="sp sp-prog">● In Progress</span>`,
+      pending:`<span class="sp sp-pend">Entered</span>`,
+      upcoming:`<span class="sp sp-upco">Upcoming</span>`,
+      off:`<span class="sp sp-off">Off</span>`,
+    };
+
+    // Day section classes
+    const sectionCls = [
+      'day-section',
+      isToday ? 'active-day' : '',
+      isSixth ? 'sixth-day' : '',
+      isOff ? 'day-off' : '',
+      (taClass === 'ta-viol' && !isOff) ? 'forced-day' : '',
+    ].filter(Boolean).join(' ');
+
+    const hdrCls = [
+      'day-hdr',
+      isToday ? 'active-day-hdr' : '',
+      isSixth ? 'sixth-hdr' : '',
+      (taClass === 'ta-viol' && !isOff) ? 'forced-hdr' : '',
+    ].filter(Boolean).join(' ');
+
+    // Inputs — locked if approved
+    const locked = day.approved;
+    const lockedAttr = locked ? 'class="time-input locked" disabled' : '';
+    const inp = (field, placeholder, extraClass='') => {
+      const val = day[field] || '';
+      const cls = locked ? 'time-input locked' : `time-input${extraClass?' '+extraClass:''}`;
+      return `<input type="text" class="${cls}" value="${val}" placeholder="${placeholder}"
+        ${locked?'disabled':''} 
+        onchange="updateField(${crew.id},${di},'${field}',this.value)"
+        oninput="liveCalc(${crew.id},${di})">`;
+    };
+
+    // Meal window indicator
+    let mealFlagHtml = '';
+    let mealClass = '';
+    if(calc && calc.mealStatus === 'late'){
+      mealFlagHtml = `
+        <div class="alert-chip al-meal">
+          ⚠ Meal Penalty — ${fmtH(calc.mealPenaltyMins)} past 6h window ·
+          ${Math.ceil(calc.mealPenaltyMins/15)}× $${MEAL_PEN_UNIT.toFixed(2)}
+          ${isSelf ? `= <strong>${fmtP(calc.mealPenaltyAmt)}</strong>` : '(applies)'}
+          <span class="rule-ref">§8(B)</span>
+        </div>`;
+      mealClass = 'warn';
+    } else if(calc && calc.mealStatus === 'none'){
+      mealFlagHtml = `<div class="alert-chip al-meal">⚠ No meal called within 6h window <span class="rule-ref">§8(A)</span></div>`;
+    }
+
+    // NDM note
+    const ndmHtml = (calc && calc.totalMins > 0)
+      ? `<div class="alert-chip al-ndm">ℹ NDM — Hours run continuously through meal breaks <span class="rule-ref">§8(C)</span></div>`
+      : '';
+
+    // 6th day
+    const sixthHtml = isSixth
+      ? `<div class="alert-chip al-6th">★ 6th Day — Hrs 1–8 × $${OT_RATE} · Hrs 9+ × $${DT_RATE} <span class="rule-ref">§3(B)(2)</span></div>`
+      : '';
+
+    // Forced call
+    const forcedHtml = (taClass === 'ta-viol' && !isOff)
+      ? `<div class="alert-chip al-forced">⚡ Forced Call — DT from last wrap to this call <span class="rule-ref">§15(B)</span></div>`
+      : '';
+
+    // Hours breakdown section
+    let hrsBreakdownHtml = '';
+    if(calc){
+      hrsBreakdownHtml = `
+        <div class="hrs-breakdown">
+          ${!isSixth ? `<div class="hrb-item"><div class="hrb-lbl">ST (hrs 1–8)</div><div class="hrb-val st">${fmtH(calc.st)}</div></div>
+          <div class="hrb-sep"></div>` : ''}
+          <div class="hrb-item"><div class="hrb-lbl">${isSixth?'Hrs 1–8 (×1.5)':'OT (hrs 9–12)'}</div><div class="hrb-val ot">${calc.ot>0?fmtH(calc.ot):'—'}</div></div>
+          <div class="hrb-sep"></div>
+          <div class="hrb-item"><div class="hrb-lbl">${isSixth?'Hrs 9+ (×2.0)':'DT (hrs 13+)'}</div><div class="hrb-val dt">${calc.dt>0?fmtH(calc.dt):'—'}</div></div>
+          <div class="hrb-sep"></div>
+          <div class="hrb-item"><div class="hrb-lbl">Total Hours</div><div class="hrb-val total">${fmtH(calc.totalMins)}</div></div>
+          <div class="hrb-sep"></div>
+          ${isSelf ? `
+            <div class="hrb-item">
+              <div class="hrb-lbl">Day Pay</div>
+              <div class="hrb-pay">${fmtP(calc.dayPay)}</div>
+            </div>` : `
+            <div class="hrb-item">
+              <div class="hrb-lbl">Day Pay</div>
+              <div style="display:flex;align-items:center;gap:4px;color:var(--t3);font-size:10px">🔒 <span style="font-size:9px">Confidential</span></div>
+            </div>`}
+        </div>`;
+    }
+
+    const actionHtml = isOff ? '' : `
+      <div class="sig-row">
+        <div class="sig-lbl">${day.approved ? '✓ Approved — locked for editing' : isToday ? 'Ready to approve this day?' : di < 2 ? 'Review and approve' : 'Enter times when available'}</div>
+        ${day.approved
+          ? `<span class="sig-btn sig-approved">✓ Approved</span>`
+          : (day.crewCall && day.wrap
+            ? `<button class="sig-btn sig-approve" onclick="approveDay(${crew.id},${di})">✓ Approve Day</button>`
+            : `<span style="font-size:9px;color:var(--t3)">Enter times to approve</span>`)}
+        <button class="sig-btn sig-save" onclick="saveDay(${crew.id},${di})">Save</button>
+      </div>`;
+
+    html += `
+      <div class="${sectionCls}" id="day-section-${di}">
+        <div class="${hdrCls}" onclick="toggleDay(${crew.id},${di})">
+          <div class="dh-name">${dayDef.label}</div>
+          <div class="dh-date">${dayDef.date}</div>
+          <div class="dh-badge ${isSixth?'dhb-6th':isOff?'dhb-off':'dhb-swd'}">${isSixth?'6TH':isOff?'OFF':'SWD'}</div>
+          <div class="dh-ta">${taHtml}</div>
+          <div class="dh-hrs">${isOff?'Rest Day':hrsText}</div>
+          <div class="dh-status">${spHtml_map[dayStatus]||''}</div>
+          <div class="dh-chevron${!isCollapsed?' open':''}" id="chev-${di}">▶</div>
+        </div>
+        ${!isCollapsed && !isOff ? `
+        <div class="day-body">
+          <div class="time-grid">
+            <div class="tg-field">
+              <div class="tg-lbl">Crew Call <span class="tg-note">↓ their time</span></div>
+              ${inp('crewCall','07:00')}
+            </div>
+            <div class="tg-field">
+              <div class="tg-lbl">Set Call <span class="tg-note">from AD</span></div>
+              ${inp('setCall','07:30','locked')}
+            </div>
+            <div class="tg-field">
+              <div class="tg-lbl">M1 Out <span class="tg-note">6h window</span></div>
+              ${inp('m1Out','13:00', mealClass)}
+            </div>
+            <div class="tg-field">
+              <div class="tg-lbl">M1 In</div>
+              ${inp('m1In','13:30')}
+            </div>
+            <div class="tg-field">
+              <div class="tg-lbl">M2 Out</div>
+              ${inp('m2Out','—')}
+            </div>
+            <div class="tg-field">
+              <div class="tg-lbl">M2 In</div>
+              ${inp('m2In','—')}
+            </div>
+            <div class="tg-field">
+              <div class="tg-lbl">Wrap <span class="tg-note">release</span></div>
+              ${inp('wrap','21:00')}
+            </div>
+          </div>
+          ${(mealFlagHtml||ndmHtml||sixthHtml||forcedHtml) ? `
+          <div class="alert-row">${forcedHtml}${sixthHtml}${mealFlagHtml}${(calc&&!mealFlagHtml&&!forcedHtml&&!sixthHtml)?`<div class="alert-chip al-ok">✓ Meal window OK</div>`:''}${ndmHtml}</div>` : ''}
+          ${hrsBreakdownHtml}
+          ${actionHtml}
+        </div>` : (!isCollapsed && isOff ? `<div class="day-body" style="color:var(--t3);font-size:11px;padding:10px 12px">Rest day — no call</div>` : '')}
+      </div>`;
+  });
+
+  // Pay summary for self
+  if(isSelf){
+    const days = STATE[crew.id].days;
+    let weekBreakdown = '<div style="margin-top:12px;background:var(--bg-e);border:1px solid var(--b);border-radius:7px;overflow:hidden">';
+    weekBreakdown += `<div style="background:var(--navy,#1a2044);padding:8px 12px;display:flex;align-items:center;gap:8px;background:var(--bg-h)">
+      <span style="font-family:\'Syne\',sans-serif;font-size:10px;font-weight:700;color:var(--gold);letter-spacing:.4px;text-transform:uppercase">Your Week Pay Summary</span>
+      <span style="font-size:9px;color:var(--t3)">Visible to you only · §32 IATSE confidentiality</span>
+    </div>`;
+    let totalPay = 0;
+    DAYS.forEach((dd,di)=>{
+      const d = days[di];
+      const calc = calcDay(d, dd.isSixth, rate);
+      if(!calc) return;
+      totalPay += calc.dayPay;
+      weekBreakdown += `<div style="display:flex;align-items:center;gap:10px;padding:6px 12px;border-bottom:1px solid var(--b);font-size:11px">
+        <span style="font-family:'Syne',sans-serif;font-size:10px;font-weight:700;width:80px">${dd.label}</span>
+        <span style="color:var(--t3);font-size:10px;width:60px">${dd.date}</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--t2)">${fmtH(calc.st)} ST · ${calc.ot>0?fmtH(calc.ot)+' OT':'—'} · ${calc.dt>0?fmtH(calc.dt)+' DT':'—'}</span>
+        ${calc.mealPenaltyAmt>0?`<span style="font-size:9px;color:var(--amber)">+${fmtP(calc.mealPenaltyAmt)} meal pen.</span>`:''}
+        <span style="margin-left:auto;font-family:'DM Mono',monospace;font-weight:500;color:var(--gold)">${fmtP(calc.dayPay)}</span>
+      </div>`;
+    });
+    weekBreakdown += `<div style="display:flex;align-items:center;padding:8px 12px;background:rgba(232,184,75,.05)">
+      <span style="flex:1;font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.3px">EST. WEEKLY GROSS (excl. vacation)</span>
+      <span style="font-family:'DM Mono',monospace;font-size:16px;font-weight:500;color:var(--gold)">${fmtP(totalPay)}</span>
+    </div></div>`;
+    html += weekBreakdown;
+  }
+
+  scroll.innerHTML = html;
+}
+
+// ── INTERACTIONS ──────────────────────────────────────────────
+function selectCrew(id){
+  currentCrewId = id;
+  const crew = CREW.find(c=>c.id===id);
+  renderCrewList();
+  renderCrewHeader(crew);
+  renderWeekSummary(crew);
+  renderTimecard(crew);
+}
+
+function toggleDay(crewId, dayIdx){
+  STATE[crewId].collapsed[dayIdx] = !STATE[crewId].collapsed[dayIdx];
+  const crew = CREW.find(c=>c.id===crewId);
+  renderTimecard(crew);
+}
+
+function updateField(crewId, dayIdx, field, value){
+  STATE[crewId].days[dayIdx][field] = value;
+}
+
+function liveCalc(crewId, dayIdx){
+  // Re-render just the week summary and hours for this crew
+  const crew = CREW.find(c=>c.id===crewId);
+  renderWeekSummary(crew);
+  // Re-render the timecard to update live calculations
+  renderTimecard(crew);
+}
+
+function approveDay(crewId, dayIdx){
+  const d = STATE[crewId].days[dayIdx];
+  if(!d.crewCall || !d.wrap){
+    showToast('Please enter crew call and wrap times first', 'error');
+    return;
+  }
+  d.approved = true;
+  const crew = CREW.find(c=>c.id===crewId);
+  renderCrewList();
+  renderTimecard(crew);
+  showToast(`${crew.name} — ${DAYS[dayIdx].label} approved ✓`, 'success');
+}
+
+function saveDay(crewId, dayIdx){
+  showToast(`${DAYS[dayIdx].label} saved`, 'success');
+}
+
+function saveAll(){
+  showToast('Draft saved — all changes retained', 'success');
+}
+
+function submitAll(){
+  const readyCrew = CREW.filter(c=>{
+    const st = STATE[c.id];
+    return !st.submitted && st.days.some((d,i)=>!d.dayOff&&d.crewCall&&d.wrap&&d.approved);
+  });
+  if(readyCrew.length === 0){
+    showToast('No completed timecards ready to submit', 'error');
+    return;
+  }
+  readyCrew.forEach(c=>{ STATE[c.id].submitted = true; });
+  renderCrewList();
+  if(currentCrewId){
+    const crew = CREW.find(c=>c.id===currentCrewId);
+    renderCrewHeader(crew);
+  }
+  showToast(`${readyCrew.length} timecards submitted to production ✓`, 'success');
+}
+
+function showToast(msg, type=''){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = type;
+  t.style.display = 'block';
+  clearTimeout(t._to);
+  t._to = setTimeout(()=>t.style.display='none', 2800);
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+renderCrewList();
+// Auto-select Sarah Chen (the completer's own card) on load
+selectCrew(MY_ID);
+</script>
+</body>
+</html>

@@ -416,23 +416,13 @@ export default function Step3Rates({
         </CardContent>
       </Card>
 
-      {/* Union-Specific Rates + OT Cap from territory rule */}
-      {(unionFields?.length > 0 || otRateCap) && (
+      {/* OT Cap from territory rule */}
+      {otRateCap && (
         <Card>
           <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Overtime & Union Rules</CardTitle>
+            <CardTitle className="text-lg">Overtime Rules</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
-            {unionFields?.map((field) => (
-              <UnionField
-                key={field.key}
-                field={field}
-                control={control}
-                errors={errors}
-                currencySymbol={currencySymbol}
-                watch={watch}
-              />
-            ))}
             {otRateCap && (
               <div className="space-y-1.5">
                 <Label className="flex items-center gap-1.5">

@@ -18,3 +18,4 @@ export { default as ProductionSettings } from './ProductionSettings.js';
 export { default as NominalCode } from './NominalCode.js';
 export { default as DesignationCodeMap } from './DesignationCodeMap.js';
 export { default as ProductionBudget } from './ProductionBudget.js';
+export { default as DisputeTicket } from './DisputeTicket.js';

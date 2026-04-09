@@ -96,6 +96,10 @@ export const updateProductionSettings = asyncHandler(async (req, res) => {
   if (req.body.dayTypes !== undefined) updates.dayTypes = req.body.dayTypes;
   if (req.body.workingDayType !== undefined) updates.workingDayType = req.body.workingDayType;
   if (req.body.onboardingRequirements !== undefined) updates.onboardingRequirements = req.body.onboardingRequirements;
+  if (req.body.mandatoryDealMemoFields !== undefined) updates.mandatoryDealMemoFields = req.body.mandatoryDealMemoFields;
+  if (req.body.payrollResponsibilities !== undefined) updates.payrollResponsibilities = req.body.payrollResponsibilities;
+  if (req.body.mealPenaltyEnabled !== undefined) updates.mealPenaltyEnabled = req.body.mealPenaltyEnabled;
+  if (req.body.approvalChain !== undefined) updates.approvalChain = req.body.approvalChain;
 
   const settings = await ProductionSettings.findOneAndUpdate(
     { productionId: req.params.id },

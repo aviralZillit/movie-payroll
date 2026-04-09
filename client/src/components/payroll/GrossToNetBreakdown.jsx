@@ -77,6 +77,11 @@ export default function GrossToNetBreakdown({
   pension = 0,
   otherDeductions = 0,
   netPay = 0,
+  // Employer fringes
+  holidayPay = 0,
+  employerNI = 0,
+  employerPension = 0,
+  totalCost = 0,
 }) {
   const steps = useMemo(
     () => [
@@ -105,6 +110,8 @@ export default function GrossToNetBreakdown({
     ],
     [basePay, overtimePay, penalties, allowances, grossPay, tax, employeeNI, pension, otherDeductions, netPay]
   );
+
+  const hasEmployerFringes = holidayPay > 0 || employerNI > 0 || employerPension > 0;
 
   return (
     <Card>
@@ -151,6 +158,36 @@ export default function GrossToNetBreakdown({
             </span>
           </div>
         </div>
+        {/* Employer fringes breakdown */}
+        {hasEmployerFringes && (
+          <div className="mt-6 pt-4 border-t space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Employer On-Costs</p>
+            {holidayPay > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Holiday Pay</span>
+                <span className="font-medium tabular-nums">{formatCurrency(holidayPay)}</span>
+              </div>
+            )}
+            {employerNI > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Employer NI / FICA</span>
+                <span className="font-medium tabular-nums">{formatCurrency(employerNI)}</span>
+              </div>
+            )}
+            {employerPension > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Employer Pension</span>
+                <span className="font-medium tabular-nums">{formatCurrency(employerPension)}</span>
+              </div>
+            )}
+            {totalCost > 0 && (
+              <div className="flex justify-between text-sm font-semibold pt-1 border-t">
+                <span>Total Cost to Production</span>
+                <span className="tabular-nums">{formatCurrency(totalCost)}</span>
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

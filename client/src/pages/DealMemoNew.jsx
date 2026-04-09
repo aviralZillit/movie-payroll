@@ -59,6 +59,7 @@ import {
 import { useContractingEntities } from "@/hooks/useContractingEntities";
 import api from "@/lib/axios";
 import { getUnionConfig } from "@/lib/unionDealMemoConfig";
+import { TERRITORY_DEFAULTS } from "@/lib/cascadingDefaults";
 import useAuthStore from "@/store/authStore";
 import { cn, formatCurrency, currencySymbol } from "@/lib/utils";
 import {
@@ -120,11 +121,15 @@ const DEFAULT_VALUES = {
   rateAmount: null,
   rateType: "",
   hpMode: "excl",
+  overtimeApplicable: true,
+  nightPremiumEnabled: true,
   weeklyRate: 0,
   dailyRate: null,
   hourlyRate: null,
   // Step 4 - Allowances
   allowances: [],
+  // Crew required fields (per-deal)
+  crewRequiredFields: [],
   // Union-specific fields
   unionFields: {},
   // Step 6 - Right to Work
@@ -134,6 +139,7 @@ const DEFAULT_VALUES = {
   // Step 8 - Payroll
   bureauId: "",
   payFrequency: "weekly",
+  payrollResponsibilities: [{ personName: "", responsibility: "", departments: "", notes: "" }],
   productionAccountant: "",
   payrollAdmin: "",
   hodApprover: "",
@@ -176,16 +182,15 @@ const US_FRINGE_DEFAULTS = {
 // Per-step validation: only Step 0 (Entity) blocks navigation.
 // All other steps are optional during navigation — full validation happens at submission.
 const STEP_FIELDS_V2 = [
-  ["productionId", "personId", "unionId", "departmentId", "designationId", "budgetTierId"], // Step 0: must select production + classification
+  ["productionId", "personId", "unionId", "departmentId", "designationId", "budgetTierId"], // Step 0: Entity
   [],  // Step 1: Crew Details
-  [],  // Step 2: Deal Structure (startDate validated at submission)
-  [],  // Step 3: Rates (weeklyRate validated at submission)
+  [],  // Step 2: Deal & Rates
+  [],  // Step 3: Right to Work
   [],  // Step 4: Allowances
   [],  // Step 5: Nominal Coding
-  [],  // Step 6: Right to Work
-  [],  // Step 7: Documents
-  [],  // Step 8: Payroll Start
-  [],  // Step 9: Preview & Issue
+  [],  // Step 6: Documents
+  [],  // Step 7: Payroll Start
+  [],  // Step 8: Preview & Issue
 ];
 
 // Legacy v1 step fields (kept for backward compat if needed)
@@ -438,6 +443,17 @@ export default function DealMemoNew() {
   const { data: budgetTiers, isLoading: tiersLoading } = useBudgetTiers(watchedUnionId, productionCountry);
   const { data: entities, isLoading: entitiesLoading } = useContractingEntities(watchedProductionId);
 
+  // Fetch production settings for mandatory field config
+  const [mandatoryFields, setMandatoryFields] = useState([]);
+  useEffect(() => {
+    if (!watchedProductionId) return;
+    api.get(`/productions/${watchedProductionId}/settings`)
+      .then(({ data: resp }) => {
+        setMandatoryFields(resp.data?.mandatoryDealMemoFields || []);
+      })
+      .catch(() => setMandatoryFields([]));
+  }, [watchedProductionId]);
+
   // Dynamically load union config when union selection changes (so step0 fields appear immediately)
   useEffect(() => {
     if (!watchedUnionId || !unions?.length) return;
@@ -609,6 +625,8 @@ export default function DealMemoNew() {
       rateType: data.rateType || undefined,
       rateAmount: Number(data.rateAmount) || undefined,
       hpMode: data.hpMode || 'excl',
+      overtimeApplicable: data.overtimeApplicable ?? true,
+      nightPremiumEnabled: data.nightPremiumEnabled ?? true,
       separateRates: data.separateRates || false,
       prepRate: data.prepRate || undefined,
       shootRate: data.shootRate || undefined,
@@ -758,19 +776,9 @@ export default function DealMemoNew() {
       setValue("departmentId", "");
       setValue("designationId", "");
       setValue("budgetTierId", "");
-      // Set country-appropriate fringe defaults
-      if (productionCountry === "US") {
-        Object.entries(US_FRINGE_DEFAULTS).forEach(([k, v]) => setValue(k, v));
-        setValue("holidayPayPct", 0);
-        setValue("employerNiPct", 0);
-        setValue("pensionPct", 0);
-        setValue("apprenticeLevyPct", 0);
-      } else {
-        Object.entries(UK_FRINGE_DEFAULTS).forEach(([k, v]) => setValue(k, v));
-        setValue("phPct", 0);
-        setValue("vacationPct", 0);
-        setValue("ficaPct", 0);
-      }
+      // Apply territory defaults via cascading system
+      const defaults = TERRITORY_DEFAULTS[productionCountry] || TERRITORY_DEFAULTS.UK;
+      Object.entries(defaults).forEach(([k, v]) => setValue(k, v, { shouldDirty: false }));
     }
   }, [watchedProductionId, productionCountry, setValue]);
 
@@ -895,6 +903,21 @@ export default function DealMemoNew() {
   };
 
   const onSubmit = handleSubmit((data) => {
+    // Check mandatory fields (from production settings) when issuing
+    if (issueModeRef.current && mandatoryFields.length > 0) {
+      const missing = mandatoryFields
+        .filter(f => f.isRequired)
+        .filter(f => {
+          const val = data[f.fieldKey];
+          return val === undefined || val === null || val === '' || val === 0;
+        });
+      if (missing.length > 0) {
+        toast.error(`Required fields missing: ${missing.map(f => f.label || f.fieldKey).join(', ')}`, { duration: 5000 });
+        issueModeRef.current = false;
+        return;
+      }
+    }
+
     const payload = {
       productionId: data.productionId,
       personId: data.personId,
@@ -948,6 +971,8 @@ export default function DealMemoNew() {
       idleDayRate: data.idleDayRate,
       housingAllowance: data.housingAllowance,
       customAllowances: data.customAllowances?.length ? data.customAllowances : undefined,
+      // V2 allowances array (from Step 4)
+      allowances: data.allowances?.filter(a => a.name && a.amount > 0) || undefined,
       // ── V2 fields ──────────────────────────────────────
       schemaVersion: 2,
       contractingEntityId: data.contractingEntityId || undefined,
@@ -974,13 +999,16 @@ export default function DealMemoNew() {
       rateBasis: data.rateBasis || undefined,
       rateType: data.rateType || undefined,
       hpMode: data.hpMode || 'excl',
+      overtimeApplicable: data.overtimeApplicable ?? true,
+      nightPremiumEnabled: data.nightPremiumEnabled ?? true,
       // Nominal lines
       nominalLines: nominalLines.length > 0 ? nominalLines : undefined,
       taxCreditScheme: data.taxCreditScheme || undefined,
       // Payroll start
       payrollBureau: data.bureauId || undefined,
       payFrequency: data.payFrequency || 'weekly',
-      // Responsibility assignments
+      // Responsibility assignments (table)
+      payrollResponsibilities: data.payrollResponsibilities?.filter(r => r.personName) || undefined,
       productionAccountant: data.productionAccountant || undefined,
       payrollAdmin: data.payrollAdmin || undefined,
       hodApprover: data.hodApprover || undefined,
@@ -989,6 +1017,7 @@ export default function DealMemoNew() {
       signingDocuments: data.documents?.filter(d => d.filename) || undefined,
       // Compliance checklist (auto-generated from territory)
       complianceChecklist: buildComplianceChecklist(productionCountry),
+      crewRequiredFields: data.crewRequiredFields?.filter(f => f.fieldKey) || undefined,
       // Union-specific fields (flexible JSON object)
       unionSpecificFields: data.unionFields || {},
       // Status: "issued" when admin clicks Issue, "draft" otherwise
@@ -1130,10 +1159,8 @@ export default function DealMemoNew() {
       case 1:
         return <Step1CrewDetails {...commonProps} territory={productionCountry} unionFields={unionConfig?.steps?.step1} />;
       case 2:
-        return <Step2DealStructure {...commonProps} currencySymbol={cSymbol} unionFields={unionConfig?.steps?.step2} />;
-      case 3:
         return (
-          <Step3Rates
+          <Step2DealStructure
             {...commonProps}
             currencySymbol={cSymbol}
             territory={productionCountry}
@@ -1141,20 +1168,19 @@ export default function DealMemoNew() {
             designationName={classificationLabels?.designation}
             budgetTierName={classificationLabels?.budgetTier}
             rateSource={rateSource}
-            unionFields={unionConfig?.steps?.step3}
           />
         );
+      case 3:
+        return <Step6Compliance {...commonProps} territory={productionCountry} unionKey={watch("unionKey")} />;
       case 4:
-        return <Step4Allowances {...commonProps} unionFields={unionConfig?.steps?.step4} allowanceSuggestions={unionConfig?.steps?.allowanceSuggestions} />;
+        return <Step4Allowances {...commonProps} allowanceSuggestions={unionConfig?.steps?.allowanceSuggestions} />;
       case 5:
         return <Step5NominalCoding {...commonProps} territory={productionCountry} nominalLines={nominalLines} setValue={setValue} designationName={classificationLabels?.designation} departmentName={classificationLabels?.department} />;
       case 6:
-        return <Step6Compliance {...commonProps} territory={productionCountry} unionKey={watch("unionKey")} />;
-      case 7:
         return <Step7Documents {...commonProps} />;
-      case 8:
+      case 7:
         return <Step8PayrollStart {...commonProps} territory={productionCountry} />;
-      case 9:
+      case 8:
         return (
           <Step9PreviewIssue
             watch={watch}

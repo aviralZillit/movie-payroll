@@ -54,8 +54,8 @@ export const create = asyncHandler(async (req, res) => {
   });
 
   const populated = await Timecard.findById(timecard._id)
-    .populate('productionId', 'name code')
-    .populate('dealMemoId', 'dealNumber personId unionId departmentId designationId')
+    .populate('productionId', 'name code country')
+    .populate('dealMemoId')
     .populate('ownerId', 'firstName lastName email');
 
   res.status(201).json({ success: true, data: populated });
@@ -78,8 +78,8 @@ export const updateEntries = asyncHandler(async (req, res) => {
   await timecard.save();
 
   const populated = await Timecard.findById(timecard._id)
-    .populate('productionId', 'name code')
-    .populate('dealMemoId', 'dealNumber')
+    .populate('productionId', 'name code country')
+    .populate('dealMemoId')
     .populate('ownerId', 'firstName lastName email');
 
   res.json({ success: true, data: populated });
@@ -186,8 +186,8 @@ export const calculate = asyncHandler(async (req, res) => {
   await timecard.save();
 
   const populated = await Timecard.findById(timecard._id)
-    .populate('productionId', 'name code')
-    .populate('dealMemoId', 'dealNumber')
+    .populate('productionId', 'name code country')
+    .populate('dealMemoId')
     .populate('ownerId', 'firstName lastName email');
 
   res.json({ success: true, data: populated });
@@ -216,8 +216,8 @@ export const submit = asyncHandler(async (req, res) => {
   await timecard.save();
 
   const populated = await Timecard.findById(timecard._id)
-    .populate('productionId', 'name code')
-    .populate('dealMemoId', 'dealNumber')
+    .populate('productionId', 'name code country')
+    .populate('dealMemoId')
     .populate('ownerId', 'firstName lastName email');
 
   res.json({ success: true, data: populated });
@@ -300,8 +300,8 @@ export const getAll = asyncHandler(async (req, res) => {
 
   const [timecards, total] = await Promise.all([
     Timecard.find(filter)
-      .populate('productionId', 'name code')
-      .populate('dealMemoId', 'dealNumber personId')
+      .populate('productionId', 'name code country')
+      .populate('dealMemoId')
       .populate('ownerId', 'firstName lastName email')
       .populate('deptApprovedById', 'firstName lastName')
       .populate('payrollApprovedById', 'firstName lastName')
@@ -323,7 +323,7 @@ export const getAll = asyncHandler(async (req, res) => {
  */
 export const getById = asyncHandler(async (req, res) => {
   const timecard = await Timecard.findById(req.params.id)
-    .populate('productionId', 'name code')
+    .populate('productionId', 'name code country')
     .populate('dealMemoId')
     .populate('ownerId', 'firstName lastName email')
     .populate('deptApprovedById', 'firstName lastName')
@@ -342,8 +342,8 @@ export const getMyTimecards = asyncHandler(async (req, res) => {
   if (req.query.status) filter.status = req.query.status;
 
   const timecards = await Timecard.find(filter)
-    .populate('productionId', 'name code')
-    .populate('dealMemoId', 'dealNumber')
+    .populate('productionId', 'name code country')
+    .populate('dealMemoId')
     .sort({ weekStarting: -1 });
 
   res.json({ success: true, data: timecards });
@@ -367,8 +367,8 @@ export const getApprovals = asyncHandler(async (req, res) => {
   }
 
   const timecards = await Timecard.find(filter)
-    .populate('productionId', 'name code')
-    .populate('dealMemoId', 'dealNumber personId')
+    .populate('productionId', 'name code country')
+    .populate('dealMemoId')
     .populate('ownerId', 'firstName lastName email')
     .sort({ submittedAt: -1 });
 

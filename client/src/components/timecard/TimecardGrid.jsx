@@ -4,20 +4,44 @@ import { addDays, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import TimecardDayRow from "./TimecardDayRow";
 
-const COLUMN_HEADERS = [
-  { label: "Day", className: "sticky left-0 z-10 bg-background min-w-[100px]" },
-  { label: "Day Type", className: "min-w-[120px]" },
-  { label: "Call Time", className: "min-w-[80px]" },
-  { label: "Lunch Start", className: "min-w-[80px]" },
-  { label: "Lunch End", className: "min-w-[80px]" },
-  { label: "Wrap Time", className: "min-w-[80px]" },
-  { label: "Total", className: "min-w-[56px] text-right" },
-  { label: "Straight", className: "min-w-[56px] text-right" },
-  { label: "OT 1.5x", className: "min-w-[56px] text-right" },
-  { label: "OT 2x", className: "min-w-[56px] text-right" },
-  { label: "", className: "min-w-[48px]" },
-  { label: "Flags", className: "min-w-[180px]" },
-];
+// Build column headers dynamically based on deal memo settings
+function buildColumnHeaders(dealMemo) {
+  const dm = dealMemo || {};
+  const isFlatDeal = ['flat', 'picture', 'per_film', 'flat_fee'].includes(dm.dealType);
+  const isBuyout = dm.rateType === 'buyout' || dm.rateType === 'all_in';
+  const noOT = !dm.overtimeApplicable || isFlatDeal || isBuyout;
+
+  const cols = [
+    { label: "Day", className: "sticky left-0 z-10 bg-background min-w-[100px]", key: "day" },
+    { label: "Day Type", className: "min-w-[110px]", key: "dayType" },
+    { label: "Crew Call", className: "min-w-[80px]", key: "crewCall" },
+    { label: "Unit Call", className: "min-w-[80px]", key: "unitCall" },
+    { label: "Unit Wrap", className: "min-w-[80px]", key: "unitWrap" },
+    { label: "Release", className: "min-w-[80px]", key: "release" },
+    { label: "Total", className: "min-w-[56px] text-right", key: "total" },
+  ];
+
+  if (!noOT) {
+    cols.push({ label: "Straight", className: "min-w-[56px] text-right", key: "straight" });
+    cols.push({ label: "Pre-Call OT", className: "min-w-[64px] text-right", key: "preCallOT" });
+    cols.push({ label: "Film OT", className: "min-w-[56px] text-right", key: "filmOT" });
+    cols.push({ label: "Wrap OT", className: "min-w-[56px] text-right", key: "wrapOT" });
+    if (dm.btaEnabled) cols.push({ label: "BTA", className: "min-w-[48px] text-right", key: "bta" });
+  }
+
+  if (dm.mealPenaltyEnabled !== false && !isFlatDeal) {
+    cols.push({ label: "Meal", className: "min-w-[48px] text-right", key: "meal" });
+  }
+  if (dm.nightPremiumEnabled !== false && !isFlatDeal) {
+    cols.push({ label: "Night", className: "min-w-[48px] text-right", key: "night" });
+  }
+
+  cols.push({ label: "Day Total", className: "min-w-[72px] text-right", key: "dayTotal" });
+  cols.push({ label: "", className: "min-w-[48px]", key: "indicators" });
+  cols.push({ label: "Flags", className: "min-w-[160px]", key: "flags" });
+
+  return cols;
+}
 
 /**
  * Detects 6th/7th consecutive work days.
@@ -51,7 +75,11 @@ export default function TimecardGrid({
   disabled = false,
   standardDayHrs,
   dayTypes,
+  dealType,
+  dealMemo = {},
 }) {
+  const isFlatDeal = ['flat', 'picture', 'per_film', 'flat_fee'].includes(dealType || dealMemo?.dealType);
+  const headers = useMemo(() => buildColumnHeaders(dealMemo), [dealMemo]);
   // Build 7-day array starting from weekStartDate (Monday)
   const days = useMemo(() => {
     const start = weekStartDate ? parseISO(weekStartDate) : new Date();
@@ -80,11 +108,16 @@ export default function TimecardGrid({
       animate={{ opacity: 1 }}
       className="rounded-lg border border-border bg-card shadow-sm"
     >
+      {isFlatDeal && (
+        <div className="px-4 py-2 border-b bg-amber-50/50 dark:bg-amber-950/20 text-sm text-amber-700 dark:text-amber-400">
+          Flat deal — overtime and day premiums not applicable. Time entries for reporting purposes only.
+        </div>
+      )}
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-b border-border bg-muted/30">
-              {COLUMN_HEADERS.map((col, i) => (
+              {headers.map((col, i) => (
                 <th
                   key={i}
                   className={cn(

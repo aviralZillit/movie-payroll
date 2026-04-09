@@ -29,7 +29,7 @@ function DocumentRow({ index, field, control, errors, remove, onFileUpload }) {
   return (
     <div className={cn(
       "flex items-start gap-3 rounded-lg border p-4",
-      field.isStandard && "bg-muted/20 border-dashed"
+      field.isStandard && "bg-muted/20"
     )}>
       <div className="mt-0.5 shrink-0">
         {field.uploadedFile ? (
@@ -123,23 +123,18 @@ function DocumentRow({ index, field, control, errors, remove, onFileUpload }) {
             )}
           </div>
 
-          {field.isStandard && (
-            <Badge variant="secondary" className="text-[10px]">Standard</Badge>
-          )}
         </div>
       </div>
 
-      {!field.isStandard && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => remove(index)}
-          className="text-muted-foreground hover:text-destructive shrink-0"
-        >
-          <X className="size-4" />
-        </Button>
-      )}
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => remove(index)}
+        className="text-muted-foreground hover:text-destructive shrink-0"
+      >
+        <X className="size-4" />
+      </Button>
     </div>
   );
 }
@@ -180,28 +175,10 @@ export default function Step7Documents({ control, errors, watch, setValue }) {
     <div className="space-y-6">
       <Card>
         <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <FileText className="size-5 text-primary" />
-              Signing Documents
-            </CardTitle>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                append({
-                  filename: "",
-                  description: "",
-                  requiresSignature: true,
-                  isStandard: false,
-                })
-              }
-            >
-              <Plus className="size-4 mr-1" />
-              Add Document
-            </Button>
-          </div>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <FileText className="size-5 text-primary" />
+            Signing Documents
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-start gap-2 rounded-md bg-blue-500/10 border border-blue-500/20 px-3 py-2 mb-4">
@@ -229,6 +206,24 @@ export default function Step7Documents({ control, errors, watch, setValue }) {
               ))}
             </div>
           )}
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mt-4"
+            onClick={() =>
+              append({
+                filename: "",
+                description: "",
+                requiresSignature: true,
+                isStandard: false,
+              })
+            }
+          >
+            <Plus className="size-4 mr-1" />
+            Add Document
+          </Button>
 
           {fields.length > 0 && (
             <>

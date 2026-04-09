@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zillit Coda — Payroll Processing · The Gilded Hour S2</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0e0f12;--bg-s:#14161c;--bg-e:#1a1d27;--bg-h:#21242f;
+  --b:#252836;--bm:#2e3245;--bl:#383d54;
+  --gold:#e8b84b;--gold-g:rgba(232,184,75,0.10);--gold-gg:rgba(232,184,75,0.05);
+  --t1:#eeeef3;--t2:#8b90aa;--t3:#555a72;
+  --green:#4ade80;--green-g:rgba(74,222,128,0.10);
+  --red:#f87171;--red-g:rgba(248,113,113,0.10);
+  --orange:#fb923c;--orange-g:rgba(251,146,60,0.10);
+  --blue:#60a5fa;--blue-g:rgba(96,165,250,0.10);
+  --teal:#2dd4bf;--teal-g:rgba(45,212,191,0.10);
+  --yellow:#fbbf24;--yellow-g:rgba(251,191,36,0.10);
+  --purple:#c084fc;--purple-g:rgba(192,132,252,0.10);
+  --r:5px;--rl:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--t1);font-family:'DM Sans',sans-serif;font-size:12px;line-height:1.5;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── TOP BAR ── */
+.topbar{height:50px;background:var(--bg-s);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0;z-index:100;}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:var(--gold);padding-right:10px;border-right:1px solid var(--b);}
+.topbar-title{font-size:12px;color:var(--t2);}
+.topbar-r{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.week-badge{background:var(--gold-g);border:1px solid rgba(232,184,75,.25);color:var(--gold);border-radius:4px;padding:3px 9px;font-size:11px;font-family:'DM Mono',monospace;}
+.user-chip{display:flex;align-items:center;gap:7px;background:var(--bg-e);border:1px solid var(--b);border-radius:20px;padding:3px 10px 3px 3px;}
+.ua{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;}
+.uname{font-size:11px;}
+
+/* ── LAYOUT ── */
+.layout{display:flex;flex:1;overflow:hidden;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:210px;flex-shrink:0;background:var(--bg-s);border-right:1px solid var(--b);overflow-y:auto;display:flex;flex-direction:column;}
+.sb-sec{padding:12px 10px 6px;}
+.sb-lbl{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.7px;padding:0 6px;margin-bottom:5px;}
+.sb-item{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:5px;cursor:pointer;color:var(--t3);transition:all .12s;margin-bottom:1px;}
+.sb-item:hover{background:var(--bg-e);color:var(--t2);}
+.sb-item.active{background:var(--gold-g);color:var(--gold);}
+.sb-icon{font-size:13px;width:16px;text-align:center;}
+.sb-label{font-size:11px;flex:1;}
+.sb-count{font-size:10px;font-family:'DM Mono',monospace;background:var(--bg-h);border-radius:8px;padding:1px 5px;color:var(--t3);}
+.sb-item.active .sb-count{background:rgba(232,184,75,.15);color:var(--gold);}
+.sb-divider{border:none;border-top:1px solid var(--b);margin:6px 10px;}
+
+/* Summary card */
+.sum-card{margin:6px 10px;background:var(--bg-e);border:1px solid var(--b);border-radius:8px;padding:10px 11px;}
+.sc-lbl{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;}
+.sc-row{display:flex;justify-content:space-between;margin-bottom:3px;}
+.sc-k{font-size:11px;color:var(--t3);}
+.sc-v{font-size:11px;font-family:'DM Mono',monospace;}
+.sc-v.gold{color:var(--gold);}
+.sc-v.gr{color:var(--green);}
+.sc-v.or{color:var(--orange);}
+.prog-wrap{margin:8px 0 4px;}
+.prog-lbl{display:flex;justify-content:space-between;font-size:9px;color:var(--t3);margin-bottom:3px;}
+.prog-bar{height:3px;background:var(--b);border-radius:2px;overflow:hidden;}
+.prog-fill{height:100%;background:var(--gold);border-radius:2px;}
+.lock-btn{width:100%;margin-top:8px;padding:6px;background:var(--gold-g);border:1px solid rgba(232,184,75,.25);border-radius:5px;color:var(--gold);font-size:11px;cursor:pointer;font-family:inherit;transition:all .12s;}
+.lock-btn:hover{background:rgba(232,184,75,.18);}
+
+.bureau-card{margin:0 10px 8px;background:var(--bg-e);border:1px solid var(--b);border-radius:6px;padding:8px 10px;}
+.bc-lbl{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;}
+.bc-name{font-size:12px;font-weight:600;margin-bottom:1px;}
+.bc-ref{font-size:10px;color:var(--t3);font-family:'DM Mono',monospace;}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+/* INTEL CARDS */
+.intel-bar{display:flex;gap:8px;padding:10px 16px;border-bottom:1px solid var(--b);flex-shrink:0;overflow-x:auto;}
+.ic{background:var(--bg-s);border:1px solid var(--b);border-radius:8px;padding:10px 13px;flex-shrink:0;min-width:130px;}
+.ic-lbl{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
+.ic-val{font-size:18px;font-weight:700;font-family:'DM Mono',monospace;line-height:1;}
+.ic-sub{font-size:10px;color:var(--t3);margin-top:2px;}
+
+/* CONTROLS BAR */
+.ctrl-bar{display:flex;align-items:center;gap:8px;padding:8px 16px;border-bottom:1px solid var(--b);flex-shrink:0;flex-wrap:wrap;}
+.search-box{background:var(--bg-e);border:1px solid var(--b);border-radius:5px;padding:5px 10px;display:flex;align-items:center;gap:7px;width:200px;}
+.search-box input{background:none;border:none;outline:none;color:var(--t1);font-size:11px;width:100%;font-family:inherit;}
+.search-box input::placeholder{color:var(--t3);}
+.fb{background:var(--bg-e);border:1px solid var(--b);border-radius:5px;padding:5px 10px;font-size:10px;color:var(--t3);cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.2px;white-space:nowrap;transition:all .12s;}
+.fb:hover,.fb.on{border-color:var(--gold);color:var(--gold);background:var(--gold-gg);}
+.ctrl-r{margin-left:auto;display:flex;gap:6px;}
+.btn{display:inline-flex;align-items:center;gap:4px;padding:5px 11px;font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.3px;border:none;border-radius:5px;cursor:pointer;transition:all .14s;white-space:nowrap;}
+.btn-gold{background:var(--gold);color:#0e0f12;}.btn-gold:hover{opacity:.85;}
+.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--bm);}.btn-ghost:hover{border-color:var(--bl);color:var(--t1);}
+.btn-teal{background:var(--teal);color:#0e0f12;}
+
+/* DEPT TABS */
+.dept-tabs{display:flex;gap:0;padding:0 16px;border-bottom:1px solid var(--b);flex-shrink:0;overflow-x:auto;}
+.dt{padding:8px 12px;font-size:10px;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.3px;color:var(--t3);cursor:pointer;border-bottom:2px solid transparent;transition:all .13s;white-space:nowrap;display:flex;align-items:center;gap:5px;}
+.dt:hover{color:var(--t2);}
+.dt.on{color:var(--gold);border-bottom-color:var(--gold);}
+.dt-badge{font-size:9px;font-family:'DM Mono',monospace;background:var(--bg-h);border-radius:8px;padding:1px 4px;}
+.dt.on .dt-badge{background:var(--gold-g);color:var(--gold);}
+
+/* TABLE */
+.table-wrap{flex:1;overflow:auto;}
+table{width:100%;border-collapse:collapse;min-width:1200px;}
+thead th{padding:8px 10px;text-align:left;font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--b);font-family:'Syne',sans-serif;font-weight:700;position:sticky;top:0;background:var(--bg-h);z-index:10;white-space:nowrap;}
+thead th:first-child{width:32px;padding:8px 6px;}
+tbody tr{border-bottom:1px solid rgba(37,40,54,.5);transition:background .07s;cursor:pointer;}
+tbody tr:hover{background:rgba(255,255,255,.015);}
+tbody tr.selected{background:var(--gold-gg);}
+tbody tr.dept-hdr-row{background:var(--bg-e);cursor:default;}
+tbody tr.dept-hdr-row:hover{background:var(--bg-e);}
+td{padding:8px 10px;vertical-align:middle;}
+td:first-child{padding:8px 6px;}
+
+/* DEPT HEADER ROW */
+.dept-hdr-cell{display:flex;align-items:center;gap:8px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;}
+.dept-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.dept-toggle{background:none;border:none;color:var(--t3);font-size:10px;cursor:pointer;padding:0 4px;transition:transform .2s;}
+.dept-toggle.open{transform:rotate(90deg);}
+
+/* CREW CELL */
+.cc{display:flex;align-items:center;gap:8px;}
+.av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;}
+.cn{font-size:11px;font-weight:600;}
+.cr{font-size:10px;color:var(--t3);}
+
+/* HOURS */
+.hrs-cell{display:flex;flex-direction:column;gap:1px;}
+.hc{font-family:'DM Mono',monospace;font-size:10.5px;}
+.hc.basic{color:var(--t2);}
+.hc.camot{color:var(--red);}
+.hc.noncam{color:var(--orange);}
+.hc.precall{color:var(--teal);}
+.hc.wrap{color:var(--teal);}
+
+/* PAY */
+.pay-cell{font-family:'DM Mono',monospace;font-size:11px;}
+
+/* DAY TYPE */
+.dt-chip{display:inline-flex;align-items:center;padding:1px 6px;border-radius:3px;font-family:'Syne',sans-serif;font-size:8px;font-weight:700;letter-spacing:.3px;}
+.dt-swd{background:var(--blue-g);color:var(--blue);}
+.dt-cwd{background:var(--teal-g);color:var(--teal);}
+.dt-scwd{background:var(--purple-g);color:var(--purple);}
+.dt-rig{background:var(--orange-g);color:var(--orange);}
+.dt-trvl{background:var(--yellow-g);color:var(--yellow);}
+.dt-night{background:var(--blue-g);color:var(--blue);}
+
+/* STATUS PILL */
+.sp{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:10px;font-family:'Syne',sans-serif;font-size:9px;font-weight:700;}
+.sp-pend{background:var(--bg-h);color:var(--t3);border:1px solid var(--b);}
+.sp-proc{background:var(--green-g);color:var(--green);border:1px solid rgba(74,222,128,.2);}
+.sp-exc{background:var(--orange-g);color:var(--orange);border:1px solid rgba(251,146,60,.2);}
+.sp-hold{background:var(--red-g);color:var(--red);border:1px solid rgba(248,113,113,.2);}
+
+/* FLAG DOTS */
+.flag-dots{display:flex;gap:3px;align-items:center;}
+.fd{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.fd.meal{background:var(--yellow);}
+.fd.bta{background:var(--red);}
+.fd.camot{background:var(--red);opacity:.7;}
+.fd.ok{background:var(--green);}
+.fd.none{background:var(--t3);}
+
+/* HETVC */
+.htv{display:inline-flex;align-items:center;gap:2px;padding:1px 5px;background:var(--purple-g);border:1px solid rgba(192,132,252,.2);border-radius:3px;font-size:8px;color:var(--purple);font-weight:700;font-family:'Syne',sans-serif;}
+
+/* ROW ACTIONS */
+.ra{display:flex;gap:4px;}
+.rb{background:var(--bg-e);border:1px solid var(--b);border-radius:4px;padding:3px 7px;font-size:10px;color:var(--t3);cursor:pointer;transition:all .1s;}
+.rb:hover{border-color:var(--gold);color:var(--gold);}
+.rb.proc{border-color:rgba(74,222,128,.3);color:var(--green);}
+.rb.exc{border-color:rgba(248,113,113,.3);color:var(--red);}
+
+/* ── SLIDE-IN DETAIL PANEL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:none;}
+.overlay.open{display:block;}
+.panel{position:fixed;right:0;top:0;bottom:0;width:580px;background:var(--bg-s);border-left:1px solid var(--b);z-index:201;overflow-y:auto;transform:translateX(100%);transition:transform .22s ease;display:flex;flex-direction:column;}
+.panel.open{transform:translateX(0);}
+.panel-hdr{padding:18px 20px;border-bottom:1px solid var(--b);display:flex;align-items:flex-start;gap:12px;flex-shrink:0;}
+.panel-av{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;}
+.panel-name{font-size:15px;font-weight:700;font-family:'Syne',sans-serif;}
+.panel-meta{font-size:11px;color:var(--t2);}
+.panel-close{margin-left:auto;background:var(--bg-e);border:1px solid var(--b);border-radius:5px;padding:5px 9px;font-size:16px;cursor:pointer;color:var(--t3);transition:all .12s;flex-shrink:0;}
+.panel-close:hover{color:var(--t1);border-color:var(--gold);}
+.panel-sec{padding:14px 20px;border-bottom:1px solid var(--b);}
+.psec-lbl{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px;font-family:'Syne',sans-serif;font-weight:700;}
+.pay-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.pgc{background:var(--bg-e);border:1px solid var(--b);border-radius:6px;padding:9px 11px;}
+.pgc-lbl{font-size:9px;color:var(--t3);margin-bottom:3px;}
+.pgc-val{font-size:17px;font-weight:700;font-family:'DM Mono',monospace;}
+.pgc-sub{font-size:9px;color:var(--t3);margin-top:2px;}
+
+/* Day breakdown table */
+.bt{width:100%;border-collapse:collapse;}
+.bt th{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;padding:5px 7px;text-align:left;border-bottom:1px solid var(--b);font-family:'Syne',sans-serif;font-weight:700;}
+.bt td{padding:7px 7px;font-size:11px;border-bottom:1px solid rgba(37,40,54,.4);}
+.bt tr:last-child td{border-bottom:none;}
+.bt tr.tot-row td{font-weight:700;color:var(--gold);border-top:1px solid var(--b);}
+.bt td.mono{font-family:'DM Mono',monospace;font-size:10.5px;}
+
+/* Flags */
+.flag-item{background:var(--bg-e);border:1px solid var(--b);border-radius:6px;padding:9px 11px;display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;}
+.flag-item:last-child{margin-bottom:0;}
+.flag-item.warn{border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.04);}
+.flag-item.err{border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.04);}
+.flag-item.info{border-color:rgba(96,165,250,.3);background:rgba(96,165,250,.04);}
+.fi-icon{font-size:13px;flex-shrink:0;margin-top:1px;}
+.fi-text{font-size:11.5px;font-weight:600;}
+.fi-detail{font-size:10.5px;color:var(--t3);margin-top:2px;line-height:1.4;}
+
+/* BACS preview */
+.bacs-pre{background:var(--bg-h);border:1px solid var(--b);border-radius:5px;padding:10px 12px;font-family:'DM Mono',monospace;font-size:10px;color:var(--t3);line-height:1.8;}
+.bacs-f{color:var(--blue);}
+.bacs-v{color:var(--t1);}
+.bacs-amt{color:var(--gold);}
+
+.panel-footer{padding:12px 20px;border-top:1px solid var(--b);background:var(--bg-s);display:flex;gap:8px;flex-shrink:0;margin-top:auto;}
+
+/* ── BACS MODAL ── */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:300;display:none;align-items:center;justify-content:center;}
+.modal-ov.open{display:flex;}
+.modal{background:var(--bg-s);border:1px solid var(--bm);border-radius:12px;width:660px;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.6);}
+.modal-hdr{padding:18px 22px;border-bottom:1px solid var(--b);display:flex;align-items:center;gap:10px;}
+.modal-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;flex:1;}
+.modal-body{padding:18px 22px;}
+.modal-footer{padding:14px 22px;border-top:1px solid var(--b);display:flex;gap:8px;justify-content:flex-end;}
+.check-row{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid rgba(37,40,54,.3);font-size:12px;}
+.check-row:last-child{border-bottom:none;}
+.ck-status{font-size:11px;margin-left:auto;}
+.bacs-full{background:var(--bg-h);border:1px solid var(--b);border-radius:5px;padding:14px;font-family:'DM Mono',monospace;font-size:10px;color:var(--t3);line-height:2;max-height:320px;overflow-y:auto;white-space:pre;}
+
+/* LOCK BANNER */
+.lock-banner{display:none;background:var(--green-g);border:1px solid rgba(74,222,128,.25);border-radius:7px;margin:10px 16px 0;padding:10px 14px;align-items:center;gap:10px;flex-shrink:0;}
+.lock-banner.show{display:flex;}
+.lb-title{font-size:12px;font-weight:600;color:var(--green);}
+.lb-sub{font-size:10px;color:var(--t3);}
+
+/* PILLS */
+.pill{display:inline-flex;align-items:center;gap:3px;padding:1.5px 7px;border-radius:20px;font-family:'Syne',sans-serif;font-size:9px;font-weight:700;letter-spacing:.2px;}
+.pg{background:var(--gold-g);color:var(--gold);border:1px solid rgba(232,184,75,.2);}
+.pgreen{background:var(--green-g);color:var(--green);border:1px solid rgba(74,222,128,.2);}
+.pblue{background:var(--blue-g);color:var(--blue);border:1px solid rgba(96,165,250,.2);}
+.pred{background:var(--red-g);color:var(--red);border:1px solid rgba(248,113,113,.2);}
+.pteal{background:var(--teal-g);color:var(--teal);border:1px solid rgba(45,212,191,.2);}
+.pdim{background:var(--bg-h);color:var(--t3);border:1px solid var(--b);}
+
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--bg-h);border:1px solid var(--bm);border-radius:8px;padding:8px 14px;font-size:11px;color:var(--t1);z-index:400;max-width:360px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.4);display:none;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--b);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">Zillit</div>
+  <div class="topbar-title">Payroll Processing · The Gilded Hour S2</div>
+  <div class="topbar-r">
+    <div class="week-badge">W/C 07 Apr 2026</div>
+    <span class="pill pdim">PACT/BECTU MMP 2021</span>
+    <div class="user-chip">
+      <div class="ua">SA</div>
+      <div><div class="uname">Sarah Alderton</div><div style="font-size:9px;color:var(--t3)">Production Accountant</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sb-sec">
+    <div class="sb-lbl">Payroll</div>
+    <div class="sb-item active" onclick="setNav(this,'received')"><span class="sb-icon">📥</span><span class="sb-label">Received</span><span class="sb-count" id="sn-received">0</span></div>
+    <div class="sb-item" onclick="setNav(this,'inprogress')"><span class="sb-icon">⚙️</span><span class="sb-label">In Progress</span><span class="sb-count" id="sn-inprog">0</span></div>
+    <div class="sb-item" onclick="setNav(this,'processed')"><span class="sb-icon">✅</span><span class="sb-label">Processed</span><span class="sb-count" id="sn-proc">0</span></div>
+    <div class="sb-item" onclick="setNav(this,'exceptions')"><span class="sb-icon">⚠️</span><span class="sb-label">Exceptions</span><span class="sb-count" id="sn-exc">0</span></div>
+  </div>
+  <hr class="sb-divider">
+  <div class="sb-sec">
+    <div class="sb-lbl">Output</div>
+    <div class="sb-item" onclick="openBacs()"><span class="sb-icon">🏦</span><span class="sb-label">BACS File</span></div>
+    <div class="sb-item" onclick="toast('Payslips — generating PDF batch…')"><span class="sb-icon">📄</span><span class="sb-label">Payslips</span></div>
+    <div class="sb-item" onclick="toast('Variance report — opening…')"><span class="sb-icon">📊</span><span class="sb-label">Variance Report</span></div>
+  </div>
+  <hr class="sb-divider">
+
+  <div class="sum-card">
+    <div class="sc-lbl">Week Summary</div>
+    <div class="sc-row"><span class="sc-k">Total crew</span><span class="sc-v" id="sc-total">—</span></div>
+    <div class="sc-row"><span class="sc-k">Timecards in</span><span class="sc-v" id="sc-in">—</span></div>
+    <div class="sc-row"><span class="sc-k">Processed</span><span class="sc-v gr" id="sc-proc">—</span></div>
+    <div class="sc-row"><span class="sc-k">Gross payroll</span><span class="sc-v gold" id="sc-gross">—</span></div>
+    <div class="sc-row"><span class="sc-k">Camera OT (2T)</span><span class="sc-v" style="color:var(--red)" id="sc-camot">—</span></div>
+    <div class="sc-row"><span class="sc-k">Non-Cam OT (1.5T)</span><span class="sc-v or" id="sc-ncot">—</span></div>
+    <div class="sc-row"><span class="sc-k">BTA payments</span><span class="sc-v" style="color:var(--orange)" id="sc-bta">—</span></div>
+    <div class="sc-row"><span class="sc-k">HETVC qualifying</span><span class="sc-v" style="color:var(--purple)" id="sc-hetvc">—</span></div>
+    <div class="prog-wrap">
+      <div class="prog-lbl"><span>Processed</span><span id="prog-lbl">0 / 0</span></div>
+      <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    </div>
+    <button class="lock-btn" onclick="lockWeek()">🔒 Lock &amp; Submit Week</button>
+  </div>
+
+  <div class="bureau-card">
+    <div class="bc-lbl">Payroll Bureau</div>
+    <div class="bc-name">Sargent-Disc</div>
+    <div class="bc-ref">Ref: GHP-S2-2026</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <div class="lock-banner" id="lockBanner">
+    <span style="font-size:18px">✅</span>
+    <div><div class="lb-title">Week locked & submitted to Sargent-Disc</div><div class="lb-sub">Submitted 08 Apr 2026 · Ref GHP-S2-W14-2026 · BACS payment date: 11 Apr 2026</div></div>
+    <span class="pill pgreen">Locked</span>
+  </div>
+
+  <!-- INTEL CARDS -->
+  <div class="intel-bar" id="intel-bar">
+    <div class="ic"><div class="ic-lbl">Gross Payroll</div><div class="ic-val" style="color:var(--gold)" id="ic-gross">—</div><div class="ic-sub" id="ic-crew-count">— crew</div></div>
+    <div class="ic"><div class="ic-lbl">Camera OT (2T→£81.82)</div><div class="ic-val" style="color:var(--red)" id="ic-camot">—</div><div class="ic-sub" id="ic-camot-sub">— hrs</div></div>
+    <div class="ic"><div class="ic-lbl">Non-Cam OT (1.5T→£81.82)</div><div class="ic-val" style="color:var(--orange)" id="ic-ncot">—</div><div class="ic-sub" id="ic-ncot-sub">— hrs</div></div>
+    <div class="ic"><div class="ic-lbl">BTA (§5.3 · £45/hr cap)</div><div class="ic-val" style="color:var(--orange)" id="ic-bta">—</div><div class="ic-sub" id="ic-bta-sub">— instances</div></div>
+    <div class="ic"><div class="ic-lbl">Meal Delay Pen.</div><div class="ic-val" style="color:var(--yellow)" id="ic-meal">—</div><div class="ic-sub" id="ic-meal-sub">— instances</div></div>
+    <div class="ic"><div class="ic-lbl">Exceptions</div><div class="ic-val" style="color:var(--red)" id="ic-exc">—</div><div class="ic-sub">require review</div></div>
+    <div class="ic"><div class="ic-lbl">vs Last Week</div><div class="ic-val" style="color:var(--orange)" id="ic-var">+3.2%</div><div class="ic-sub">↑ OT increase</div></div>
+    <div class="ic"><div class="ic-lbl">HETVC Qualifying</div><div class="ic-val" style="color:var(--purple)" id="ic-hetvc">—</div><div class="ic-sub">eligible spend</div></div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="ctrl-bar">
+    <div class="search-box"><span style="color:var(--t3);font-size:11px">🔍</span><input type="text" placeholder="Search crew, role…" oninput="filterSearch(this.value)" id="searchInput"></div>
+    <button class="fb on" onclick="setFilter(this,'all')">All</button>
+    <button class="fb" onclick="setFilter(this,'pending')">Pending</button>
+    <button class="fb" onclick="setFilter(this,'processed')">Processed</button>
+    <button class="fb" onclick="setFilter(this,'exception')">Exceptions</button>
+    <button class="fb" onclick="setFilter(this,'hold')">On Hold</button>
+    <div class="ctrl-r">
+      <button class="btn btn-ghost" onclick="selectAll()">☑ Select All</button>
+      <button class="btn btn-ghost" onclick="openBacs()">📄 BACS Preview</button>
+      <button class="btn btn-teal" onclick="processSelected()">⚡ Process Selected</button>
+    </div>
+  </div>
+
+  <!-- DEPT TABS -->
+  <div class="dept-tabs" id="deptTabs"></div>
+
+  <!-- TABLE -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th><input type="checkbox" style="accent-color:var(--gold)" onchange="checkAll(this)"></th>
+          <th style="min-width:180px">Crew Member</th>
+          <th>Agreement</th>
+          <th>Day Types</th>
+          <th>Hours (Wk)</th>
+          <th>Cam OT</th>
+          <th>Non-Cam OT</th>
+          <th>BTA</th>
+          <th>Meal Pen</th>
+          <th>Basic Pay</th>
+          <th>OT/Pen Total</th>
+          <th>Gross Pay</th>
+          <th>HETVC</th>
+          <th>Flags</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div class="overlay" id="overlay" onclick="closePanel()"></div>
+<div class="panel" id="panel">
+  <div class="panel-hdr">
+    <div class="panel-av" id="p-av"></div>
+    <div style="flex:1">
+      <div class="panel-name" id="p-name"></div>
+      <div class="panel-meta" id="p-meta"></div>
+    </div>
+    <button class="panel-close" onclick="closePanel()">×</button>
+  </div>
+  <div class="panel-sec">
+    <div class="psec-lbl">Pay Calculation · PACT/BECTU MMP 2021</div>
+    <div class="pay-grid" id="p-paygrid"></div>
+  </div>
+  <div class="panel-sec">
+    <div class="psec-lbl">Daily Breakdown</div>
+    <table class="bt"><thead><tr><th>Day</th><th>Type</th><th>Call</th><th>Unit Call</th><th>Unit Wrap</th><th>Release</th><th>Cam OT</th><th>Non-Cam OT</th><th>BTA</th><th>Flags</th><th>Pay</th></tr></thead><tbody id="p-days"></tbody></table>
+  </div>
+  <div class="panel-sec" id="p-flags-sec">
+    <div class="psec-lbl">Flags & Exceptions</div>
+    <div id="p-flags"></div>
+  </div>
+  <div class="panel-sec">
+    <div class="psec-lbl">BACS Record (Standard 18)</div>
+    <div class="bacs-pre" id="p-bacs"></div>
+  </div>
+  <div class="panel-sec">
+    <div class="psec-lbl">HETVC / Tax Credit Coding</div>
+    <div style="display:flex;align-items:center;gap:8px;" id="p-hetvc"></div>
+  </div>
+  <div class="panel-footer">
+    <button class="btn btn-ghost" style="color:var(--red);border-color:rgba(248,113,113,.3)" onclick="holdCurrent()">⏸ Hold Payment</button>
+    <button class="btn btn-ghost" onclick="flagCurrent()">⚠️ Flag Exception</button>
+    <div style="flex:1"></div>
+    <button class="btn btn-ghost" onclick="closePanel()">Close</button>
+    <button class="btn btn-gold" id="p-proc-btn" onclick="processCurrent()">✓ Process &amp; Approve</button>
+  </div>
+</div>
+
+<!-- BACS MODAL -->
+<div class="modal-ov" id="bacsModal">
+  <div class="modal-ov" onclick="closeBacs()" style="position:absolute;inset:0;z-index:-1"></div>
+  <div class="modal">
+    <div class="modal-hdr">
+      <span style="font-size:18px">🏦</span>
+      <div class="modal-title">BACS Standard 18 · W/C 07 Apr 2026</div>
+      <button class="btn btn-ghost" onclick="closeBacs()" style="padding:3px 8px">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+        <span class="pill pg">GHP-S2-2026</span>
+        <span class="pill pblue">Sargent-Disc</span>
+        <span class="pill pgreen">Payment: 11 Apr 2026</span>
+        <span class="pill pdim" id="bacs-count">0 records</span>
+      </div>
+      <div class="psec-lbl" style="margin-bottom:8px">Pre-Submission Checks</div>
+      <div class="check-row"><span>✅</span><span style="flex:1">All mandatory fields present (sort code, account, payee name)</span><span class="ck-status" style="color:var(--green)">Pass</span></div>
+      <div class="check-row"><span>✅</span><span style="flex:1">MMP 2021 rates validated — Camera OT 2T capped £81.82, Non-Cam 1.5T capped £81.82</span><span class="ck-status" style="color:var(--green)">Pass</span></div>
+      <div class="check-row"><span>⚠️</span><span style="flex:1" id="bacs-exc-check">Exceptions flagged — review before submission</span><span class="ck-status" style="color:var(--orange)">Warning</span></div>
+      <div class="check-row"><span>✅</span><span style="flex:1">HETVC tagging applied to qualifying records</span><span class="ck-status" style="color:var(--green)">Pass</span></div>
+      <div class="check-row"><span>✅</span><span style="flex:1" id="bacs-total-check">Total reconciles to cost report</span><span class="ck-status" style="color:var(--green)">Pass</span></div>
+      <div class="psec-lbl" style="margin:14px 0 8px">File Preview (first 15 records)</div>
+      <div class="bacs-full" id="bacs-content"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeBacs()">Cancel</button>
+      <button class="btn btn-ghost" onclick="toast('Copied to clipboard')">📋 Copy</button>
+      <button class="btn btn-gold" onclick="submitBacs()">📤 Submit to Sargent-Disc</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── MMP 2021 CONSTANTS ────────────────────────────────────────────
+const OT_CAP = 81.82;
+const BTA_CAP = 45.00;
+
+function hourlyRate(dailyRate){ return +(dailyRate/11).toFixed(2); }
+function camOTRate(daily){ return Math.min(hourlyRate(daily)*2, OT_CAP); }
+function nonCamOTRate(daily){ return Math.min(hourlyRate(daily)*1.5, OT_CAP); }
+function btaRate(){ return BTA_CAP; }
+function holidayRate(){ return 0.1207; }
+
+// ── DETERMINISTIC RNG ─────────────────────────────────────────────
+function rng(s){ var x=Math.sin(s+7)*10000; return x-Math.floor(x); }
+function ri(s,a,b){ return a+Math.floor(rng(s)*(b-a+1)); }
+
+// ── DEPARTMENT DEFINITIONS ────────────────────────────────────────
+const DEPTS = [
+  {id:'camera',   name:'Camera',            color:'#e8b84b', count:14, baseRate:700,  camDept:true},
+  {id:'elec',     name:'Electrical',        color:'#fbbf24', count:18, baseRate:580,  camDept:false},
+  {id:'grip',     name:'Grip',              color:'#f59e0b', count:10, baseRate:560,  camDept:false},
+  {id:'art',      name:'Art Department',    color:'#a78bfa', count:20, baseRate:520,  camDept:false},
+  {id:'sound',    name:'Sound',             color:'#60a5fa', count:6,  baseRate:640,  camDept:false},
+  {id:'prod',     name:'Production Office', color:'#f87171', count:15, baseRate:490,  camDept:false},
+  {id:'locations',name:'Locations',         color:'#34d399', count:8,  baseRate:510,  camDept:false},
+  {id:'costume',  name:'Costume',           color:'#2dd4bf', count:12, baseRate:480,  camDept:false},
+  {id:'makeup',   name:'Make-Up & Hair',    color:'#ec4899', count:10, baseRate:490,  camDept:false},
+  {id:'transport',name:'Transport',         color:'#6366f1', count:14, baseRate:420,  camDept:false},
+  {id:'stunts',   name:'Stunts',            color:'#ef4444', count:6,  baseRate:780,  camDept:false},
+  {id:'vfx',      name:'VFX',               color:'#14b8a6', count:4,  baseRate:600,  camDept:false},
+  {id:'construct',name:'Construction',      color:'#8b5cf6', count:12, baseRate:440,  camDept:false},
+  {id:'directing',name:'Directing',         color:'#fb923c', count:6,  baseRate:820,  camDept:false},
+];
+
+const FIRST = ['James','Emily','Marcus','Priya','Tom','Rosa','Cass','Yuki','Lee','Sam','Alex','Rachel','Owen','Nina','Isla','Demi','Fatima','Harry','Gerry','Mia','Dan','Billie','Jamie','Elena','Sofia','Liam','Aisha','Ravi','Zoe','Oscar','Chen','Wei','Layla','Kofi','Ivan','Pilar','Seren','Nadia','Bram','Kira','Darius','Sienna','Felix','Jade','Theo','Ana'];
+const LAST  = ['Webb','Chen','Vasquez','Patel','Richards','Mendez','Park','Tanaka','Franklin','Walsh','Nolan','Santos','Cooper','Byrne','Osei','Al-Hassan','Carter','Hughes','Kwame','Cameron','Clarke','Wu','Sharma','Murphy','Schmidt','Johansson','Petrov','Nielsen','Moreau','Bauer','Romero','Andersen','Reid','Torres','Foster','Shaw','Lane','Hart','Cross','Myers','Williams','Lawson','Ford','Yuen','Thorn'];
+const ROLES = {
+  camera:['DP','1st AC','1st AC','2nd AC','2nd AC','Camera Trainee','Camera Trainee','Steadicam Op','DIT','DIT','Camera PA','B-Cam Op','Focus Puller','Loader'],
+  elec:['Gaffer','Gaffer','Best Boy Elec','Best Boy Elec','Rigging Gaffer','Spark','Spark','Spark','Spark','Spark','Spark','Lamp Op','Lamp Op','Lamp Op','Rigging Spark','Rigging Spark','Generator Op','Practical Elec'],
+  grip:['Key Grip','Key Grip','Best Boy Grip','Dolly Grip','Dolly Grip','Grip','Grip','Grip','Crane Technician','Rigging Grip'],
+  art:['Production Designer','Art Director','Art Director','Set Decorator','Set Decorator','Props Master','Props Buyer','Standby Props','Standby Art Dir','Art Dept Coord','Set Dresser','Set Dresser','Set Dresser','Sculptor','Graphic Designer','Art PA','Draftsperson','Storyboard Artist','Concept Artist','Buyer'],
+  sound:['Production Sound Mixer','Boom Operator','Boom Operator','Sound Trainee','Playback Op','Sound PA'],
+  prod:['Line Producer','UPM','1st AD','1st AD','2nd AD','2nd AD','3rd AD','3rd AD','Script Supervisor','Production Coord','Production Secretary','Production Accountant','Prod Accountant Asst','Continuity','Runner'],
+  locations:['Location Manager','Location Manager','Asst Location Mgr','Asst Location Mgr','Location Scout','Location Assistant','Unit Manager','Location PA'],
+  costume:['Costume Designer','Costume Supervisor','Cutter','Cutter','Costume Standby','Costume Standby','Costume Asst','Costume Asst','Seamstress','Dresser','Buyer','Wardrobe Master'],
+  makeup:['Hair & MU Designer','MU Supervisor','Make-Up Artist','Make-Up Artist','Make-Up Artist','Hair Stylist','Hair Stylist','SFX MU Artist','MU Trainee','MU Trainee'],
+  transport:['Transport Captain','Transport Captain','Driver','Driver','Driver','Driver','Driver','Driver','Driver','Driver','Driver','Driver','Unit Driver','Honey Wagon Driver'],
+  stunts:['Stunt Coordinator','Stunt Coordinator','Stunt Performer','Stunt Performer','Stunt Performer','Stunt PA'],
+  vfx:['VFX Supervisor','VFX Producer','On-Set VFX','VFX PA'],
+  construct:['Construction Manager','Propmaker Foreman','Propmaker','Propmaker','Carpenter','Carpenter','Carpenter','Painter','Painter','Plasterer','Sculptor','Labourer'],
+  directing:['Director','Director','Director of Photography','Script Supervisor','Script Supervisor','Director PA'],
+};
+
+// Day type distributions per department (chance of each type per day)
+const DAY_TYPE_DIST = {
+  camera:['SWD','SWD','SWD','CWD','SCWD'],
+  elec:['SWD','SWD','CWD','CWD','SCWD'],
+  grip:['SWD','SWD','CWD','SCWD','SWD'],
+  art:['SWD','SWD','SWD','SWD','CWD'],
+  sound:['SWD','SWD','SWD','CWD','SCWD'],
+  prod:['SWD','SWD','SWD','SWD','SWD'],
+  locations:['SWD','CWD','SWD','SWD','TRVL'],
+  costume:['SWD','SWD','SWD','CWD','SWD'],
+  makeup:['SWD','SWD','CWD','SCWD','SWD'],
+  transport:['SWD','CWD','CWD','SWD','SWD'],
+  stunts:['SWD','SWD','SWD','CWD','SCWD'],
+  vfx:['SWD','SWD','SWD','SWD','CWD'],
+  construct:['SWD','SWD','SWD','CWD','SWD'],
+  directing:['SWD','SWD','SWD','CWD','SCWD'],
+};
+
+// BTA: some crew get BTA on specific days due to late wraps
+const BTA_CREW_INDICES = [2,5,9,14,19,28,35,41,52,63,74,88,102,118];
+
+// ── GENERATE CREW ─────────────────────────────────────────────────
+let allCrew = [];
+let idC = 1;
+
+DEPTS.forEach((dept, di) => {
+  const roles = ROLES[dept.id];
+  for(let i=0; i<dept.count; i++){
+    const seed = idC*79+di*31+i*23;
+    const fn = FIRST[(idC+i*3)%FIRST.length];
+    const ln = LAST[(i*7+idC)%LAST.length];
+    const name = fn+' '+ln;
+    const role = roles[i%roles.length];
+    const isHOD = i===0;
+    const dailyRate = dept.baseRate + ri(seed+1, isHOD?50:0, isHOD?100:40) + (i<3?ri(seed+2,0,30):0);
+    const hr = hourlyRate(dailyRate);
+    const isCam = dept.camDept;
+
+    // Days worked this week (4-5)
+    const days = ri(seed+3,4,5);
+
+    // Generate day-level data
+    const dayTypes = DAY_TYPE_DIST[dept.id];
+    const dayData = [];
+    let totalCamOTHrs = 0, totalNonCamOTHrs = 0, totalBTAHrs = 0, totalMealPenHrs = 0;
+    let totalBasicPay = 0, totalCamOTPay = 0, totalNonCamOTPay = 0, totalBTAPay = 0, totalMealPenPay = 0;
+    const hasBTA = BTA_CREW_INDICES.includes(idC-1);
+
+    for(let d=0; d<days; d++){
+      const ds = seed+d*100;
+      const type = dayTypes[d%dayTypes.length];
+      const ctrHrs = (type==='CWD'||type==='SCWD') ? 10 : 11; // contracted hours
+      const crewCallMins = ri(ds+10,360,450); // 06:00–07:30
+      const unitCallMins = crewCallMins + ri(ds+11,0,30); // up to 30min pre-call
+      const filmMins = ctrHrs*60 + ri(ds+12, -15, isCam?90:60); // film duration
+      const unitWrapMins = unitCallMins + filmMins;
+      const mealBrkMins = (type==='CWD') ? 0 : 60;
+      const releaseMinsDelta = ri(ds+13,0,60); // wrap OT
+      const releaseMins = unitWrapMins + releaseMinsDelta;
+
+      // Hours calc
+      const preCallMins = unitCallMins - crewCallMins;
+      const camOTMins = isCam ? Math.max(0, filmMins - ctrHrs*60) : 0;
+      const nonCamOTMins_wrap = releaseMinsDelta; // wrap OT (Non-Cam)
+      const nonCamOTMins_precall = preCallMins; // pre-call (Non-Cam)
+
+      // BTA: inject on day 2 for BTA crew
+      const btaMins = (hasBTA && d===1) ? ri(ds+20, 30, 60) : 0; // 30-60min short
+
+      // Meal delay: occasional
+      const mealDelay = (isCam ? rng(ds+30)<0.15 : rng(ds+30)<0.08) && type!=='CWD';
+      const mealDelayMins = mealDelay ? 30 : 0;
+
+      // Pay
+      const basicDayPay = dailyRate;
+      const camOTPay_ = isCam ? (camOTMins/60)*camOTRate(dailyRate) : 0;
+      const ncOTPay_ = ((nonCamOTMins_wrap+nonCamOTMins_precall)/60)*nonCamOTRate(dailyRate);
+      const btaPay_ = btaMins>0 ? (btaMins/60)*btaRate() : 0;
+      const mealPenPay_ = mealDelay ? (mealDelayMins/60)*hr : 0;
+
+      dayData.push({
+        day:['Mon','Tue','Wed','Thu','Fri'][d],
+        type,
+        crewCall: fmtTime(crewCallMins),
+        unitCall: fmtTime(unitCallMins),
+        unitWrap: fmtTime(unitWrapMins),
+        release: fmtTime(releaseMins),
+        camOTMins, nonCamOTMins_wrap, nonCamOTMins_precall, btaMins, mealDelayMins,
+        basicPay: basicDayPay, camOTPay:camOTPay_, ncOTPay:ncOTPay_, btaPay:btaPay_, mealPenPay:mealPenPay_,
+        dayTotal: basicDayPay + camOTPay_ + ncOTPay_ + btaPay_ + mealPenPay_,
+      });
+
+      totalCamOTHrs += camOTMins/60;
+      totalNonCamOTHrs += (nonCamOTMins_wrap+nonCamOTMins_precall)/60;
+      totalBTAHrs += btaMins/60;
+      totalMealPenHrs += mealDelayMins/60;
+      totalBasicPay += basicDayPay;
+      totalCamOTPay += camOTPay_;
+      totalNonCamOTPay += ncOTPay_;
+      totalBTAPay += btaPay_;
+      totalMealPenPay += mealPenPay_;
+    }
+
+    const holPay = totalBasicPay * 0.1207;
+    const gross = totalBasicPay + holPay + totalCamOTPay + totalNonCamOTPay + totalBTAPay + totalMealPenPay;
+
+    // Status distribution
+    const sr = rng(seed+50);
+    let status = sr<0.08?'exception':sr<0.12?'hold':sr<0.45?'processed':'pending';
+
+    // Flags
+    const flags = [];
+    if(totalCamOTHrs > 2) flags.push({t:'info',text:`Camera OT: ${totalCamOTHrs.toFixed(1)}h at T×2→£${camOTRate(dailyRate)}/hr (§3.3(a)(i))`});
+    if(totalBTAHrs > 0) flags.push({t:'err',text:`BTA: ${(totalBTAHrs*60).toFixed(0)}min below 11h turnaround → £${totalBTAPay.toFixed(2)} (§5.3 · £45/hr cap)`});
+    if(totalMealPenHrs > 0) flags.push({t:'warn',text:`Meal delay ${(totalMealPenHrs*60).toFixed(0)}min beyond 6h window → £${totalMealPenPay.toFixed(2)} (§5.4(b)(i))`});
+    if(totalNonCamOTHrs > 4) flags.push({t:'warn',text:`Non-Cam OT: ${totalNonCamOTHrs.toFixed(1)}h pre-call/wrap at 1.5T→£${nonCamOTRate(dailyRate)}/hr (§3.3(a)(ii))`});
+    if(status==='exception') flags.push({t:'err',text:'Rate query flagged — deal memo rate discrepancy. Accountant review required before processing.'});
+    if(status==='hold') flags.push({t:'err',text:'Payment on hold — missing signed consent form for broken turnaround. HR sign-off required.'});
+
+    // Sort/account codes (deterministic)
+    const s1=ri(seed+60,10,99),s2=ri(seed+61,10,99),s3=ri(seed+62,10,99);
+    const sortCode=`${s1}-${s2}-${s3}`;
+    const account=String(ri(seed+63,10000000,99999999));
+
+    const hetvc = !['transport','construct'].includes(dept.id);
+
+    allCrew.push({
+      id:idC, name, role, dept:dept.id, deptName:dept.name, deptColor:dept.color,
+      dailyRate, hourlyRate:hr, camDept:isCam, agreement:'PACT/BECTU MMP 2021',
+      days, dayData,
+      totalCamOTHrs, totalNonCamOTHrs, totalBTAHrs, totalMealPenHrs,
+      totalBasicPay, holPay, totalCamOTPay, totalNonCamOTPay, totalBTAPay, totalMealPenPay, gross,
+      status, flags, sortCode, account, hetvc,
+      initials: (fn[0]+ln[0]).toUpperCase(),
+      color: dept.color,
+    });
+    idC++;
+  }
+});
+
+function fmtTime(mins){ return String(Math.floor(mins/60)%24).padStart(2,'0')+':'+String(mins%60).padStart(2,'0'); }
+function fmtH(h){ if(!h||h<=0) return '—'; const hr=Math.floor(h), mn=Math.round((h-hr)*60); return mn?`${hr}h${mn}m`:`${hr}h`; }
+function fmtP(v){ return '£'+v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
+function fmtPS(v){ return '£'+Math.round(v).toLocaleString('en-GB'); }
+
+// ── STATE ─────────────────────────────────────────────────────────
+let currentFilter='all';
+let currentDept='all';
+let currentSearch='';
+let currentNav='received';
+let selectedIds=new Set();
+let panelCrew=null;
+const statusOverrides={};
+
+function getStatus(c){ return statusOverrides[c.id]||c.status; }
+
+// ── SIDEBAR COUNTS ────────────────────────────────────────────────
+function updateCounts(){
+  const all=allCrew;
+  document.getElementById('sn-received').textContent=all.length;
+  document.getElementById('sn-inprog').textContent=all.filter(c=>['pending','exception'].includes(getStatus(c))).length;
+  document.getElementById('sn-proc').textContent=all.filter(c=>getStatus(c)==='processed').length;
+  document.getElementById('sn-exc').textContent=all.filter(c=>getStatus(c)==='exception'||getStatus(c)==='hold').length;
+}
+
+// ── INTEL / SUMMARY ───────────────────────────────────────────────
+function updateIntel(){
+  const relevant=allCrew;
+  const gross=relevant.reduce((a,c)=>a+c.gross,0);
+  const camOT=relevant.reduce((a,c)=>a+c.totalCamOTPay,0);
+  const ncOT=relevant.reduce((a,c)=>a+c.totalNonCamOTPay,0);
+  const btaTotal=relevant.reduce((a,c)=>a+c.totalBTAPay,0);
+  const mealTotal=relevant.reduce((a,c)=>a+c.totalMealPenPay,0);
+  const camOTHrs=relevant.reduce((a,c)=>a+c.totalCamOTHrs,0);
+  const ncOTHrs=relevant.reduce((a,c)=>a+c.totalNonCamOTHrs,0);
+  const btaCount=relevant.filter(c=>c.totalBTAHrs>0).length;
+  const mealCount=relevant.filter(c=>c.totalMealPenHrs>0).length;
+  const excCount=relevant.filter(c=>['exception','hold'].includes(getStatus(c))).length;
+  const hetvc=relevant.filter(c=>c.hetvc).reduce((a,c)=>a+c.totalBasicPay,0);
+  const proc=relevant.filter(c=>getStatus(c)==='processed').length;
+
+  document.getElementById('ic-gross').textContent=fmtPS(gross);
+  document.getElementById('ic-crew-count').textContent=relevant.length+' crew';
+  document.getElementById('ic-camot').textContent=fmtPS(camOT);
+  document.getElementById('ic-camot-sub').textContent=camOTHrs.toFixed(1)+'h total';
+  document.getElementById('ic-ncot').textContent=fmtPS(ncOT);
+  document.getElementById('ic-ncot-sub').textContent=ncOTHrs.toFixed(1)+'h total';
+  document.getElementById('ic-bta').textContent=fmtPS(btaTotal);
+  document.getElementById('ic-bta-sub').textContent=btaCount+' crew affected';
+  document.getElementById('ic-meal').textContent=fmtPS(mealTotal);
+  document.getElementById('ic-meal-sub').textContent=mealCount+' instances';
+  document.getElementById('ic-exc').textContent=excCount;
+  document.getElementById('ic-hetvc').textContent=fmtPS(hetvc);
+
+  // Sidebar summary
+  document.getElementById('sc-total').textContent=relevant.length;
+  document.getElementById('sc-in').textContent=relevant.filter(c=>getStatus(c)!=='pending').length+' / '+relevant.length;
+  document.getElementById('sc-proc').textContent=proc;
+  document.getElementById('sc-gross').textContent=fmtPS(gross);
+  document.getElementById('sc-camot').textContent=fmtPS(camOT);
+  document.getElementById('sc-ncot').textContent=fmtPS(ncOT);
+  document.getElementById('sc-bta').textContent=fmtPS(btaTotal);
+  document.getElementById('sc-hetvc').textContent=fmtPS(hetvc);
+  const pct=Math.round(proc/relevant.length*100);
+  document.getElementById('prog-fill').style.width=pct+'%';
+  document.getElementById('prog-lbl').textContent=`${proc} / ${relevant.length}`;
+
+  updateCounts();
+}
+
+// ── DEPT TABS ─────────────────────────────────────────────────────
+function buildDeptTabs(){
+  const tabs=document.getElementById('deptTabs');
+  tabs.innerHTML='<div class="dt on" onclick="setDept(\'all\',this)">All <span class="dt-badge">'+allCrew.length+'</span></div>';
+  DEPTS.forEach(d=>{
+    const n=allCrew.filter(c=>c.dept===d.id).length;
+    tabs.innerHTML+=`<div class="dt" onclick="setDept('${d.id}',this)" style="--dc:${d.color}">${d.name} <span class="dt-badge">${n}</span></div>`;
+  });
+}
+
+function setDept(id,el){
+  currentDept=id;
+  document.querySelectorAll('.dt').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  render();
+}
+
+// ── DAY TYPE CHIP ────────────────────────────────────────────────
+function dayTypeChip(types){
+  const uniq=[...new Set(types)];
+  return uniq.map(t=>{
+    const cls=t==='SWD'?'dt-swd':t==='CWD'?'dt-cwd':t==='SCWD'?'dt-scwd':t==='RIG'?'dt-rig':'dt-trvl';
+    return `<span class="dt-chip ${cls}">${t}</span>`;
+  }).join(' ');
+}
+
+// ── RENDER TABLE ──────────────────────────────────────────────────
+function render(){
+  let rows=allCrew;
+  if(currentDept!=='all') rows=rows.filter(c=>c.dept===currentDept);
+  if(currentFilter!=='all') rows=rows.filter(c=>getStatus(c)===currentFilter);
+  if(currentSearch) rows=rows.filter(c=>(c.name+c.role+c.deptName).toLowerCase().includes(currentSearch.toLowerCase()));
+
+  const tbody=document.getElementById('tbody');
+  let html='';
+  let lastDept='';
+
+  rows.forEach(c=>{
+    const st=getStatus(c);
+    const sel=selectedIds.has(c.id);
+
+    // Dept header row
+    if(currentDept==='all' && c.dept!==lastDept){
+      lastDept=c.dept;
+      const dept=DEPTS.find(d=>d.id===c.dept);
+      const deptRows=allCrew.filter(x=>x.dept===c.dept);
+      const deptGross=deptRows.reduce((a,x)=>a+x.gross,0);
+      const deptExc=deptRows.filter(x=>['exception','hold'].includes(getStatus(x))).length;
+      html+=`<tr class="dept-hdr-row">
+        <td></td>
+        <td colspan="15">
+          <div class="dept-hdr-cell">
+            <div class="dept-dot" style="background:${dept.color}"></div>
+            <span>${dept.name}</span>
+            <span style="color:var(--t3);font-size:10px;font-weight:400">(${deptRows.length} crew)</span>
+            <span style="margin-left:10px;font-family:'DM Mono',monospace;font-size:11px;color:var(--gold)">${fmtPS(deptGross)}</span>
+            ${deptExc>0?`<span class="pill pred" style="font-size:8px;margin-left:6px">${deptExc} exceptions</span>`:''}
+          </div>
+        </td>
+      </tr>`;
+    }
+
+    // Status pill
+    const spCls=st==='processed'?'sp-proc':st==='exception'?'sp-exc':st==='hold'?'sp-hold':'sp-pend';
+    const spLbl=st==='processed'?'✓ Processed':st==='exception'?'⚠ Exception':st==='hold'?'⏸ Hold':'Pending';
+
+    // Flag dots
+    let flagDots='<div class="flag-dots">';
+    if(c.totalBTAHrs>0) flagDots+='<div class="fd bta" title="BTA"></div>';
+    if(c.totalMealPenHrs>0) flagDots+='<div class="fd meal" title="Meal delay"></div>';
+    if(c.totalCamOTHrs>0.5) flagDots+='<div class="fd camot" title="Camera OT"></div>';
+    if(!c.totalBTAHrs&&!c.totalMealPenHrs&&!c.totalCamOTHrs&&st!=='exception'&&st!=='hold') flagDots+='<div class="fd ok" title="Clean"></div>';
+    if(st==='exception'||st==='hold') flagDots+='<div class="fd" style="background:var(--red)" title="Flagged"></div>';
+    flagDots+='</div>';
+
+    // Day types
+    const dtypes=c.dayData.map(d=>d.type);
+
+    html+=`<tr class="${sel?'selected':''}" onclick="openPanel(${c.id})">
+      <td onclick="event.stopPropagation()"><input type="checkbox" ${sel?'checked':''} style="accent-color:var(--gold)" onchange="toggleSel(${c.id},this)"></td>
+      <td>
+        <div class="cc">
+          <div class="av" style="background:${c.color}20;color:${c.color};border:1px solid ${c.color}40">${c.initials}</div>
+          <div><div class="cn">${c.name}</div><div class="cr">${c.role}</div></div>
+        </div>
+      </td>
+      <td><span class="pill pdim" style="font-size:8px">PACT/BECTU</span></td>
+      <td>${dayTypeChip(dtypes)}</td>
+      <td>
+        <div class="hrs-cell">
+          <span class="hc basic">${c.days}d · ${(c.days*11).toFixed(0)}h basic</span>
+          ${c.totalCamOTHrs>0?`<span class="hc camot">Cam OT ${fmtH(c.totalCamOTHrs)}</span>`:''}
+          ${c.totalNonCamOTHrs>0?`<span class="hc noncam">NC OT ${fmtH(c.totalNonCamOTHrs)}</span>`:''}
+        </div>
+      </td>
+      <td class="pay-cell" style="color:${c.totalCamOTPay>0?'var(--red)':'var(--t3)'}">${c.totalCamOTPay>0?fmtP(c.totalCamOTPay):'—'}</td>
+      <td class="pay-cell" style="color:${c.totalNonCamOTPay>0?'var(--orange)':'var(--t3)'}">${c.totalNonCamOTPay>0?fmtP(c.totalNonCamOTPay):'—'}</td>
+      <td class="pay-cell" style="color:${c.totalBTAPay>0?'var(--orange)':'var(--t3)'}">${c.totalBTAPay>0?fmtP(c.totalBTAPay):'—'}</td>
+      <td class="pay-cell" style="color:${c.totalMealPenPay>0?'var(--yellow)':'var(--t3)'}">${c.totalMealPenPay>0?fmtP(c.totalMealPenPay):'—'}</td>
+      <td class="pay-cell">${fmtP(c.totalBasicPay)}</td>
+      <td class="pay-cell" style="color:var(--orange)">${fmtP(c.totalCamOTPay+c.totalNonCamOTPay+c.totalBTAPay+c.totalMealPenPay)}</td>
+      <td class="pay-cell" style="font-weight:700;color:var(--gold)">${fmtP(c.gross)}</td>
+      <td>${c.hetvc?'<div class="htv">HETVC</div>':'<span style="color:var(--t3)">—</span>'}</td>
+      <td>${flagDots}</td>
+      <td><span class="sp ${spCls}">${spLbl}</span></td>
+      <td onclick="event.stopPropagation()">
+        <div class="ra">
+          ${st!=='processed'?`<button class="rb proc" onclick="processRow(${c.id})">✓</button>`:''}
+          <button class="rb" onclick="openPanel(${c.id});event.stopPropagation()">→</button>
+        </div>
+      </td>
+    </tr>`;
+  });
+  tbody.innerHTML=html;
+  updateIntel();
+}
+
+// ── PANEL ─────────────────────────────────────────────────────────
+function openPanel(id){
+  const c=allCrew.find(x=>x.id===id);
+  if(!c)return;
+  panelCrew=c;
+  const st=getStatus(c);
+
+  document.getElementById('p-av').textContent=c.initials;
+  document.getElementById('p-av').style.cssText=`width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;background:${c.color}20;color:${c.color};border:1px solid ${c.color}40;flex-shrink:0`;
+  document.getElementById('p-name').textContent=c.name;
+  document.getElementById('p-meta').textContent=`${c.role} · ${c.deptName} · ${c.agreement}`;
+
+  // Pay grid
+  document.getElementById('p-paygrid').innerHTML=`
+    <div class="pgc"><div class="pgc-lbl">Basic (daily rate × ${c.days}d)</div><div class="pgc-val" style="color:var(--gold)">${fmtP(c.totalBasicPay)}</div><div class="pgc-sub">£${c.dailyRate}/day · £${c.hourlyRate.toFixed(2)}/hr</div></div>
+    <div class="pgc"><div class="pgc-lbl">Holiday Pay (12.07%)</div><div class="pgc-val">${fmtP(c.holPay)}</div><div class="pgc-sub">§ holiday entitlement</div></div>
+    <div class="pgc"><div class="pgc-lbl">Camera OT (2T→£${camOTRate(c.dailyRate)}/hr)</div><div class="pgc-val" style="color:var(--red)">${c.totalCamOTPay>0?fmtP(c.totalCamOTPay):'—'}</div><div class="pgc-sub">${fmtH(c.totalCamOTHrs)} · §3.3(a)(i) · cap £81.82</div></div>
+    <div class="pgc"><div class="pgc-lbl">Non-Cam OT (1.5T→£${nonCamOTRate(c.dailyRate)}/hr)</div><div class="pgc-val" style="color:var(--orange)">${c.totalNonCamOTPay>0?fmtP(c.totalNonCamOTPay):'—'}</div><div class="pgc-sub">${fmtH(c.totalNonCamOTHrs)} · §3.3(a)(ii) · cap £81.82</div></div>
+    <div class="pgc"><div class="pgc-lbl">BTA (§5.3 · £45/hr cap)</div><div class="pgc-val" style="color:var(--orange)">${c.totalBTAPay>0?fmtP(c.totalBTAPay):'—'}</div><div class="pgc-sub">${fmtH(c.totalBTAHrs)} below 11h turnaround</div></div>
+    <div class="pgc"><div class="pgc-lbl">Meal Delay Pen. (§5.4)</div><div class="pgc-val" style="color:var(--yellow)">${c.totalMealPenPay>0?fmtP(c.totalMealPenPay):'—'}</div><div class="pgc-sub">at basic hourly rate</div></div>
+    <div class="pgc" style="grid-column:1/-1;background:var(--gold-gg);border-color:rgba(232,184,75,.2)"><div class="pgc-lbl">Est. Gross Pay</div><div class="pgc-val" style="color:var(--gold);font-size:22px">${fmtP(c.gross)}</div><div class="pgc-sub">incl. holiday pay · excl. allowances</div></div>`;
+
+  // Day breakdown
+  const dayRows=c.dayData.map(d=>{
+    const typeChip=`<span class="dt-chip ${d.type==='SWD'?'dt-swd':d.type==='CWD'?'dt-cwd':d.type==='SCWD'?'dt-scwd':d.type==='RIG'?'dt-rig':'dt-trvl'}">${d.type}</span>`;
+    const flags=[];
+    if(d.btaMins>0) flags.push(`<span style="font-size:9px;color:var(--red)">BTA ${d.btaMins}m</span>`);
+    if(d.mealDelayMins>0) flags.push(`<span style="font-size:9px;color:var(--yellow)">Meal +${d.mealDelayMins}m</span>`);
+    if(d.camOTMins>0) flags.push(`<span style="font-size:9px;color:var(--red)">CamOT ${fmtH(d.camOTMins/60)}</span>`);
+    return `<tr>
+      <td style="font-weight:600">${d.day}</td>
+      <td>${typeChip}</td>
+      <td class="mono">${d.crewCall}</td>
+      <td class="mono">${d.unitCall}</td>
+      <td class="mono">${d.unitWrap}</td>
+      <td class="mono">${d.release}</td>
+      <td class="mono" style="color:${d.camOTMins>0?'var(--red)':'var(--t3)'}">${d.camOTMins>0?fmtH(d.camOTMins/60):'—'}</td>
+      <td class="mono" style="color:${(d.nonCamOTMins_wrap+d.nonCamOTMins_precall)>0?'var(--orange)':'var(--t3)'}">${(d.nonCamOTMins_wrap+d.nonCamOTMins_precall)>0?fmtH((d.nonCamOTMins_wrap+d.nonCamOTMins_precall)/60):'—'}</td>
+      <td class="mono" style="color:${d.btaMins>0?'var(--orange)':'var(--t3)'}">${d.btaMins>0?d.btaMins+'m':'—'}</td>
+      <td>${flags.join(' ')}</td>
+      <td class="mono" style="color:var(--gold)">${fmtP(d.dayTotal)}</td>
+    </tr>`;
+  }).join('');
+
+  const totRow=`<tr class="tot-row">
+    <td colspan="6">Totals</td>
+    <td class="mono">${fmtH(c.totalCamOTHrs)}</td>
+    <td class="mono">${fmtH(c.totalNonCamOTHrs)}</td>
+    <td class="mono">${c.totalBTAHrs>0?fmtH(c.totalBTAHrs):'—'}</td>
+    <td></td>
+    <td class="mono">${fmtP(c.gross)}</td>
+  </tr>`;
+  document.getElementById('p-days').innerHTML=dayRows+totRow;
+
+  // Flags
+  const flagSec=document.getElementById('p-flags-sec');
+  const flagDiv=document.getElementById('p-flags');
+  if(c.flags.length){
+    flagSec.style.display='block';
+    flagDiv.innerHTML=c.flags.map(f=>`<div class="flag-item ${f.t}">
+      <div class="fi-icon">${f.t==='err'?'🔴':f.t==='warn'?'⚠️':'ℹ️'}</div>
+      <div><div class="fi-text">${f.text}</div></div>
+    </div>`).join('');
+  }else{flagSec.style.display='none';}
+
+  // BACS
+  document.getElementById('p-bacs').innerHTML=`<span class="bacs-f">NAME</span> <span class="bacs-v">${c.name.toUpperCase()}</span>\n<span class="bacs-f">SORT</span> <span class="bacs-v">${c.sortCode}</span>\n<span class="bacs-f">ACCT</span> <span class="bacs-v">${c.account}</span>\n<span class="bacs-f">AMNT</span> <span class="bacs-amt">${fmtP(c.gross)}</span>\n<span class="bacs-f">REF </span> <span class="bacs-v">GHP-S2-W14-${String(c.id).padStart(3,'0')}</span>\n<span class="bacs-f">DATE</span> <span class="bacs-v">110426</span>`;
+
+  // HETVC
+  document.getElementById('p-hetvc').innerHTML=c.hetvc
+    ?`<div class="htv">HETVC</div><span style="font-size:12px;color:var(--t2);flex:1">UK Drama qualifying expenditure (§ HMRC guidance)</span><span class="pill pgreen">${fmtP(c.totalBasicPay)} qualifying</span>`
+    :`<span style="font-size:12px;color:var(--t3)">Not HETVC qualifying — ${c.deptName}</span>`;
+
+  // Proc button
+  const btn=document.getElementById('p-proc-btn');
+  if(st==='processed'){btn.textContent='✓ Processed';btn.disabled=true;btn.style.opacity='.5';}
+  else{btn.textContent='✓ Process & Approve';btn.disabled=false;btn.style.opacity='1';}
+
+  document.getElementById('panel').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closePanel(){
+  document.getElementById('panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+
+function processCurrent(){
+  if(!panelCrew)return;
+  statusOverrides[panelCrew.id]='processed';
+  render(); closePanel();
+  toast(`${panelCrew.name} processed · ${fmtP(panelCrew.gross)} queued for BACS`);
+}
+function holdCurrent(){
+  if(!panelCrew)return;
+  statusOverrides[panelCrew.id]='hold';
+  render(); closePanel();
+  toast(`${panelCrew.name} — payment held`);
+}
+function flagCurrent(){
+  if(!panelCrew)return;
+  statusOverrides[panelCrew.id]='exception';
+  render(); closePanel();
+  toast(`${panelCrew.name} — flagged as exception`);
+}
+
+// ── FILTER / SELECT ───────────────────────────────────────────────
+function setFilter(btn,f){
+  currentFilter=f;
+  document.querySelectorAll('.fb').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  render();
+}
+function filterSearch(v){ currentSearch=v; render(); }
+function setNav(el,v){
+  currentNav=v;
+  document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));
+  el.classList.add('active');
+  const fMap={received:'all',inprogress:'pending',processed:'processed',exceptions:'exception'};
+  currentFilter=fMap[v]||'all';
+  document.querySelectorAll('.fb').forEach((b,i)=>b.classList.toggle('on',i===0));
+  render();
+}
+function toggleSel(id,el){ if(el.checked)selectedIds.add(id);else selectedIds.delete(id); render(); }
+function selectAll(){
+  const vis=getVisible();
+  if(selectedIds.size===vis.length)selectedIds.clear();else vis.forEach(id=>selectedIds.add(id));
+  render();
+}
+function checkAll(el){ const vis=getVisible(); if(el.checked)vis.forEach(id=>selectedIds.add(id));else selectedIds.clear(); render(); }
+function getVisible(){ let r=allCrew; if(currentDept!=='all')r=r.filter(c=>c.dept===currentDept); if(currentFilter!=='all')r=r.filter(c=>getStatus(c)===currentFilter); if(currentSearch)r=r.filter(c=>(c.name+c.role).toLowerCase().includes(currentSearch.toLowerCase())); return r.map(c=>c.id); }
+function processRow(id){ statusOverrides[id]='processed'; render(); toast('Processed · queued for BACS'); }
+function processSelected(){
+  if(!selectedIds.size){toast('Select crew to process');return;}
+  let n=0; selectedIds.forEach(id=>{if(getStatus(allCrew.find(c=>c.id===id))!=='processed'){statusOverrides[id]='processed';n++;}}); selectedIds.clear(); render();
+  toast(`${n} timecards processed · queued for BACS`);
+}
+
+// ── BACS MODAL ────────────────────────────────────────────────────
+function openBacs(){
+  const proc=allCrew.filter(c=>getStatus(c)==='processed');
+  const total=proc.reduce((a,c)=>a+c.gross,0);
+  const excCount=allCrew.filter(c=>['exception','hold'].includes(getStatus(c))).length;
+  document.getElementById('bacs-count').textContent=proc.length+' records';
+  document.getElementById('bacs-exc-check').textContent=`${excCount} exception${excCount!==1?'s':''} flagged — review before submission`;
+  document.getElementById('bacs-total-check').textContent=`Total ${fmtP(total)} reconciles to cost report`;
+  const lines=allCrew.slice(0,15).map(c=>`<span style="color:var(--blue)">${String(idC++%99).padStart(2,'0')}</span> <span style="color:var(--teal)">${c.sortCode.replace(/-/g,'')}</span> <span style="color:var(--green)">${c.account}</span> <span style="color:var(--gold)">${String(Math.round(c.gross*100)).padStart(11,'0')}</span> <span style="color:var(--t2)">${c.name.substring(0,18).padEnd(18)}</span> GHP-S2-W14-${String(c.id).padStart(3,'0')}`).join('\n');
+  document.getElementById('bacs-content').innerHTML=`<span style="color:var(--gold);font-weight:700">BACS STANDARD 18 · GILDED HOUR PRODUCTIONS</span>\n<span style="color:var(--t3)">Payment Date: 110426  Originator: 204512  File Ref: GHP-W14-2026  Sargent-Disc</span>\n<span style="color:var(--t3)">${'─'.repeat(70)}</span>\n${lines}\n<span style="color:var(--t3)">${'─'.repeat(70)}</span>\n<span style="color:var(--t3)">RECORDS: ${proc.length}   TOTAL: </span><span style="color:var(--gold)">${fmtP(total)}</span><span style="color:var(--t3)">   STATUS: ${proc.length>0?'READY':'PENDING'}</span>`;
+  document.getElementById('bacsModal').classList.add('open');
+  idC=1; // reset for next call
+}
+function closeBacs(){ document.getElementById('bacsModal').classList.remove('open'); }
+function submitBacs(){ closeBacs(); lockWeek(); }
+function lockWeek(){ document.getElementById('lockBanner').classList.add('show'); toast('Week locked & submitted to Sargent-Disc · Ref GHP-S2-W14-2026'); }
+
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; clearTimeout(t._to); t._to=setTimeout(()=>t.style.display='none',3000); }
+
+// ── INIT ─────────────────────────────────────────────────────────
+buildDeptTabs();
+render();
+</script>
+</body>
+</html>

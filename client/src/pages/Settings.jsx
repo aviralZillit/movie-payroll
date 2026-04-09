@@ -702,6 +702,16 @@ export default function Settings() {
       {ADMIN_ROLES.includes(user?.role) && (
         <BureauContactsSection />
       )}
+
+      {/* ── Payroll Responsibilities (admin only) ──────────────── */}
+      {ADMIN_ROLES.includes(user?.role) && (
+        <PayrollResponsibilitiesSection />
+      )}
+
+      {/* ── Mandatory Deal Memo Fields (admin only) ────────────── */}
+      {ADMIN_ROLES.includes(user?.role) && (
+        <MandatoryFieldsSection />
+      )}
     </motion.div>
   );
 }
@@ -841,6 +851,234 @@ function BureauContactsSection() {
                 {saving ? <Loader2 className="size-3 mr-1 animate-spin" /> : <Save className="size-3 mr-1" />}
                 Save Contacts
               </Button>
+            </div>
+          </>
+        )}
+        {loading && <p className="text-sm text-muted-foreground">Loading...</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Payroll Responsibilities ─────────────────────────────────────────
+const RESPONSIBILITY_OPTIONS = [
+  { value: "payroll_manager", label: "Payroll Manager" },
+  { value: "petty_cash", label: "Petty Cash" },
+  { value: "payroll_admin", label: "Payroll Admin" },
+  { value: "production_accountant", label: "Production Accountant" },
+  { value: "cost_controller", label: "Cost Controller" },
+  { value: "custom", label: "Other" },
+];
+
+function PayrollResponsibilitiesSection() {
+  const [selectedProdId, setSelectedProdId] = useState("");
+  const [responsibilities, setResponsibilities] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [productions, setProductions] = useState([]);
+
+  useEffect(() => {
+    api.get("/productions").then(({ data }) => setProductions(data.data || data.productions || [])).catch(() => {});
+  }, []);
+
+  const fetchData = async (prodId) => {
+    if (!prodId) return;
+    setLoading(true);
+    try {
+      const { data } = await api.get(`/productions/${prodId}/settings`);
+      setResponsibilities(data.data?.payrollResponsibilities || []);
+    } catch { setResponsibilities([]); }
+    setLoading(false);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await api.put(`/productions/${selectedProdId}/settings`, { payrollResponsibilities: responsibilities });
+      toast.success("Payroll responsibilities saved");
+    } catch { toast.error("Failed to save"); }
+    setSaving(false);
+  };
+
+  const addRow = () => setResponsibilities([...responsibilities, { personName: "", responsibility: "custom", customResponsibility: "", departments: [], notes: "" }]);
+  const removeRow = (i) => setResponsibilities(responsibilities.filter((_, idx) => idx !== i));
+  const updateRow = (i, key, val) => {
+    const updated = [...responsibilities];
+    updated[i] = { ...updated[i], [key]: val };
+    setResponsibilities(updated);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><ClipboardList className="size-5" /> Payroll Responsibilities</CardTitle>
+        <CardDescription>Assign who manages payroll for which departments</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="max-w-sm">
+          <Label>Production</Label>
+          <Select value={selectedProdId} onValueChange={(v) => { setSelectedProdId(v); fetchData(v); }}>
+            <SelectTrigger><SelectValue placeholder="Select production..." /></SelectTrigger>
+            <SelectContent>
+              {productions.map((p) => <SelectItem key={p._id} value={p._id}>{p.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {selectedProdId && !loading && (
+          <>
+            {responsibilities.length > 0 && (
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="text-left px-3 py-2 font-medium">Person</th>
+                      <th className="text-left px-3 py-2 font-medium">Responsibility</th>
+                      <th className="text-left px-3 py-2 font-medium">Departments</th>
+                      <th className="text-left px-3 py-2 font-medium">Notes</th>
+                      <th className="px-3 py-2 w-10"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {responsibilities.map((r, i) => (
+                      <tr key={i} className="border-t">
+                        <td className="px-3 py-2">
+                          <Input className="h-8 text-sm" placeholder="Name" value={r.personName || ""} onChange={(e) => updateRow(i, "personName", e.target.value)} />
+                        </td>
+                        <td className="px-3 py-2">
+                          <Select value={r.responsibility || "custom"} onValueChange={(v) => updateRow(i, "responsibility", v)}>
+                            <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {RESPONSIBILITY_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                          {r.responsibility === "custom" && (
+                            <Input className="h-7 text-xs mt-1" placeholder="Specify..." value={r.customResponsibility || ""} onChange={(e) => updateRow(i, "customResponsibility", e.target.value)} />
+                          )}
+                        </td>
+                        <td className="px-3 py-2">
+                          <Input className="h-8 text-sm" placeholder="e.g. Wardrobe, Camera" value={(r.departments || []).join(", ")} onChange={(e) => updateRow(i, "departments", e.target.value.split(",").map(s => s.trim()).filter(Boolean))} />
+                        </td>
+                        <td className="px-3 py-2">
+                          <Input className="h-8 text-sm" placeholder="Notes" value={r.notes || ""} onChange={(e) => updateRow(i, "notes", e.target.value)} />
+                        </td>
+                        <td className="px-3 py-2">
+                          <Button variant="ghost" size="sm" onClick={() => removeRow(i)} className="text-muted-foreground hover:text-destructive"><Trash2 className="size-3.5" /></Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={addRow}><Plus className="size-3 mr-1" /> Add Row</Button>
+              <Button size="sm" onClick={handleSave} disabled={saving}>
+                {saving ? <Loader2 className="size-3 mr-1 animate-spin" /> : <Save className="size-3 mr-1" />}
+                Save
+              </Button>
+            </div>
+          </>
+        )}
+        {loading && <p className="text-sm text-muted-foreground">Loading...</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Mandatory Deal Memo Fields ───────────────────────────────────────
+const CONFIGURABLE_FIELDS = [
+  { key: "employmentStatus", label: "Employment Type" },
+  { key: "startDate", label: "Start Date" },
+  { key: "endDate", label: "End Date" },
+  { key: "dealType", label: "Deal Type" },
+  { key: "weeklyRate", label: "Weekly Rate" },
+  { key: "dailyRate", label: "Daily Rate" },
+  { key: "rateType", label: "Rate Type" },
+  { key: "hpMode", label: "Holiday Pay Mode" },
+  { key: "taxCode", label: "Tax Code" },
+  { key: "niNumber", label: "NI Number" },
+  { key: "bankSortCode", label: "Bank Sort Code" },
+  { key: "bankAccountNumber", label: "Bank Account Number" },
+  { key: "dateOfBirth", label: "Date of Birth" },
+  { key: "crewAddress", label: "Address" },
+  { key: "emergencyContact", label: "Emergency Contact" },
+];
+
+function MandatoryFieldsSection() {
+  const [selectedProdId, setSelectedProdId] = useState("");
+  const [fields, setFields] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [productions, setProductions] = useState([]);
+
+  useEffect(() => {
+    api.get("/productions").then(({ data }) => setProductions(data.data || data.productions || [])).catch(() => {});
+  }, []);
+
+  const fetchData = async (prodId) => {
+    if (!prodId) return;
+    setLoading(true);
+    try {
+      const { data } = await api.get(`/productions/${prodId}/settings`);
+      const saved = data.data?.mandatoryDealMemoFields || [];
+      // Merge saved state with all configurable fields
+      const merged = CONFIGURABLE_FIELDS.map((f) => {
+        const existing = saved.find((s) => s.fieldKey === f.key);
+        return { fieldKey: f.key, label: f.label, isRequired: existing?.isRequired ?? false };
+      });
+      setFields(merged);
+    } catch { setFields(CONFIGURABLE_FIELDS.map(f => ({ fieldKey: f.key, label: f.label, isRequired: false }))); }
+    setLoading(false);
+  };
+
+  const toggleField = (key) => {
+    setFields(fields.map((f) => f.fieldKey === key ? { ...f, isRequired: !f.isRequired } : f));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const required = fields.filter((f) => f.isRequired);
+      await api.put(`/productions/${selectedProdId}/settings`, { mandatoryDealMemoFields: required });
+      toast.success(`${required.length} mandatory fields saved`);
+    } catch { toast.error("Failed to save"); }
+    setSaving(false);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><Shield className="size-5" /> Mandatory Deal Memo Fields</CardTitle>
+        <CardDescription>Choose which fields must be filled before a deal memo can be issued</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="max-w-sm">
+          <Label>Production</Label>
+          <Select value={selectedProdId} onValueChange={(v) => { setSelectedProdId(v); fetchData(v); }}>
+            <SelectTrigger><SelectValue placeholder="Select production..." /></SelectTrigger>
+            <SelectContent>
+              {productions.map((p) => <SelectItem key={p._id} value={p._id}>{p.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {selectedProdId && !loading && (
+          <>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {fields.map((f) => (
+                <label key={f.fieldKey} className="flex items-center gap-2 p-2 rounded-md border cursor-pointer hover:bg-muted/30 transition-colors">
+                  <Checkbox checked={f.isRequired} onCheckedChange={() => toggleField(f.fieldKey)} />
+                  <span className="text-sm">{f.label}</span>
+                </label>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" onClick={handleSave} disabled={saving}>
+                {saving ? <Loader2 className="size-3 mr-1 animate-spin" /> : <Save className="size-3 mr-1" />}
+                Save Requirements
+              </Button>
+              <span className="text-xs text-muted-foreground">{fields.filter(f => f.isRequired).length} fields marked mandatory</span>
             </div>
           </>
         )}

@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Zillit Coda — Crew Weekly Timesheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0e0f12;--bg-s:#14161c;--bg-e:#1a1d27;--bg-h:#21242f;
+  --b:#252836;--bm:#2e3245;--bl:#383d54;
+  --gold:#e8b84b;--gold-g:rgba(232,184,75,0.10);--gold-gg:rgba(232,184,75,0.05);
+  --t1:#eeeef3;--t2:#8b90aa;--t3:#555a72;
+  --green:#4ade80;--green-g:rgba(74,222,128,0.10);
+  --red:#f87171;--red-g:rgba(248,113,113,0.10);
+  --orange:#fb923c;--orange-g:rgba(251,146,60,0.10);
+  --blue:#60a5fa;--blue-g:rgba(96,165,250,0.10);
+  --teal:#2dd4bf;--teal-g:rgba(45,212,191,0.10);
+  --yellow:#fbbf24;--yellow-g:rgba(251,191,36,0.10);
+  --purple:#c084fc;--purple-g:rgba(192,132,252,0.10);
+  --r:5px;--rl:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--t1);font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.5;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{height:50px;background:var(--bg-s);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 18px;gap:12px;flex-shrink:0;z-index:200;}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:var(--gold);padding-right:12px;border-right:1px solid var(--b);}
+.breadcrumb{font-size:12px;color:var(--t3);}
+.breadcrumb span{color:var(--t2);}
+.breadcrumb .cur{color:var(--gold);}
+.topbar-r{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.week-bar{height:42px;background:var(--bg-s);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0;}
+.wb-btn{background:var(--bg-e);border:1px solid var(--b);border-radius:var(--r);padding:3px 9px;color:var(--t2);cursor:pointer;font-size:13px;}
+.wb-btn:hover{border-color:var(--gold);color:var(--gold);}
+.wb-label{font-family:'Syne',sans-serif;font-size:12.5px;font-weight:700;}
+.wb-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.main{display:flex;flex:1;overflow:hidden;}
+.table-area{flex:1;overflow-y:auto;display:flex;flex-direction:column;}
+.aside{width:268px;flex-shrink:0;background:var(--bg-s);border-left:1px solid var(--b);overflow-y:auto;}
+.btn{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;font-family:'Syne',sans-serif;font-size:10.5px;font-weight:700;letter-spacing:.3px;border:none;border-radius:var(--r);cursor:pointer;transition:all .14s;white-space:nowrap;}
+.btn-gold{background:var(--gold);color:#0e0f12;}.btn-gold:hover{opacity:.85;}
+.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--bm);}.btn-ghost:hover{border-color:var(--bl);color:var(--t1);}
+.btn-sm{padding:4px 8px;font-size:10px;}
+.btn-red{background:transparent;color:var(--red);border:1px solid rgba(248,113,113,.3);}.btn-red:hover{background:var(--red-g);}
+.pill{display:inline-flex;align-items:center;gap:3px;padding:1.5px 6px;border-radius:20px;font-family:'Syne',sans-serif;font-size:9px;font-weight:700;letter-spacing:.2px;}
+.pg{background:var(--gold-g);color:var(--gold);border:1px solid rgba(232,184,75,.2);}
+.pgreen{background:var(--green-g);color:var(--green);border:1px solid rgba(74,222,128,.2);}
+.pblue{background:var(--blue-g);color:var(--blue);border:1px solid rgba(96,165,250,.2);}
+.porange{background:var(--orange-g);color:var(--orange);border:1px solid rgba(251,146,60,.2);}
+.pred{background:var(--red-g);color:var(--red);border:1px solid rgba(248,113,113,.2);}
+.pteal{background:var(--teal-g);color:var(--teal);border:1px solid rgba(45,212,191,.2);}
+.pgrey{background:var(--bg-h);color:var(--t3);border:1px solid var(--b);}
+.ppurple{background:var(--purple-g);color:var(--purple);border:1px solid rgba(192,132,252,.2);}
+.pyellow{background:var(--yellow-g);color:var(--yellow);border:1px solid rgba(251,191,36,.2);}
+.src{display:inline-flex;align-items:center;font-family:'Syne',sans-serif;font-size:8px;font-weight:700;padding:1px 4px;border-radius:3px;flex-shrink:0;line-height:1.4;}
+.src-gps{background:var(--green-g);color:var(--green);}
+.src-cs{background:var(--blue-g);color:var(--blue);}
+.src-bp{background:var(--teal-g);color:var(--teal);}
+.src-auto{background:var(--purple-g);color:var(--purple);}
+.src-over{background:var(--orange-g);color:var(--orange);}
+.src-manual{background:var(--yellow-g);color:var(--yellow);}
+.src-lock{background:var(--red-g);color:var(--red);}
+/* Crew header */
+.crew-hdr{display:flex;align-items:center;gap:12px;padding:11px 16px;background:var(--bg-e);border-bottom:1px solid var(--b);flex-shrink:0;}
+.ch-av{width:38px;height:38px;border-radius:50%;background:var(--gold-g);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--gold);flex-shrink:0;}
+.ch-name{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;}
+.ch-role{font-size:11px;color:var(--t2);}
+.ot-badge{display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--red-g);border:1px solid rgba(248,113,113,.2);border-radius:var(--r);font-size:11px;color:var(--red);margin-left:auto;white-space:nowrap;}
+/* Week summary */
+.week-summary{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--b);flex-shrink:0;}
+.ws{padding:7px 6px;text-align:center;border-right:1px solid var(--b);}
+.ws:last-child{border-right:none;}
+.ws-lbl{font-family:'Syne',sans-serif;font-size:8px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--t3);margin-bottom:2px;}
+.ws-val{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;}
+/* Column headers */
+.col-headers{display:flex;border-bottom:2px solid var(--b);flex-shrink:0;background:var(--bg-h);position:sticky;top:0;z-index:10;}
+.ch{font-family:'Syne',sans-serif;font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--t3);padding:7px 8px;border-right:1px solid var(--b);}
+.ch:last-child{border-right:none;}
+.cw-day{width:82px;flex-shrink:0;}
+.cw-type{width:82px;flex-shrink:0;}
+.cw-call{width:126px;flex-shrink:0;}
+.cw-wrap{width:126px;flex-shrink:0;}
+.cw-ot{width:200px;flex-shrink:0;}
+.cw-allow{flex:1;}
+.cw-status{width:82px;flex-shrink:0;}
+.cw-chev{width:24px;flex-shrink:0;padding:7px 4px;}
+/* Day row */
+.day-row{border-bottom:1px solid var(--b);transition:background .07s;}
+.day-row.rest{opacity:.4;}
+.day-row.has-override{border-left:3px solid var(--orange);}
+.day-row.has-flag{border-left:3px solid var(--yellow);}
+.dr-top{display:flex;align-items:center;cursor:pointer;transition:background .07s;}
+.dr-top:hover{background:rgba(255,255,255,.012);}
+.day-row.expanded>.dr-top{background:var(--bg-e);}
+.dr-cell{padding:8px 8px;border-right:1px solid rgba(37,40,54,.5);}
+.dr-cell:last-child{border-right:none;}
+.day-lbl{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;}
+.day-dt{font-size:10px;color:var(--t3);font-family:'DM Mono',monospace;}
+/* Time pair */
+.tc-pair{display:flex;flex-direction:column;gap:2px;}
+.tc-line{display:flex;align-items:center;gap:3px;}
+.tc-row-lbl{font-size:9px;font-family:'Syne',sans-serif;font-weight:700;color:var(--t3);width:28px;flex-shrink:0;}
+.tc-val{font-family:'DM Mono',monospace;font-size:12px;line-height:1;}
+.tc-val.dim{color:var(--t3);}
+.tc-val.over{color:var(--orange);}
+.tc-val.manual{color:var(--yellow);}
+.tc-edit{opacity:0;background:none;border:1px solid var(--bm);border-radius:3px;padding:1px 5px;font-size:9px;color:var(--t3);cursor:pointer;transition:all .1s;flex-shrink:0;}
+.tc-edit:hover{border-color:var(--gold);color:var(--gold);}
+.dr-top:hover .tc-edit{opacity:1;}
+/* OT cell */
+.ot-cell{display:flex;flex-direction:column;gap:2px;}
+.ot-line{display:flex;align-items:center;gap:5px;}
+.ot-tag{font-family:'Syne',sans-serif;font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;flex-shrink:0;line-height:1.5;}
+.ot-basic{background:var(--blue-g);color:var(--blue);}
+.ot-precall{background:var(--teal-g);color:var(--teal);}
+.ot-wrap{background:var(--teal-g);color:var(--teal);}
+.ot-t13{background:var(--orange-g);color:var(--orange);}
+.ot-t2{background:var(--red-g);color:var(--red);}
+.ot-meal{background:var(--yellow-g);color:var(--yellow);}
+.ot-bta{background:var(--red-g);color:var(--red);}
+.ot-val{font-family:'DM Mono',monospace;font-size:11px;color:var(--t2);}
+.ot-lock{font-size:8px;color:var(--t3);margin-left:auto;}
+/* Allow cell */
+.allow-cell{display:flex;gap:3px;flex-wrap:wrap;align-items:center;}
+.allow-add-btn{background:none;border:1px dashed var(--bm);border-radius:var(--r);padding:2px 8px;font-size:10px;color:var(--t3);cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;transition:all .12s;white-space:nowrap;}
+.allow-add-btn:hover{border-color:var(--gold);color:var(--gold);}
+/* Status chip */
+.sc{font-family:'Syne',sans-serif;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;}
+.sc-auto{background:var(--purple-g);color:var(--purple);}
+.sc-confirmed{background:var(--green-g);color:var(--green);}
+.sc-pending{background:var(--yellow-g);color:var(--yellow);}
+.sc-override{background:var(--orange-g);color:var(--orange);}
+.sc-manual{background:var(--yellow-g);color:var(--yellow);}
+.sc-rest{background:var(--bg-h);color:var(--t3);}
+/* Chevron */
+.chev{color:var(--t3);font-size:10px;transition:transform .2s;display:block;padding:0 2px;}
+.day-row.expanded .chev{transform:rotate(180deg);}
+/* Day detail */
+.day-detail{display:none;padding:14px 16px 16px;background:rgba(0,0,0,.22);border-top:1px solid var(--b);}
+.day-row.expanded .day-detail{display:block;}
+.dd-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;}
+.dd-card{background:var(--bg-s);border:1px solid var(--b);border-radius:var(--rl);overflow:hidden;}
+.dd-ch{font-family:'Syne',sans-serif;font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--t3);padding:6px 10px;background:var(--bg-e);border-bottom:1px solid var(--b);display:flex;align-items:center;gap:6px;}
+.lock-b{font-size:8px;color:var(--red);background:var(--red-g);border:1px solid rgba(248,113,113,.2);padding:1px 5px;border-radius:3px;margin-left:auto;}
+.edit-b{font-size:8px;color:var(--t3);margin-left:auto;font-style:italic;}
+.dd-row{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;border-bottom:1px solid rgba(37,40,54,.4);font-size:12px;gap:6px;}
+.dd-row:last-child{border-bottom:none;}
+.dd-row.clickable{cursor:pointer;transition:background .1s;}
+.dd-row.clickable:hover{background:rgba(232,184,75,.05);}
+.dd-row.clickable:hover .edit-hint{opacity:1!important;}
+.edit-hint{opacity:0;font-size:9px;color:var(--gold);transition:opacity .1s;flex-shrink:0;}
+.dd-k{color:var(--t2);flex-shrink:0;}
+.dd-v{font-family:'DM Mono',monospace;font-size:11.5px;display:flex;align-items:center;gap:4px;}
+.dd-v.vg{color:var(--green);}
+.dd-v.vo{color:var(--orange);}
+.dd-v.vr{color:var(--red);}
+.dd-v.vy{color:var(--yellow);}
+.dd-v.vt{color:var(--teal);}
+.dd-v.vgold{color:var(--gold);}
+.dd-v.vd{color:var(--t3);}
+/* Calc notices */
+.cn{display:flex;gap:8px;padding:7px 10px;border-radius:var(--r);font-size:12px;margin-bottom:7px;align-items:flex-start;line-height:1.45;}
+.cn-y{background:var(--yellow-g);border-left:3px solid var(--yellow);}
+.cn-r{background:var(--red-g);border-left:3px solid var(--red);}
+.cn-t{background:var(--teal-g);border-left:3px solid var(--teal);}
+.cn-o{background:var(--orange-g);border-left:3px solid var(--orange);}
+/* Override notice */
+.over-notice{display:flex;gap:8px;padding:8px 10px;background:var(--orange-g);border:1px solid rgba(251,146,60,.2);border-radius:var(--r);font-size:12px;margin-bottom:10px;line-height:1.5;}
+/* Audit log */
+.audit-log{background:var(--bg-s);border:1px solid var(--b);border-radius:var(--r);overflow:hidden;}
+.audit-h{font-family:'Syne',sans-serif;font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--t3);padding:5px 10px;background:var(--bg-e);border-bottom:1px solid var(--b);}
+.ae{display:flex;gap:8px;padding:5px 10px;border-bottom:1px solid rgba(37,40,54,.3);font-size:11.5px;}
+.ae:last-child{border-bottom:none;}
+.ae-t{font-family:'DM Mono',monospace;font-size:10.5px;color:var(--t3);width:56px;flex-shrink:0;}
+.ae-a{color:var(--t2);flex-shrink:0;width:80px;font-size:11px;}
+.ae-d{color:var(--t1);flex:1;}
+/* Aside */
+.aside-sec{padding:12px 14px;border-bottom:1px solid var(--b);}
+.as-ttl{font-family:'Syne',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--t3);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.as-ttl::after{content:'';flex:1;height:1px;background:var(--b);}
+.pay-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(37,40,54,.3);font-size:12px;}
+.pay-row:last-child{border-bottom:none;}
+.pay-k{color:var(--t2);}
+.pay-v{font-family:'DM Mono',monospace;font-size:11.5px;}
+.pay-total{display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--b);font-size:13px;font-weight:700;}
+.wc-row{display:flex;justify-content:space-between;font-size:12px;padding:2px 0;}
+.wc-k{color:var(--t3);}
+.wc-v{font-family:'DM Mono',monospace;color:var(--t1);}
+.submit-panel{padding:12px 14px;}
+.week-confirm-box{background:var(--bg-e);border:1px solid var(--b);border-radius:var(--r);padding:10px 12px;margin-bottom:10px;}
+/* Toggle */
+.tog{position:relative;display:inline-block;width:36px;height:20px;flex-shrink:0;cursor:pointer;}
+.tog input{opacity:0;width:0;height:0;}
+.tog-sl{position:absolute;inset:0;background:var(--b);border-radius:20px;transition:.18s;border:1px solid var(--bm);}
+.tog-sl:before{content:'';position:absolute;width:14px;height:14px;left:2px;bottom:2px;background:var(--t3);border-radius:50%;transition:.18s;}
+.tog input:checked+.tog-sl{background:var(--teal);border-color:var(--teal);}
+.tog input:checked+.tog-sl:before{transform:translateX(16px);background:#fff;}
+.tog.gold input:checked+.tog-sl{background:var(--gold);border-color:var(--gold);}
+.pref-row{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--bg-e);border:1px solid var(--b);border-radius:var(--r);margin-bottom:5px;}
+.pr-ttl{font-size:12px;font-weight:600;}
+.pr-sub{font-size:10.5px;color:var(--t3);}
+.asgn-card{background:var(--bg-e);border:1px solid var(--b);border-radius:var(--rl);overflow:hidden;margin-bottom:8px;}
+.asgn-av{width:26px;height:26px;border-radius:50%;background:var(--teal-g);border:1.5px solid var(--teal);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:9px;font-weight:700;color:var(--teal);flex-shrink:0;}
+/* Modal */
+.modal{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;}
+.modal.open{display:flex;}
+.modal-ov{position:absolute;inset:0;background:rgba(0,0,0,.65);}
+.modal-panel{position:relative;background:var(--bg-s);border:1px solid var(--bm);border-radius:var(--rl);padding:20px;width:440px;max-width:calc(100vw - 32px);max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.6);}
+.modal-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;margin-bottom:3px;}
+.modal-sub{font-size:12px;color:var(--t2);margin-bottom:14px;line-height:1.5;}
+.field label{display:block;font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--t3);margin-bottom:4px;}
+.field input,.field select,.field textarea{width:100%;background:var(--bg-e);border:1px solid var(--bm);border-radius:var(--r);padding:8px 10px;color:var(--t1);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border .12s;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold);}
+.field{margin-bottom:10px;}
+.fg-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.lock-notice{display:flex;align-items:flex-start;gap:7px;padding:8px 10px;background:var(--red-g);border:1px solid rgba(248,113,113,.2);border-radius:var(--r);font-size:11.5px;color:var(--red);margin-bottom:12px;line-height:1.4;}
+.calc-display{display:flex;justify-content:space-between;padding:8px 10px;background:var(--bg-e);border:1px solid var(--b);border-radius:var(--r);margin-bottom:10px;font-size:13px;}
+.calc-lbl{color:var(--t2);}
+.calc-amt{font-family:'DM Mono',monospace;color:var(--gold);font-weight:600;}
+.allow-types{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;}
+.allow-type-btn{padding:9px 10px;border:1px solid var(--bm);border-radius:var(--r);background:var(--bg-e);cursor:pointer;text-align:center;transition:all .12s;}
+.allow-type-btn:hover{border-color:var(--bl);}
+.allow-type-btn.sel{border-color:var(--gold);background:var(--gold-g);}
+.at-icon{font-size:18px;margin-bottom:2px;}
+.at-lbl{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;}
+.at-sub{font-size:10px;color:var(--t3);}
+.amend-notice{background:var(--bg-e);border:1px solid var(--b);border-radius:var(--r);padding:8px 10px;font-size:11.5px;color:var(--t3);margin-bottom:12px;line-height:1.5;}
+.scope-pills{display:flex;gap:4px;margin-top:6px;}
+.sp-btn{flex:1;padding:4px;font-family:'Syne',sans-serif;font-size:9px;font-weight:700;border:1px solid var(--b);border-radius:var(--r);background:var(--bg-h);color:var(--t3);cursor:pointer;text-align:center;transition:all .12s;}
+.sp-btn.sp-on{border-color:var(--teal);background:var(--teal-g);color:var(--teal);}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--bg-h);border:1px solid var(--bm);border-radius:var(--rl);padding:9px 16px;font-size:12px;color:var(--t1);z-index:500;max-width:380px;text-align:center;line-height:1.4;box-shadow:0 4px 20px rgba(0,0,0,.5);display:none;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">Zillit</div>
+  <div class="breadcrumb">Coda · <span>The Gilded Hour S2</span> · <span class="cur">My Timecard</span></div>
+  <div class="topbar-r">
+    <span class="pill ppurple">⚡ Auto-filled · GPS + Call Sheet</span>
+    <span class="pill pyellow" id="week-status">Draft · Not submitted</span>
+  </div>
+</div>
+
+<div class="week-bar">
+  <button class="wb-btn" onclick="shiftWeek(-1)">‹</button>
+  <span class="wb-label" id="week-label">Week 14 · 07–13 Apr 2026</span>
+  <button class="wb-btn" onclick="shiftWeek(1)">›</button>
+  <div class="wb-right">
+    <button class="btn btn-ghost btn-sm" onclick="openModal('assign-modal')">👤 Assignment</button>
+    <button class="btn btn-ghost btn-sm" onclick="openAllowModal(null)">＋ Add Allowance</button>
+    <button class="btn btn-gold btn-sm" id="submit-btn" onclick="submitWeek()">Approve &amp; Submit →</button>
+  </div>
+</div>
+
+<div class="main">
+<div class="table-area">
+
+<div class="crew-hdr">
+  <div class="ch-av">JW</div>
+  <div style="flex:1;">
+    <div class="ch-name">James Whitfield</div>
+    <div class="ch-role">1st Assistant Camera · Camera · PACT/BECTU Drama · Direct Hire Sch. D · Week 14 of 22</div>
+  </div>
+  <div class="ot-badge">🔒 OT is auto-calculated from your times — you cannot enter it manually</div>
+</div>
+
+<div class="week-summary">
+  <div class="ws"><div class="ws-lbl">Basic</div><div class="ws-val" style="color:var(--blue)" id="ws-basic">—</div></div>
+  <div class="ws"><div class="ws-lbl">Pre-Call OT</div><div class="ws-val" style="color:var(--teal)" id="ws-precall">—</div></div>
+  <div class="ws"><div class="ws-lbl">Wrap OT</div><div class="ws-val" style="color:var(--teal)" id="ws-wrapot">—</div></div>
+  <div class="ws"><div class="ws-lbl">Cam OT (T×2)</div><div class="ws-val" style="color:var(--red)" id="ws-ot13">—</div></div>
+  <div class="ws"><div class="ws-lbl">Meal Delay</div><div class="ws-val" style="color:var(--yellow)" id="ws-meal">—</div></div>
+  <div class="ws"><div class="ws-lbl">Allowances</div><div class="ws-val" style="color:var(--teal)" id="ws-allow">—</div></div>
+  <div class="ws"><div class="ws-lbl">Est. Gross</div><div class="ws-val" style="color:var(--gold)" id="ws-gross">—</div></div>
+</div>
+
+<div class="col-headers">
+  <div class="ch cw-day">Day</div>
+  <div class="ch cw-type">Day Type</div>
+  <div class="ch cw-call">Crew Call / Time In</div>
+  <div class="ch cw-wrap">Unit Wrap / Time Out</div>
+  <div class="ch cw-ot">OT Breakdown <span style="color:var(--red);font-size:7px;letter-spacing:0">● LOCKED · Cam OT = T×2</span></div>
+  <div class="ch cw-allow">Allowances &amp; Claims</div>
+  <div class="ch cw-status">Status</div>
+  <div class="ch cw-chev"></div>
+</div>
+
+<div id="day-rows"></div>
+</div><!-- /table-area -->
+
+<div class="aside">
+  <div class="submit-panel">
+    <div class="as-ttl">Week 14 Actions</div>
+    <div class="week-confirm-box" id="week-confirm-box">Loading…</div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <button class="btn btn-gold" style="justify-content:center;" onclick="submitWeek()" id="submit-btn-2">✓ Approve &amp; Submit →</button>
+      <button class="btn btn-ghost btn-sm" style="justify-content:center;" onclick="openAllowModal(null)">＋ Add Allowance / Claim</button>
+    </div>
+  </div>
+  <div class="aside-sec">
+    <div class="as-ttl">Pay Estimate</div>
+    <div id="aside-pay"></div>
+    <div style="font-size:10px;color:var(--t3);margin-top:8px;line-height:1.4;">Estimate only · subject to payroll bureau calculation.</div>
+  </div>
+  <div class="aside-sec">
+    <div class="as-ttl">Timecard Assignment</div>
+    <div style="font-size:12px;color:var(--t2);margin-bottom:8px;">Control who completes your timecards. You always retain full access and final approval.</div>
+    <div class="asgn-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--bg-h);border-bottom:1px solid var(--b);">
+        <span class="pill pteal" style="font-size:8px;">Active</span>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-ghost btn-sm" onclick="openModal('assign-modal')">Reassign</button>
+          <button class="btn btn-sm btn-red" onclick="toast('Assignment removed.')">Remove</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;">
+        <div class="asgn-av">OA</div>
+        <div><div style="font-size:12px;font-weight:600;">O. Adeyemi</div><div style="font-size:11px;color:var(--t3);">Camera Trainee</div></div>
+      </div>
+      <div style="padding:6px 10px;border-top:1px solid var(--b);">
+        <div class="scope-pills">
+          <div class="sp-btn sp-on" onclick="setScope(this)">All weeks</div>
+          <div class="sp-btn" onclick="setScope(this)">This week</div>
+          <div class="sp-btn" onclick="setScope(this)">Custom</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="aside-sec">
+    <div class="as-ttl">My Preferences</div>
+    <div class="pref-row"><div><div class="pr-ttl">GPS auto-fill</div><div class="pr-sub">Pre-fill times from clock-in logs</div></div><label class="tog gold"><input type="checkbox" checked><span class="tog-sl"></span></label></div>
+    <div class="pref-row"><div><div class="pr-ttl">Override alerts</div><div class="pr-sub">Notify me if a time is changed</div></div><label class="tog gold"><input type="checkbox" checked><span class="tog-sl"></span></label></div>
+    <div class="pref-row"><div><div class="pr-ttl">Show pay estimates</div><div class="pr-sub">Display gross estimate in summary</div></div><label class="tog gold"><input type="checkbox" checked><span class="tog-sl"></span></label></div>
+    <div class="pref-row"><div><div class="pr-ttl">Kit rental auto-apply</div><div class="pr-sub">Add daily kit from deal memo</div></div><label class="tog gold"><input type="checkbox" checked><span class="tog-sl"></span></label></div>
+  </div>
+  <div class="aside-sec">
+    <div class="as-ttl">Source Key</div>
+    <div style="display:flex;flex-direction:column;gap:5px;font-size:12px;">
+      <div style="display:flex;align-items:center;gap:7px;"><span class="src src-gps">GPS</span><span style="color:var(--t2);">Verified GPS clock-in/out</span></div>
+      <div style="display:flex;align-items:center;gap:7px;"><span class="src src-cs">CS</span><span style="color:var(--t2);">Call sheet</span></div>
+      <div style="display:flex;align-items:center;gap:7px;"><span class="src src-bp">BP</span><span style="color:var(--t2);">Back pages / AD report</span></div>
+      <div style="display:flex;align-items:center;gap:7px;"><span class="src src-manual">Manual</span><span style="color:var(--yellow);">Your amendment</span></div>
+      <div style="display:flex;align-items:center;gap:7px;"><span class="src src-over">Override</span><span style="color:var(--orange);">Producer override</span></div>
+      <div style="display:flex;align-items:center;gap:7px;"><span class="src src-lock">Locked</span><span style="color:var(--t2);">Set by production, contact AD to dispute</span></div>
+    </div>
+  </div>
+</div>
+</div><!-- /main -->
+
+<!-- ALLOWANCE MODAL -->
+<div class="modal" id="allow-modal">
+  <div class="modal-ov" onclick="closeModal('allow-modal')"></div>
+  <div class="modal-panel">
+    <div class="modal-title">Add Allowance</div>
+    <div class="modal-sub">Add a personal expense or allowance claim to your timecard. Select a type below.</div>
+    <div class="lock-notice">🔒 <div>Pre-call OT, wrap OT, camera OT, BTA and meal penalties are <strong>system-calculated only</strong> from your times. They cannot be added here.</div></div>
+    <div class="allow-types">
+      <div class="allow-type-btn sel" onclick="selAllowType('perdiem',this)"><div class="at-icon">🍽️</div><div class="at-lbl">Per Diem</div><div class="at-sub">Daily allowance</div></div>
+      <div class="allow-type-btn" onclick="selAllowType('mileage',this)"><div class="at-icon">🚗</div><div class="at-lbl">Mileage</div><div class="at-sub">45p/mile HMRC</div></div>
+      <div class="allow-type-btn" onclick="selAllowType('meal',this)"><div class="at-icon">🧾</div><div class="at-lbl">Meal Buyout</div><div class="at-sub">Meal not provided</div></div>
+      <div class="allow-type-btn" onclick="selAllowType('kit',this)"><div class="at-icon">🎒</div><div class="at-lbl">Kit / Box Rental</div><div class="at-sub">From deal memo</div></div>
+    </div>
+    <div id="allow-fields">
+      <div class="field"><label>Day</label><select id="allow-day"><option>Monday 07 Apr</option><option>Tuesday 08 Apr</option><option selected>Wednesday 09 Apr</option><option>Thursday 10 Apr</option><option>Friday 11 Apr</option></select></div>
+      <div class="fg-2">
+        <div class="field"><label>Per Diem Rate</label><input type="text" value="£45.00" readonly style="color:var(--t3);"></div>
+        <div class="field"><label>Days count</label><input type="number" value="1" min="1" max="7" id="pd-days" oninput="calcPD()"></div>
+      </div>
+      <div class="calc-display"><span class="calc-lbl">Total</span><span class="calc-amt" id="pd-total">£45.00</span></div>
+      <div class="field"><label>Note (optional)</label><input type="text" placeholder="e.g. Distant location, overnight…"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('allow-modal')">Cancel</button>
+      <button class="btn btn-gold" style="flex:2;" onclick="confirmAllow()">＋ Add to Timecard</button>
+    </div>
+  </div>
+</div>
+
+<!-- AMEND MODAL -->
+<div class="modal" id="amend-modal">
+  <div class="modal-ov" onclick="closeModal('amend-modal')"></div>
+  <div class="modal-panel">
+    <div class="modal-title" id="amend-title">Amend Time</div>
+    <div class="modal-sub" id="amend-sub">All OT will recalculate automatically from the corrected time.</div>
+    <div class="fg-2">
+      <div class="field"><label id="amend-field-lbl">New time</label><input type="time" id="amend-input" style="font-family:'DM Mono',monospace;color:var(--gold);"></div>
+      <div class="field"><label>Original (auto-filled)</label><input type="text" id="amend-orig" readonly style="color:var(--t3);"></div>
+    </div>
+    <div class="field"><label>Reason for amendment *</label><textarea id="amend-reason" rows="3" placeholder="e.g. GPS failed to log my departure. I left at 19:30 — confirmed by call sheet." style="resize:none;"></textarea></div>
+    <div class="amend-notice">This amendment will be flagged <span style="color:var(--yellow);">Manual</span> and logged with a timestamp. Your assignee and producer will see it. All overtime recalculates automatically.</div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('amend-modal')">Cancel</button>
+      <button class="btn btn-gold" style="flex:2;" onclick="confirmAmend()">Save Amendment</button>
+    </div>
+  </div>
+</div>
+
+<!-- ASSIGN MODAL -->
+<div class="modal" id="assign-modal">
+  <div class="modal-ov" onclick="closeModal('assign-modal')"></div>
+  <div class="modal-panel">
+    <div class="modal-title">Assignment Settings</div>
+    <div class="modal-sub">Choose who completes your timecards. You always retain full visibility and must approve before anything goes to the producer.</div>
+    <div class="lock-notice">⚠️ <div>The assigned person <strong>cannot see your pay rates</strong>. They can only fill times, notes, and allowances.</div></div>
+    <div class="field"><label>Assign to</label>
+      <select><option value="">— Select crew member —</option><option selected>O. Adeyemi (Camera Trainee)</option><option>J. Okonkwo (DP)</option><option>T. Marsh (1st AD)</option></select>
+    </div>
+    <div class="field"><label>Scope</label><select><option>All future weeks</option><option>This week only</option><option>Custom date range</option></select></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('assign-modal')">Cancel</button>
+      <button class="btn btn-gold" style="flex:2;" onclick="closeModal('assign-modal');toast('Assignment saved.')">Save Assignment</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── PACT/BECTU MMP Agreement (5 April 2021) ───────────────────
+// §3.3(a): Hourly Rate = daily rate ÷ 11
+// §3.3(a)(i):  Camera OT  = 2T = £127.28  → capped at £81.82 (§3.3(c))
+// §3.3(a)(ii): Non-Camera OT (pre-calls, wrap, de-rigs) = 1.5T = £95.46 → capped at £81.82
+// §5.3(b):     BTA = 1.5T, separate cap of £45/hr (£22.50/30min)
+// §5.4(b)(i):  Meal delay penalty = at Hourly Rate, 15-min increments
+// §2.3: SWD contracted = 11h worked. Camera OT triggers after 11h filming (unit call → unit wrap)
+const DAILY=700, HOURLY=+(700/11).toFixed(2);  // £63.64/hr
+const OT_CAP=81.82;                             // §3.3(c) Max OT Rate
+const CAMOT=Math.min(HOURLY*2, OT_CAP);         // 2T → £81.82 (capped)
+const NONOT=Math.min(HOURLY*1.5, OT_CAP);       // 1.5T → £81.82 (capped)
+const BTA_RATE=45;                               // §5.3(b) £45/hr cap (separate)
+const HOLIDAY=0.1207, MEAL_WIN=6*60, MIN_TA=11*60;
+const CTR_SWD=11*60, CTR_CWD=10*60;             // contracted hours by day type
+
+let days=[
+  {lbl:'Monday',dt:'07 Apr',type:'SWD',
+   call:'07:00',callSrc:'cs', unitCall:'07:30',unitCallSrc:'cs',
+   unitWrap:'18:30',unitWrapSrc:'bp', timeOut:'19:00',timeOutSrc:'gps',
+   ndb:{o:'07:30',i:'08:00'}, m1:{o:'13:00',i:'14:00'}, m2:null,
+   site:'Elstree Studios', overNote:null,
+   allows:[{type:'kit',lbl:'Kit Rental',amt:75}],
+   log:[{t:'07:03',a:'GPS',d:'Clock-in · Elstree car park'},{t:'07:30',a:'Call Sheet',d:'Unit call 07:30 · JW pre-call 07:00 (30min prep OT)'},{t:'13:00',a:'AD Report',d:'1st meal 13:00–14:00 (5.5h from call ✓)'},{t:'18:30',a:'AD Report',d:'Unit wrap 18:30'},{t:'19:00',a:'GPS',d:'Clock-out'}]},
+  {lbl:'Tuesday',dt:'08 Apr',type:'SWD',
+   call:'07:00',callSrc:'cs', unitCall:'07:30',unitCallSrc:'cs',
+   unitWrap:'21:00',unitWrapSrc:'bp', timeOut:'21:30',timeOutSrc:'gps',
+   ndb:{o:'07:30',i:'08:00'}, m1:{o:'13:30',i:'14:30'}, m2:{o:'18:30',i:'19:00'},
+   site:'Elstree Studios, Borehamwood',
+   overNote:null,
+   allows:[{type:'kit',lbl:'Kit Rental',amt:75}],
+   log:[{t:'07:03',a:'GPS',d:'Clock-in'},{t:'07:30',a:'Call Sheet',d:'Unit call · JW crew call 07:00 (+30min pre-call OT)'},{t:'13:30',a:'AD Report',d:'⚠ 1st meal 13:30 — 6h 30min from crew call (07:00). 30min delay penalty @ £63.64/hr = £31.82'},{t:'18:30',a:'AD Report',d:'2nd meal 18:30–19:00'},{t:'21:00',a:'AD Report',d:'Unit wrap 21:00 · 12h filmed (11h contracted + 1h Camera OT @ £81.82)'},{t:'21:30',a:'GPS',d:'Clock-out · 30min wrap OT @ £81.82/hr'}]},
+  {lbl:'Wednesday',dt:'09 Apr',type:'SWD',
+   call:'08:00',callSrc:'gps', unitCall:'08:00',unitCallSrc:'cs',
+   unitWrap:'18:00',unitWrapSrc:'bp', timeOut:'18:15',timeOutSrc:'gps',
+   ndb:null, m1:{o:'13:00',i:'14:00'}, m2:null,
+   site:'Hatfield House', overNote:null,
+   allows:[{type:'kit',lbl:'Kit Rental',amt:75},{type:'mileage',lbl:'Mileage 34mi',amt:15.30}],
+   log:[{t:'07:52',a:'GPS',d:'Clock-in · Hatfield House'},{t:'08:00',a:'Call Sheet',d:'Unit call 08:00 (no pre-call today)'},{t:'13:00',a:'AD Report',d:'1st meal 13:00 — 5h from call ✓'},{t:'18:00',a:'AD Report',d:'Unit wrap 18:00'},{t:'18:15',a:'GPS',d:'Clock-out'}]},
+  {lbl:'Thursday',dt:'10 Apr',type:'SWD',
+   call:'07:00',callSrc:'cs', unitCall:'07:30',unitCallSrc:'cs',
+   unitWrap:'20:30',unitWrapSrc:'bp', timeOut:'21:00',timeOutSrc:'gps',
+   ndb:{o:'07:30',i:'08:00'}, m1:{o:'13:00',i:'14:00'}, m2:{o:'18:30',i:'19:00'},
+   site:'Elstree Studios, Borehamwood', overNote:null,
+   allows:[{type:'kit',lbl:'Kit Rental',amt:75},{type:'perdiem',lbl:'Per Diem',amt:45}],
+   log:[{t:'07:02',a:'GPS',d:'Clock-in'},{t:'07:30',a:'Call Sheet',d:'Unit call · JW crew call 07:00 (+30min pre-call OT)'},{t:'13:00',a:'AD Report',d:'1st meal 13:00–14:00 — 6h from crew call ✓'},{t:'18:30',a:'AD Report',d:'2nd meal 18:30–19:00'},{t:'20:30',a:'AD Report',d:'Unit wrap 20:30 · 11h 30min filmed (11h contracted + 30min Camera OT @ £81.82)'},{t:'21:00',a:'GPS',d:'Clock-out · 30min wrap OT @ £81.82/hr'}]},
+  {lbl:'Friday',dt:'11 Apr',type:'SWD',
+   call:'08:00',callSrc:'gps', unitCall:'08:00',unitCallSrc:'cs',
+   unitWrap:'17:30',unitWrapSrc:'bp', timeOut:'17:30',timeOutSrc:'gps',
+   ndb:null, m1:{o:'13:00',i:'14:00'}, m2:null,
+   site:'Elstree Studios', overNote:null,
+   allows:[{type:'kit',lbl:'Kit Rental',amt:75}],
+   log:[{t:'07:58',a:'GPS',d:'Clock-in'},{t:'08:00',a:'Call Sheet',d:'Unit call 08:00 (no pre-call)'},{t:'13:00',a:'AD Report',d:'1st meal ✓'},{t:'17:30',a:'GPS',d:'Clock-out · simultaneous with unit wrap'}]},
+  {lbl:'Saturday',dt:'12 Apr',type:'REST',call:null,unitCall:null,unitWrap:null,timeOut:null,callSrc:null,unitCallSrc:null,unitWrapSrc:null,timeOutSrc:null,ndb:null,m1:null,m2:null,site:'',overNote:null,allows:[],log:[]},
+  {lbl:'Sunday',dt:'13 Apr',type:'REST',call:null,unitCall:null,unitWrap:null,timeOut:null,callSrc:null,unitCallSrc:null,unitWrapSrc:null,timeOutSrc:null,ndb:null,m1:null,m2:null,site:'',overNote:null,allows:[],log:[]}
+];
+
+let amendments=[];
+let pendingAmend=null;
+let curAllowType='perdiem';
+let curAllowDayIdx=null;
+
+function toM(t){if(!t)return null;const[h,m]=t.split(':').map(Number);return h*60+m;}
+function fmtH(m){if(!m||m<=0)return'—';const h=Math.floor(m/60),mn=m%60;return mn?`${h}h ${mn}m`:`${h}h`;}
+function fmtP(v){return'£'+v.toFixed(2);}
+function fmtHrs(m){if(!m||m<=0)return null;return`${Math.floor(m/60)}:${String(m%60).padStart(2,'0')}`;}
+
+function calcDay(d){
+  if(d.type==='REST'||!d.unitCall||!d.timeOut)return null;
+  const crewCall=toM(d.call),uCall=toM(d.unitCall),uWrap=toM(d.unitWrap),tOut=toM(d.timeOut);
+
+  // §3.3(a)(ii): Pre-call OT = crew call → unit call (Non-Camera OT: 1.5T → capped £81.82)
+  const preCallMins=(crewCall!==null&&crewCall<uCall)?uCall-crewCall:0;
+
+  // Filming hours = unit call → unit wrap, deducting formal meals only (NDB is non-deductible)
+  let mealBrkMins=0;
+  if(d.m1)mealBrkMins+=toM(d.m1.i)-toM(d.m1.o);
+  if(d.m2)mealBrkMins+=toM(d.m2.i)-toM(d.m2.o);
+  const filmMins=uWrap!==null?Math.max(0,(uWrap-uCall)-mealBrkMins):0;
+
+  // §3.3(a)(i): Camera OT = filming beyond contracted hours (SWD=11h, CWD/SCWD=10h), 2T→cap £81.82
+  const ctrHrs=(d.type==='CWD'||d.type==='SCWD')?CTR_CWD:CTR_SWD;
+  const camOTMins=Math.max(0,filmMins-ctrHrs);
+
+  // §3.3(a)(ii): Wrap OT = unit wrap → time out (Non-Camera OT: 1.5T → capped £81.82)
+  const wrapOTMins=(uWrap!==null&&tOut>uWrap)?tOut-uWrap:0;
+
+  // §5.4(b)(i): Meal delay penalty = time past 6h window at Hourly Rate, 15-min increments
+  const mealRef=crewCall||uCall;
+  let mealDelayMins=0;
+  if(d.m1){const gap=toM(d.m1.o)-mealRef;if(gap>MEAL_WIN)mealDelayMins=gap-MEAL_WIN;}
+  else if(filmMins>5*60)mealDelayMins=15;
+
+  const basicPay=DAILY;
+  const preCallPay=(preCallMins/60)*NONOT;   // 1.5T capped £81.82
+  const camOTPay=(camOTMins/60)*CAMOT;       // 2T capped £81.82
+  const wrapOTPay=(wrapOTMins/60)*NONOT;     // 1.5T capped £81.82
+  const mealPenPay=(mealDelayMins/60)*HOURLY; // basic Hourly Rate per §5.4(b)(i)
+  const holPay=basicPay*HOLIDAY;
+  const allowTotal=d.allows.reduce((a,x)=>a+x.amt,0);
+  return{preCallMins,filmMins,camOTMins,wrapOTMins,mealDelayMins,
+    basicPay,preCallPay,camOTPay,wrapOTPay,mealPenPay,holPay,allowTotal,
+    dayGross:basicPay+holPay+preCallPay+camOTPay+wrapOTPay+mealPenPay+allowTotal};
+}
+
+function getBTA(i){
+  if(i===0)return null;
+  const prev=days[i-1],curr=days[i];
+  if(prev.type==='REST'||curr.type==='REST')return null;
+  const pOut=toM(prev.timeOut),cCall=toM(curr.call)||toM(curr.unitCall);
+  if(pOut===null||cCall===null)return null;
+  let ta=cCall-pOut;if(ta<0)ta+=24*60;
+  if(ta<MIN_TA){const sh=MIN_TA-ta;return{ta,sh,pay:(sh/60)*BTA_RATE};} // §5.3(b) capped £45/hr
+  return null;
+}
+
+function src(s){
+  const m={gps:'<span class="src src-gps">GPS</span>',cs:'<span class="src src-cs">CS</span>',bp:'<span class="src src-bp">BP</span>',auto:'<span class="src src-auto">Auto</span>',manual:'<span class="src src-manual">Manual</span>',over:'<span class="src src-over">Override</span>',lock:'<span class="src src-lock">Locked</span>'};
+  return m[s]||'';
+}
+
+function typeLabel(t){
+  const m={SWD:'<span class="pill pgrey">🎬 SWD</span>',CWD:'<span class="pill pgrey">🎥 CWD</span>',SCWD:'<span class="pill pgrey">🎬 SCWD</span>',RIG:'<span class="pill porange">🔧 Rig</span>',Trvl:'<span class="pill pblue">✈ Travel</span>',Hol:'<span class="pill pteal">🌴 Holiday</span>',Sick:'<span class="pill pred">🤒 Sick</span>',REST:'<span class="pill pgrey">💤 Rest</span>'};
+  return m[t]||t;
+}
+
+function render(){
+  const cont=document.getElementById('day-rows');
+  cont.innerHTML='';
+  let totBasic=0,totPre=0,totWrap=0,totCamOT=0,totMeal=0,totAllow=0,totGross=0;
+  let totPrePay=0,totWrapPay=0,totCamOTPay=0,totMealPenPay=0,totBTAPay=0,totHolPay=0,totBasicPay=0;
+
+  days.forEach((d,i)=>{
+    const c=calcDay(d);
+    const bta=getBTA(i);
+    const rest=d.type==='REST';
+    const amended=amendments.filter(a=>a.di===i);
+    let rowCls='day-row';
+    if(rest)rowCls+=' rest';
+    else if(d.overNote)rowCls+=' has-override';
+    else if(c&&(c.mealDelayMins>0||(bta)))rowCls+=' has-flag';
+
+    let statusHtml='';
+    if(rest)statusHtml='<span class="sc sc-rest">Rest</span>';
+    else if(d.overNote)statusHtml='<span class="sc sc-override">Overridden</span>';
+    else if(amended.length)statusHtml='<span class="sc sc-manual">Amended</span>';
+    else statusHtml='<span class="sc sc-auto">Auto-filled</span>';
+
+    // OT cell
+    let otHtml='<div class="ot-cell">';
+    if(c){
+      otHtml+=`<div class="ot-line"><span class="ot-tag ot-basic">Basic</span><span class="ot-val">${fmtH(Math.min(c.filmMins, CTR_SWD))}</span></div>`;
+      if(c.preCallMins>0)otHtml+=`<div class="ot-line"><span class="ot-tag ot-precall">Pre-call</span><span class="ot-val">${fmtH(c.preCallMins)} · ${fmtP(c.preCallPay)}</span></div>`;
+      if(c.wrapOTMins>0)otHtml+=`<div class="ot-line"><span class="ot-tag ot-wrap">Wrap OT</span><span class="ot-val">${fmtH(c.wrapOTMins)} · ${fmtP(c.wrapOTPay)}</span></div>`;
+      if(c.camOTMins>0)otHtml+=`<div class="ot-line"><span class="ot-tag ot-t2">Cam OT T×2</span><span class="ot-val">${fmtH(c.camOTMins)} · ${fmtP(c.camOTPay)}</span></div>`;
+      if(c.mealDelayMins>0)otHtml+=`<div class="ot-line"><span class="ot-tag ot-meal">Meal Delay</span><span class="ot-val">${fmtH(c.mealDelayMins)} · ${fmtP(c.mealPenPay)}</span></div>`;
+      if(bta)otHtml+=`<div class="ot-line"><span class="ot-tag ot-bta">BTA</span><span class="ot-val">${fmtH(bta.sh)} · ${fmtP(bta.pay)}</span></div>`;
+    }else if(!rest){otHtml+='<div style="color:var(--t3);font-size:11px;">—</div>';}
+    otHtml+='<div class="ot-lock">🔒</div></div>';
+
+    // Allow cell
+    let alHtml='<div class="allow-cell">';
+    d.allows.forEach(a=>{alHtml+=`<span class="pill pteal">£${a.amt} ${a.lbl}</span>`;});
+    if(!rest)alHtml+=`<button class="allow-add-btn" onclick="event.stopPropagation();openAllowModal(${i})">＋</button>`;
+    alHtml+='</div>';
+
+    // Call / Time In cell
+    const callAmend=amended.find(a=>a.fld==='call');
+    const callSrcTag=callAmend?'manual':d.callSrc;
+    let callHtml='<div class="tc-pair">';
+    if(!rest){
+      callHtml+=`<div class="tc-line">
+        <span class="tc-row-lbl">Call</span>
+        <span class="tc-val ${callAmend?'manual':d.overNote?'over':''}">${d.call||'—'}</span>
+        ${src(callSrcTag)}
+        <button class="tc-edit" onclick="event.stopPropagation();openAmend(${i},'call','Crew Call Time')" title="Amend">✎</button>
+      </div>
+      <div class="tc-line">
+        <span class="tc-row-lbl" style="color:var(--t3)">In</span>
+        <span class="tc-val dim">${d.unitCall||'—'}</span>
+        ${src(d.unitCallSrc)} ${src('lock')}
+      </div>`;
+    }else{callHtml+='<span style="color:var(--t3);font-size:11px;padding:2px 0">Rest day</span>';}
+    callHtml+='</div>';
+
+    // Unit Wrap / Time Out cell
+    const outAmend=amended.find(a=>a.fld==='timeOut');
+    const outSrcTag=outAmend?'manual':d.overNote?'over':d.timeOutSrc;
+    let wrapHtml='<div class="tc-pair">';
+    if(!rest){
+      wrapHtml+=`<div class="tc-line">
+        <span class="tc-row-lbl" style="color:var(--t3)">Wrap</span>
+        <span class="tc-val dim">${d.unitWrap||'—'}</span>
+        ${src(d.unitWrapSrc)} ${src('lock')}
+      </div>
+      <div class="tc-line">
+        <span class="tc-row-lbl">Out</span>
+        <span class="tc-val ${outAmend?'manual':d.overNote?'over':''}">${d.timeOut||'—'}</span>
+        ${src(outSrcTag)}
+        <button class="tc-edit" onclick="event.stopPropagation();openAmend(${i},'timeOut','Time Out')" title="Amend">✎</button>
+      </div>`;
+    }
+    wrapHtml+='</div>';
+
+    // Detail
+    let detHtml=`<div class="day-detail" id="dd-${i}">`;
+    if(!rest){
+      if(d.overNote)detHtml+=`<div class="over-notice"><span>⚠</span><div><strong style="color:var(--orange)">Producer override.</strong> ${d.overNote}</div></div>`;
+      if(c){
+        if(c.mealDelayMins>0){
+          const gap=d.m1?((toM(d.m1.o)-(toM(d.call)||toM(d.unitCall)))/60).toFixed(1):'?';
+          detHtml+=`<div class="cn cn-y"><span>⚠</span><div><strong style="color:var(--yellow)">Meal delay penalty</strong> — first meal ${d.m1?'at '+d.m1.o:' not recorded'} (${gap}h after call, limit is 6h). Delay = ${fmtH(c.mealDelayMins)} at £${HOURLY.toFixed(2)}/hr = <strong>${fmtP(c.mealPenPay)}</strong>. §5.4(b)(i).</div></div>`;
+        }
+        if(bta)detHtml+=`<div class="cn cn-r"><span>🔴</span><div><strong style="color:var(--red)">Broken turnaround</strong> — ${fmtH(bta.ta)} between yesterday's release and today's call. Minimum 11h required. <strong>BTA = ${fmtP(bta.pay)}</strong> auto-applied.</div></div>`;
+        if(c.preCallMins>0)detHtml+=`<div class="cn cn-t"><span>⚡</span><div><strong style="color:var(--teal)">Pre-call overtime</strong> — your call was ${d.call}, unit call was ${d.unitCall} (+${fmtH(c.preCallMins)}). <strong>${fmtH(c.preCallMins)} × £${HOURLY.toFixed(2)}/hr = ${fmtP(c.preCallPay)}</strong> auto-added.</div></div>`;
+        if(c.wrapOTMins>0)detHtml+=`<div class="cn cn-t"><span>⚡</span><div><strong style="color:var(--teal)">Wrap overtime</strong> — released ${d.timeOut}, unit wrap was ${d.unitWrap} (+${fmtH(c.wrapOTMins)}). <strong>${fmtH(c.wrapOTMins)} × £${HOURLY.toFixed(2)}/hr = ${fmtP(c.wrapOTPay)}</strong> auto-added.</div></div>`;
+      }
+      detHtml+=`<div class="dd-grid">
+      <div class="dd-card">
+        <div class="dd-ch">Times <span class="edit-b">✎ click to amend</span></div>
+        <div class="dd-row clickable" onclick="openAmend(${i},'call','Crew Call Time')">
+          <span class="dd-k">Crew call</span>
+          <span class="dd-v ${callAmend?'vy':''}">${d.call||'—'} ${src(callSrcTag)}</span>
+          <span class="edit-hint">✎ amend</span>
+        </div>
+        <div class="dd-row"><span class="dd-k">Unit call (locked)</span><span class="dd-v vg">${d.unitCall||'—'} ${src(d.unitCallSrc)} ${src('lock')}</span></div>
+        <div class="dd-row"><span class="dd-k">Unit wrap (locked)</span><span class="dd-v vg">${d.unitWrap||'—'} ${src(d.unitWrapSrc)} ${src('lock')}</span></div>
+        <div class="dd-row clickable" onclick="openAmend(${i},'timeOut','Time Out / Release')">
+          <span class="dd-k">Your release</span>
+          <span class="dd-v ${outAmend?'vy':d.overNote?'vo':'vg'}">${d.timeOut||'—'} ${src(outSrcTag)}</span>
+          <span class="edit-hint">✎ amend</span>
+        </div>
+        ${d.ndb?`<div class="dd-row"><span class="dd-k">NDB</span><span class="dd-v">${d.ndb.o}–${d.ndb.i}</span></div>`:''}
+        ${d.m1?`<div class="dd-row"><span class="dd-k">1st Meal</span><span class="dd-v ${c&&c.mealDelayMins>0?'vy':''}">${d.m1.o}–${d.m1.i}</span></div>`:''}
+        ${d.m2?`<div class="dd-row"><span class="dd-k">2nd Meal</span><span class="dd-v">${d.m2.o}–${d.m2.i}</span></div>`:''}
+        <div class="dd-row"><span class="dd-k">Site</span><span class="dd-v" style="font-family:'DM Sans',sans-serif;font-size:11px;color:var(--t2)">${d.site||'—'}</span></div>
+      </div>
+      <div class="dd-card">
+        <div class="dd-ch">OT Breakdown <span class="lock-b">🔒 Auto-calc</span></div>
+        ${c?`
+        <div class="dd-row"><span class="dd-k">Basic (SWD 11h contracted)</span><span class="dd-v">${fmtH(Math.min(c.filmMins,CTR_SWD))}</span></div>
+        <div class="dd-row"><span class="dd-k">Pre-call OT — 1.5T → £${NONOT.toFixed(2)}/hr <span style="font-size:9px;color:var(--t3)">(§3.3(a)(ii))</span></span><span class="dd-v vt">${c.preCallMins>0?fmtH(c.preCallMins)+' · '+fmtP(c.preCallPay):'—'}</span></div>
+        <div class="dd-row"><span class="dd-k">Camera OT — 2T → £${CAMOT.toFixed(2)}/hr <span style="font-size:9px;color:var(--t3)">(§3.3(a)(i), cap £81.82)</span></span><span class="dd-v vr">${c.camOTMins>0?fmtH(c.camOTMins)+' · '+fmtP(c.camOTPay):'—'}</span></div>
+        <div class="dd-row"><span class="dd-k">Wrap OT — 1.5T → £${NONOT.toFixed(2)}/hr <span style="font-size:9px;color:var(--t3)">(§3.3(a)(ii))</span></span><span class="dd-v vt">${c.wrapOTMins>0?fmtH(c.wrapOTMins)+' · '+fmtP(c.wrapOTPay):'—'}</span></div>
+        <div class="dd-row"><span class="dd-k">Meal delay — £${HOURLY.toFixed(2)}/hr <span style="font-size:9px;color:var(--t3)">(§5.4(b)(i))</span></span><span class="dd-v vy">${c.mealDelayMins>0?fmtH(c.mealDelayMins)+' · '+fmtP(c.mealPenPay):'—'}</span></div>
+        <div class="dd-row"><span class="dd-k">BTA — £${BTA_RATE.toFixed(2)}/hr cap <span style="font-size:9px;color:var(--t3)">(§5.3(b))</span></span><span class="dd-v vr">${bta?fmtH(bta.sh)+' · '+fmtP(bta.pay):'—'}</span></div>
+        <div class="dd-row" style="border-top:1px solid var(--b)"><span class="dd-k" style="font-weight:600">Day total</span><span class="dd-v vgold">${fmtP(c.dayGross)}</span></div>`:'<div style="padding:10px;color:var(--t3);font-size:11.5px">Enter times to calculate</div>'}
+      </div>
+      <div class="dd-card">
+        <div class="dd-ch">Allowances <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openAllowModal(${i})" style="padding:2px 7px;font-size:9px;margin-left:auto;">＋ Add</button></div>
+        ${d.allows.length?d.allows.map((a,ai)=>`<div class="dd-row"><span class="dd-k">${a.lbl}</span><span class="dd-v vt">${fmtP(a.amt)}<button onclick="event.stopPropagation();removeAllow(${i},${ai})" style="background:none;border:none;color:var(--t3);cursor:pointer;font-size:10px;margin-left:4px;" title="Remove">✕</button></span></div>`).join('')+'<div class="dd-row" style="border-top:1px solid var(--b)"><span class="dd-k" style="font-weight:600">Total</span><span class="dd-v vt">'+fmtP(d.allows.reduce((a,x)=>a+x.amt,0))+'</span></div>':'<div style="padding:10px;color:var(--t3);font-size:11.5px;text-align:center">No allowances<br><button class="allow-add-btn" onclick="event.stopPropagation();openAllowModal('+i+')" style="margin-top:6px;">＋ Add</button></div>'}
+      </div></div>`;
+
+      // Audit log
+      if(d.log.length){
+        detHtml+='<div class="audit-log"><div class="audit-h">Activity Log</div>';
+        d.log.forEach(l=>detHtml+=`<div class="ae"><span class="ae-t">${l.t}</span><span class="ae-a">${l.a}</span><span class="ae-d" style="${l.warn?'color:var(--orange)':''}">${l.d}</span></div>`);
+        amendments.filter(a=>a.di===i).forEach(a=>detHtml+=`<div class="ae"><span class="ae-t">${a.ts}</span><span class="ae-a" style="color:var(--yellow)">You</span><span class="ae-d" style="color:var(--yellow)">Amended ${a.flbl}: ${a.old} → ${a.val}. "${a.reason}"</span></div>`);
+        detHtml+='</div>';
+      }
+    }
+    detHtml+='</div>';
+
+    // Accumulate
+    if(c){totBasic+=c.filmMins;totPre+=c.preCallMins;totWrap+=c.wrapOTMins;totCamOT+=c.camOTMins;totMeal+=c.mealDelayMins;totAllow+=c.allowTotal;totGross+=c.dayGross;totPrePay+=c.preCallPay;totWrapPay+=c.wrapOTPay;totCamOTPay+=c.camOTPay;totMealPenPay+=c.mealPenPay;totHolPay+=c.holPay;totBasicPay+=c.basicPay;}
+    if(bta)totBTAPay+=bta.pay;
+
+    const el=document.createElement('div');
+    el.className=rowCls;el.id='dr-'+i;
+    el.innerHTML=`<div class="dr-top" onclick="toggleDay(${i})">
+      <div class="dr-cell cw-day"><div class="day-lbl">${d.lbl}</div><div class="day-dt">${d.dt}</div></div>
+      <div class="dr-cell cw-type">${typeLabel(d.type)}</div>
+      <div class="dr-cell cw-call">${callHtml}</div>
+      <div class="dr-cell cw-wrap">${wrapHtml}</div>
+      <div class="dr-cell cw-ot">${otHtml}</div>
+      <div class="dr-cell cw-allow">${alHtml}</div>
+      <div class="dr-cell cw-status">${statusHtml}</div>
+      <div class="dr-cell cw-chev"><span class="chev">▾</span></div>
+    </div>${detHtml}`;
+    cont.appendChild(el);
+  });
+
+  // Summary strip
+  document.getElementById('ws-basic').textContent=fmtH(totBasic);
+  document.getElementById('ws-precall').textContent=totPre>0?fmtH(totPre):'—';
+  document.getElementById('ws-wrapot').textContent=totWrap>0?fmtH(totWrap):'—';
+  document.getElementById('ws-ot13').textContent=totCamOT>0?fmtH(totCamOT):'—';
+  document.getElementById('ws-meal').textContent=totMeal>0?fmtH(totMeal):'—';
+  document.getElementById('ws-allow').textContent=totAllow>0?fmtP(totAllow):'—';
+  document.getElementById('ws-gross').textContent=fmtP(totGross);
+
+  // Aside pay
+  document.getElementById('aside-pay').innerHTML=`
+    <div class="pay-row"><span class="pay-k">Basic (daily × days)</span><span class="pay-v" style="color:var(--gold)">${fmtP(totBasicPay)}</span></div>
+    <div class="pay-row"><span class="pay-k">Holiday pay (12.07%)</span><span class="pay-v">${fmtP(totHolPay)}</span></div>
+    <div class="pay-row"><span class="pay-k">Pre-call OT</span><span class="pay-v" style="color:var(--teal)">${totPrePay>0?fmtP(totPrePay):'—'}</span></div>
+    <div class="pay-row"><span class="pay-k">Wrap OT</span><span class="pay-v" style="color:var(--teal)">${totWrapPay>0?fmtP(totWrapPay):'—'}</span></div>
+    <div class="pay-row"><span class="pay-k">Camera OT (T×2 · £${(HOURLY*2).toFixed(2)}/hr)</span><span class="pay-v" style="color:var(--red)">${totCamOTPay>0?fmtP(totCamOTPay):'—'}</span></div>
+    <div class="pay-row"><span class="pay-k">Meal delay penalty (§5.4)</span><span class="pay-v" style="color:var(--yellow)">${totMealPenPay>0?fmtP(totMealPenPay):'—'}</span></div>
+    <div class="pay-row"><span class="pay-k">BTA</span><span class="pay-v" style="color:var(--red)">${totBTAPay>0?fmtP(totBTAPay):'—'}</span></div>
+    <div class="pay-row"><span class="pay-k">Allowances</span><span class="pay-v" style="color:var(--teal)">${totAllow>0?fmtP(totAllow):'—'}</span></div>
+    <div class="pay-total"><span>Est. Gross</span><span class="pay-v" style="color:var(--gold)">${fmtP(totGross)}</span></div>`;
+
+  // Confirm box
+  const workDays=days.filter(d=>d.type!=='REST').length;
+  const btaCount=days.filter((_,i)=>getBTA(i)).length;
+  const amendCount=amendments.length;
+  document.getElementById('week-confirm-box').innerHTML=`
+    <div class="wc-row"><span class="wc-k">Shoot days</span><span class="wc-v">${workDays} of 7</span></div>
+    <div class="wc-row"><span class="wc-k">Agreement</span><span class="wc-v">PACT/BECTU Drama</span></div>
+    <div class="wc-row"><span class="wc-k">Meal delay pen.</span><span class="wc-v" style="color:${totMealPenPay>0?'var(--yellow)':'var(--green)'}">${totMealPenPay>0?fmtP(totMealPenPay):'None'}</span></div>
+    <div class="wc-row"><span class="wc-k">BTA flags</span><span class="wc-v" style="color:${btaCount?'var(--red)':'var(--green)'}">${btaCount||'None'}</span></div>
+    <div class="wc-row"><span class="wc-k">Your amendments</span><span class="wc-v" style="color:${amendCount?'var(--yellow)':'var(--t2)'}">${amendCount||'None'}</span></div>`;
+}
+
+function toggleDay(i){
+  const row=document.getElementById('dr-'+i);
+  if(!row)return;
+  const open=row.classList.contains('expanded');
+  row.classList.toggle('expanded',!open);
+}
+
+function openAmend(di,fld,flbl){
+  pendingAmend={di,fld,flbl};
+  const d=days[di];
+  document.getElementById('amend-title').textContent=`Amend ${flbl} — ${d.lbl} ${d.dt}`;
+  document.getElementById('amend-field-lbl').textContent=`New ${flbl}`;
+  const orig=d[fld]||'—';
+  document.getElementById('amend-orig').value=orig;
+  document.getElementById('amend-input').value=orig!=='—'?orig:'';
+  document.getElementById('amend-reason').value='';
+  openModal('amend-modal');
+}
+
+function confirmAmend(){
+  const reason=document.getElementById('amend-reason').value.trim();
+  if(!reason){toast('Please provide a reason for your amendment.');return;}
+  const val=document.getElementById('amend-input').value;
+  if(!val){toast('Please enter a time.');return;}
+  const{di,fld,flbl}=pendingAmend;
+  const old=days[di][fld]||'—';
+  days[di][fld]=val;
+  const now=new Date();
+  const ts=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  amendments.push({di,fld,flbl,old,val,reason,ts});
+  closeModal('amend-modal');
+  render();
+  const row=document.getElementById('dr-'+di);
+  if(row)row.classList.add('expanded');
+  toast(`Time amended to ${val}. OT recalculated automatically.`);
+}
+
+function openAllowModal(di){
+  curAllowDayIdx=di;
+  curAllowType='perdiem';
+  document.querySelectorAll('.allow-type-btn').forEach((b,idx)=>b.classList.toggle('sel',idx===0));
+  buildAllowFields('perdiem');
+  if(di!==null){const sel=document.getElementById('allow-day');if(sel)sel.selectedIndex=Math.min(di,sel.options.length-1);}
+  openModal('allow-modal');
+}
+
+function selAllowType(type,btn){
+  curAllowType=type;
+  document.querySelectorAll('.allow-type-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  buildAllowFields(type);
+}
+
+function daySelHtml(selIdx){
+  const opts=['Monday 07 Apr','Tuesday 08 Apr','Wednesday 09 Apr','Thursday 10 Apr','Friday 11 Apr'];
+  return `<div class="field"><label>Day</label><select id="allow-day">${opts.map((o,i)=>`<option ${i===(selIdx||0)?'selected':''}>${o}</option>`).join('')}</select></div>`;
+}
+
+function buildAllowFields(type){
+  const di=curAllowDayIdx;
+  const f=document.getElementById('allow-fields');
+  if(type==='perdiem'){
+    f.innerHTML=daySelHtml(di)+`<div class="fg-2"><div class="field"><label>Per Diem Rate</label><input type="text" value="£45.00" readonly style="color:var(--t3);"></div><div class="field"><label>Days count</label><input type="number" value="1" min="1" max="7" id="pd-days" oninput="calcPD()"></div></div><div class="calc-display"><span class="calc-lbl">Total</span><span class="calc-amt" id="pd-total">£45.00</span></div><div class="field"><label>Note (optional)</label><input type="text" placeholder="e.g. Distant location, overnight…"></div>`;
+  }else if(type==='mileage'){
+    f.innerHTML=daySelHtml(di)+`<div class="fg-2"><div class="field"><label>From (postcode)</label><input type="text" placeholder="e.g. N1 1AA"></div><div class="field"><label>Miles (one-way)</label><input type="number" id="miles-val" placeholder="0" oninput="calcMile()"></div></div><div class="field"><label>Return journey?</label><select id="return-sel" onchange="calcMile()"><option value="yes">Yes — both ways</option><option value="no">One way only</option></select></div><div class="calc-display"><span class="calc-lbl">Total @ 45p/mile</span><span class="calc-amt" id="mile-calc">£0.00</span></div>`;
+  }else if(type==='meal'){
+    f.innerHTML=daySelHtml(di)+`<div class="field"><label>Meal description</label><input type="text" placeholder="e.g. Lunch not provided at location"></div><div class="fg-2"><div class="field"><label>Amount £</label><input type="number" id="meal-amt" placeholder="0.00" oninput="calcMealAmt()"></div><div class="field"><label>Receipt ref.</label><input type="text" placeholder="REF-001"></div></div><div class="calc-display"><span class="calc-lbl">Claim amount</span><span class="calc-amt" id="meal-total">£0.00</span></div><div style="font-size:11px;color:var(--t3);margin-bottom:8px;">Meal buyout expense — not the same as a meal penalty. Penalties are auto-calculated from break times.</div>`;
+  }else{
+    f.innerHTML=daySelHtml(di)+`<div class="field"><label>Kit description</label><input type="text" value="Camera equipment / handheld kit" id="kit-desc"></div><div class="fg-2"><div class="field"><label>Daily rate £</label><input type="number" value="75" id="kit-amt" oninput="calcKit()"></div><div class="field"><label>Days</label><input type="number" value="1" min="1" max="7" id="kit-days" oninput="calcKit()"></div></div><div class="calc-display"><span class="calc-lbl">Total</span><span class="calc-amt" id="kit-total">£75.00</span></div><div style="font-size:11px;color:var(--t3);">Rate from deal memo. Non-taxable equipment rental.</div>`;
+  }
+}
+
+function calcPD(){const v=parseInt(document.getElementById('pd-days')?.value)||1;const t=document.getElementById('pd-total');if(t)t.textContent='£'+(v*45).toFixed(2);}
+function calcMile(){const m=parseFloat(document.getElementById('miles-val')?.value)||0;const r=document.getElementById('return-sel')?.value==='yes';const t=document.getElementById('mile-calc');if(t)t.textContent='£'+(m*(r?2:1)*0.45).toFixed(2);}
+function calcMealAmt(){const v=parseFloat(document.getElementById('meal-amt')?.value)||0;const t=document.getElementById('meal-total');if(t)t.textContent='£'+v.toFixed(2);}
+function calcKit(){const a=parseFloat(document.getElementById('kit-amt')?.value)||0;const d=parseInt(document.getElementById('kit-days')?.value)||1;const t=document.getElementById('kit-total');if(t)t.textContent='£'+(a*d).toFixed(2);}
+
+function confirmAllow(){
+  const sel=document.getElementById('allow-day');
+  const di=sel?sel.selectedIndex:(curAllowDayIdx||0);
+  let allow=null;
+  if(curAllowType==='perdiem'){const dc=parseInt(document.getElementById('pd-days')?.value)||1;allow={type:'perdiem',lbl:'Per Diem',amt:dc*45};}
+  else if(curAllowType==='mileage'){const m=parseFloat(document.getElementById('miles-val')?.value)||0;const r=document.getElementById('return-sel')?.value==='yes';const t=+(m*(r?2:1)*0.45).toFixed(2);allow={type:'mileage',lbl:`Mileage ${Math.round(m*(r?2:1))}mi`,amt:t};}
+  else if(curAllowType==='meal'){const v=parseFloat(document.getElementById('meal-amt')?.value)||0;allow={type:'meal',lbl:'Meal Buyout',amt:v};}
+  else{const a=parseFloat(document.getElementById('kit-amt')?.value)||75;const dk=parseInt(document.getElementById('kit-days')?.value)||1;const desc=document.getElementById('kit-desc')?.value||'Kit Rental';allow={type:'kit',lbl:desc,amt:a*dk};}
+  if(allow)days[di].allows.push(allow);
+  closeModal('allow-modal');
+  render();
+  const row=document.getElementById('dr-'+di);if(row)row.classList.add('expanded');
+  toast('Allowance added.');
+}
+
+function removeAllow(di,ai){
+  days[di].allows.splice(ai,1);
+  render();
+  const row=document.getElementById('dr-'+di);if(row)row.classList.add('expanded');
+}
+
+function submitWeek(){
+  document.getElementById('week-status').textContent='Submitted · Awaiting Producer';
+  document.getElementById('week-status').className='pill pteal';
+  ['submit-btn','submit-btn-2'].forEach(id=>{const el=document.getElementById(id);if(el){el.textContent='✓ Submitted';el.className='btn btn-ghost btn-sm';el.disabled=true;}});
+  toast('Timecard submitted · Awaiting T. Walsh (Producer) approval.');
+}
+
+function shiftWeek(d){toast(d>0?'Next week — no data in demo':'Previous week — no data in demo');}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function setScope(btn){btn.closest('.scope-pills').querySelectorAll('.sp-btn').forEach(b=>b.classList.remove('sp-on'));btn.classList.add('sp-on');}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';clearTimeout(t._to);t._to=setTimeout(()=>t.style.display='none',3200);}
+
+render();
+</script>
+</body>
+</html>

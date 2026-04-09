@@ -26,7 +26,7 @@ import { getRightToWorkConfig } from "@/lib/countryFieldConfig";
 //   3. Set the overall verification status
 //
 // The crew member fills in references, uploads scans, and enters expiry
-// dates via the Crew Portal — NOT here.
+// dates via the deal memo — NOT here.
 // ---------------------------------------------------------------------------
 export default function Step6RightToWork({
   control,
@@ -76,7 +76,7 @@ export default function Step6RightToWork({
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Select which documents this crew member needs to provide. They will upload them via the Crew Portal.
+            Select which documents this crew member needs to provide. They will upload them via the deal memo.
           </p>
 
           {/* Checkbox list of standard documents */}
@@ -181,33 +181,6 @@ export default function Step6RightToWork({
             )}
           />
 
-          <Controller
-            name="rightToWork.status"
-            control={control}
-            render={({ field }) => (
-              <div className="space-y-1.5">
-                <Label>Verification Status</Label>
-                <Select value={field.value ?? "pending"} onValueChange={field.onChange}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="verified">Verified</SelectItem>
-                    <SelectItem value="expired">Expired</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          />
-
-          <div className="flex items-start gap-2 rounded-md bg-blue-500/10 border border-blue-500/20 px-3 py-2">
-            <Info className="size-4 text-blue-500 mt-0.5 shrink-0" />
-            <p className="text-xs text-blue-600 dark:text-blue-400">
-              Once the deal memo is issued, the crew member will see these document requests in their Crew Portal
-              and can upload scans, enter reference numbers, and expiry dates. You'll be able to verify or reject each document.
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>

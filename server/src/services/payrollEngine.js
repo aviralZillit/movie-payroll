@@ -97,31 +97,54 @@ const calculatePayrollItemV2 = async (timecard, dealMemo) => {
     basePay = basePay.div(1 + hpPct);
   }
 
-  // --- OT calculation ---
+  // --- Deal type, rate type, and employment type flags ---
+  const isBuyout = dealMemo.rateType === 'buyout' || dealMemo.rateType === 'all_in';
+  const isFlatDeal = ['flat', 'picture', 'per_film', 'flat_fee'].includes(dealMemo.dealType);
+
+  // Employment type rules — determines which payroll features apply
+  let empRules;
+  try {
+    const { getEmploymentRules } = await import('../config/employmentTypeRules.js');
+    empRules = getEmploymentRules(dealMemo.employmentStatus);
+  } catch {
+    empRules = { payroll: { overtime: true, mealPenalties: true, nightPremium: true, dayPremiums: true, turnaroundPenalties: true } };
+  }
+  const noOT = !empRules.payroll.overtime || isBuyout || isFlatDeal;
+  const noPremiums = !empRules.payroll.dayPremiums || isFlatDeal || isBuyout;
+
+  // For flat deals, base pay is the fixed amount — no per-day multiplication
+  if (isFlatDeal) {
+    basePay = weeklyRate; // flat fee stored as weeklyRate
+  }
+
+  // --- OT calculation (skip for buyout and flat deals) ---
   let totalOt1x5 = new Decimal(0);
   let totalOt2x = new Decimal(0);
   let totalGoldenTime = new Decimal(0);
 
-  const otRate1x5 = new Decimal(dealMemo.otRate1x5 || hourlyRate.times(1.5).toNumber());
-  const otRate2x = new Decimal(dealMemo.otRate2x || hourlyRate.times(2).toNumber());
+  if (!noOT) {
+    const otRate1x5 = new Decimal(dealMemo.otRate1x5 || hourlyRate.times(1.5).toNumber());
+    const otRate2x = new Decimal(dealMemo.otRate2x || hourlyRate.times(2).toNumber());
 
-  // Apply OT rate cap if set (e.g. UK Camera £81.82)
-  const otCap = dealMemo.otRateCap ? new Decimal(dealMemo.otRateCap) : null;
-  const effectiveOt1x5 = otCap ? Decimal.min(otRate1x5, otCap) : otRate1x5;
-  const effectiveOt2x = otCap ? Decimal.min(otRate2x, otCap) : otRate2x;
+    // Apply OT rate cap if set (e.g. UK Camera £81.82)
+    const otCap = dealMemo.otRateCap ? new Decimal(dealMemo.otRateCap) : null;
+    const effectiveOt1x5 = otCap ? Decimal.min(otRate1x5, otCap) : otRate1x5;
+    const effectiveOt2x = otCap ? Decimal.min(otRate2x, otCap) : otRate2x;
 
-  totalOt1x5 = new Decimal(timecard.totalOt1x5Hrs || 0).times(effectiveOt1x5);
-  totalOt2x = new Decimal(timecard.totalOt2xHrs || 0).times(effectiveOt2x);
+    totalOt1x5 = new Decimal(timecard.totalOt1x5Hrs || 0).times(effectiveOt1x5);
+    totalOt2x = new Decimal(timecard.totalOt2xHrs || 0).times(effectiveOt2x);
 
-  // Golden time (IATSE: 2x from hour 14)
-  if (dealMemo.goldenTimeEnabled && dealMemo.goldenTimeMultiplier) {
-    const gtHrs = new Decimal(timecard.totalGoldenTimeHrs || 0);
-    totalGoldenTime = gtHrs.times(hourlyRate).times(dealMemo.goldenTimeMultiplier);
+    // Golden time (IATSE: 2x from hour 14)
+    if (dealMemo.goldenTimeEnabled && dealMemo.goldenTimeMultiplier) {
+      const gtHrs = new Decimal(timecard.totalGoldenTimeHrs || 0);
+      totalGoldenTime = gtHrs.times(hourlyRate).times(dealMemo.goldenTimeMultiplier);
+    }
   }
 
-  // --- Meal penalties ---
+  // --- Meal penalties (skip if disabled or flat/buyout deal) ---
   let mealPenaltyPay = new Decimal(0);
   for (const entry of timecard.entries || []) {
+    if (dealMemo.mealPenaltyEnabled === false || !empRules.payroll.mealPenalties || isFlatDeal) break;
     if (entry.mealPenaltyCount > 0) {
       const dtConfig = resolveDayTypeConfig(entry, productionDayTypes);
       // Skip meal penalty if day type config says it doesn't apply
@@ -135,21 +158,25 @@ const calculatePayrollItemV2 = async (timecard, dealMemo) => {
     }
   }
 
-  // --- Day premiums ---
+  // --- Day premiums (skip for flat/buyout deals) ---
   let sixthDayPay = new Decimal(0);
   let seventhDayPay = new Decimal(0);
-  for (const entry of timecard.entries || []) {
-    if (entry.isSixthDay && entry.callTime && entry.wrapTime && !entry.isRestDay) {
-      sixthDayPay = sixthDayPay.plus(dailyRate.times((dealMemo.sixthDayMultiplier || 1.5) - 1));
-    }
-    if (entry.isSeventhDay && entry.callTime && entry.wrapTime && !entry.isRestDay) {
-      seventhDayPay = seventhDayPay.plus(dailyRate.times((dealMemo.seventhDayMultiplier || 2.0) - 1));
+  if (!noPremiums) {
+    for (const entry of timecard.entries || []) {
+      if (entry.isSixthDay && entry.callTime && entry.wrapTime && !entry.isRestDay) {
+        sixthDayPay = sixthDayPay.plus(dailyRate.times((dealMemo.sixthDayMultiplier || 1.5) - 1));
+      }
+      if (entry.isSeventhDay && entry.callTime && entry.wrapTime && !entry.isRestDay) {
+        seventhDayPay = seventhDayPay.plus(dailyRate.times((dealMemo.seventhDayMultiplier || 2.0) - 1));
+      }
     }
   }
 
-  // --- Night premium ---
+  // --- Night premium (skip if disabled or flat deal) ---
   const nightHrs = new Decimal(timecard.totalNightHrs || 0);
-  const nightPct = dealMemo.nightPremiumPct != null ? dealMemo.nightPremiumPct / 100 : 0;
+  const nightPct = (dealMemo.nightPremiumEnabled !== false && empRules.payroll.nightPremium && !isFlatDeal)
+    ? (dealMemo.nightPremiumPct != null ? dealMemo.nightPremiumPct / 100 : 0)
+    : 0;
   const nightPremiumPay = nightHrs.times(hourlyRate).times(nightPct);
 
   // --- Turnaround penalties ---
@@ -162,33 +189,43 @@ const calculatePayrollItemV2 = async (timecard, dealMemo) => {
     }
   }
 
-  // --- Allowances (v2 cap-aware) ---
-  let totalAllowances = new Decimal(0);
+  // --- Allowances (v2 cap-aware, split taxable vs non-taxable) ---
+  let taxableAllowances = new Decimal(0);
+  let nonTaxableAllowances = new Decimal(0);
   if (dealMemo.allowances && dealMemo.allowances.length > 0) {
     const breakdown = calculateAllowanceProRating(dealMemo.allowances, timecard.entries, timecard.daysWorked);
     for (const a of breakdown) {
-      totalAllowances = totalAllowances.plus(a.weeklyTotal || 0);
+      const amt = new Decimal(a.weeklyTotal || 0);
+      if (a.taxTreatment === 'non-taxable' || a.taxTreatment === 'non_taxable' || a.taxTreatment === 'reimbursement' || a.taxTreatment === 'partly-exempt') {
+        nonTaxableAllowances = nonTaxableAllowances.plus(amt);
+      } else {
+        taxableAllowances = taxableAllowances.plus(amt);
+      }
     }
   } else {
-    // Fallback to v1 flat allowances
-    totalAllowances = new Decimal(dealMemo.kitAllowance || 0)
+    // Fallback to v1 flat allowances (all treated as taxable)
+    taxableAllowances = new Decimal(dealMemo.kitAllowance || 0)
       .plus(dealMemo.phoneAllowance || 0)
       .plus(dealMemo.computerAllowance || 0)
       .plus(dealMemo.carAllowance || 0)
       .plus(new Decimal(dealMemo.travelAllowance || 0).times(timecard.daysWorked || 0))
       .plus(new Decimal(dealMemo.perDiemRate || 0).times(timecard.daysWorked || 0));
   }
+  const totalAllowances = taxableAllowances.plus(nonTaxableAllowances);
 
-  // --- Gross pay ---
-  const grossPay = basePay
+  // --- Fringeable base (excludes non-taxable allowances) ---
+  const fringeableGross = basePay
     .plus(totalOt1x5).plus(totalOt2x).plus(totalGoldenTime)
     .plus(mealPenaltyPay).plus(turnaroundPenaltyPay)
     .plus(sixthDayPay).plus(seventhDayPay).plus(nightPremiumPay)
-    .plus(totalAllowances);
+    .plus(taxableAllowances);
 
-  // --- Territory-aware fringes ---
+  // --- Gross pay (includes all allowances) ---
+  const grossPay = fringeableGross.plus(nonTaxableAllowances);
+
+  // --- Territory-aware fringes (calculated on fringeable base, not full gross) ---
   const totalWorkedHrs = (timecard.totalStraightHrs || 0) + (timecard.totalOt1x5Hrs || 0) + (timecard.totalOt2xHrs || 0);
-  const fringes = calculateTerritoryFringes(grossPay.toNumber(), totalWorkedHrs, dealMemo);
+  const fringes = calculateTerritoryFringes(fringeableGross.toNumber(), totalWorkedHrs, dealMemo);
 
   // --- Territory-aware employee deductions ---
   const taxes = calculateTerritoryTax(grossPay.toNumber(), dealMemo);

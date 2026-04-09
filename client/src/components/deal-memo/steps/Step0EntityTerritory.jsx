@@ -329,25 +329,6 @@ export default function Step0EntityTerritory({
         </CardContent>
       </Card>
 
-      {unionFields?.length > 0 && (
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Union-Specific Terms</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
-            {unionFields.map((field) => (
-              <UnionField
-                key={field.key}
-                field={field}
-                control={control}
-                errors={errors}
-                currencySymbol={currencySymbol}
-                watch={watch}
-              />
-            ))}
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

@@ -26,6 +26,9 @@ import AdminRateCards from "@/pages/AdminRateCards";
 import UserManagement from "@/pages/UserManagement";
 import RatesBible from "@/pages/RatesBible";
 import CrewPortal from "@/pages/CrewPortal";
+import PayrollGrid from "@/pages/PayrollGrid";
+import Completer from "@/pages/Completer";
+import CrewPayHistory from "@/pages/CrewPayHistory";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -72,6 +75,9 @@ export default function App() {
                 <Route path="/timecards/:id" element={<TimecardDetail />} />
                 <Route path="/payroll" element={<Payroll />} />
                 <Route path="/payroll/:id" element={<PayrollDetail />} />
+                <Route path="/payroll/grid/:productionId" element={<PayrollGrid />} />
+                <Route path="/completer/:deptId" element={<Completer />} />
+                <Route path="/pay-history/:productionId" element={<CrewPayHistory />} />
                 <Route path="/rate-cards" element={<RateCards />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/admin/rate-cards" element={<AdminRateCards />} />
