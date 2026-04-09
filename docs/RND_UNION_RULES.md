@@ -198,6 +198,42 @@
 
 ---
 
+---
+
+## M. ANSWERS TO REMAINING QUESTIONS (from deep research)
+
+### Q1: Meal Break Input on UK Timecards
+**Answer:** Meal times ARE captured on the timecard — fields: M1 Out, M1 In, M2 Out (optional), M2 In (optional). Source of truth = daily production report / call sheet back pages. HOD or dept coordinator enters actual meal times (not individual crew). Sargent-Disc CrewStart uses daily Time Reports that roll up into weekly Timesheets.
+
+**Implementation:** Add M1 Out, M1 In, M2 Out, M2 In to day row (expanded view). Pre-fill from production report if available.
+
+### Q2: Second Meal on UK Productions
+**Answer:** Triggered when crew work >5 hours after M1 end (Film) or when no meal break within 6 hours of M1 end (TV Drama). Uncommon on well-scheduled TV (10+1 day). More common on features (11+1) and night shoots.
+
+**Implementation:** Always support M2 fields but make them optional. Auto-show M2 fields when elapsed time from M1 In exceeds 5 hours. Display warning if M2 not provided within required window.
+
+### Q3: Turnaround Measurement for BECTU
+**Answer:** Measured from **individual crew member's finish/release time** — NOT from camera wrap or unit wrap. Legal basis: Working Time Regulations 1998. Different departments finish at different times (costume/HMU may finish later than camera).
+
+**Implementation:** Use the **Release** field (4th time field) as turnaround start point. This is correct — it's the crew member's personal departure time.
+
+### Q4: Partial Days Under BECTU
+**Answer:** No "minimum call" in US sense. UK uses daily rate — if called, you get the full daily rate. TV Drama: cancellation after 1pm day-before = full pay. Weekly crew: week guaranteed regardless. Sick days: no contractual sick pay for freelancers beyond SSP. Mark as unpaid/sick.
+
+**Implementation:** No partial day rate calculator needed. Day is either worked (full daily rate) or not worked (no pay / sick / cancelled). Cancellation after cutoff = full pay.
+
+### Q5: Payslip vs Cost Estimate
+**Answer:** Do NOT generate payslips (bureau's job). DO generate a **"Hot Cost" — daily estimated cost per crew member** from timecard data + deal memo rates. This is what production accountants need for cost control. Label it "estimate" to avoid confusion with legal payslip.
+
+**Implementation:** Build "Hot Cost" view showing per-person daily cost estimate. Compare estimated vs budgeted. This feeds into the Weekly Cost Report. NOT a payslip.
+
+### Q6: UK Ltd Company Timecard
+**Answer:** Ltd company crew do NOT submit full timecards (IR35 risk). They submit invoices against a Purchase Order. Production tracks their days via daily production report. For AVEC/HETVC: must track which days were worked in UK vs overseas.
+
+**Implementation:** Create a lightweight "Ltd Company Day Log" — date, worked yes/no, UK location yes/no, linked to PO. NOT a full timecard with call/wrap/meal. Ltd company person submits invoice separately; system cross-references against day log.
+
+---
+
 ## Sources
 - [IATSE Local 728 Rest Period Edition](https://www.iatse728.org)
 - [SAG-AFTRA Rest Periods](https://www.sagaftra.org/rest-periods-forced-calls-0)

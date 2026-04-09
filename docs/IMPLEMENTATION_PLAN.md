@@ -1,205 +1,192 @@
-# Implementation Plan — Remaining Work
+# Final Implementation Plan — All R&D Complete
 
-## What We Know (can build now)
+## All Questions Resolved
 
-### A. Wire New Calculator into Payroll Engine
-**Status:** timecardCalculator.js exists but payrollEngine.js still uses old overtimeCalculator.js
-**Action:**
-- Replace old calculator calls in payrollEngine.js with new calculateDay/calculateWeek
-- All rates read from deal memo — no hardcoding
-- BTA, pre-call/wrap OT split, meal delay escalation, night premium flat all flow through
-- Test: same timecard data produces correct pay with new calculator
+| Question | Answer | Impact |
+|----------|--------|--------|
+| Meal break input | M1 Out/In + M2 Out/In on timecard, from production report | Add 4 meal fields to day row |
+| Second meal trigger | >5hrs after M1 end (Film) / 6hrs (TV Drama), auto-show M2 | M2 fields optional, auto-appear |
+| Turnaround measurement | From individual **Release** time (not unit wrap) | Our 4th field (Release) is correct |
+| Partial days | No partial rate — full daily rate or nothing (UK) | No partial day calculator needed |
+| Payslip | Don't generate. Build **Hot Cost** estimate instead | New "Hot Cost" view per crew |
+| Ltd company timecard | Lightweight day log (not full timecard, IR35 risk) | New "Ltd Day Log" component |
+| Day type | User fills it in (confirmed by client) | Keep dropdown, user selects |
+| Receipt upload | Not needed for now (confirmed by client) | Skip receipt feature |
 
-### B. Meal Break Inputs in Timecard UI
-**Status:** Model has lunchStart/lunchEnd/secondMealStart/secondMealEnd. UI doesn't show them.
-**Action:**
-- Add meal break fields to expanded day detail (Times card)
-- M1 Out / M1 In + M2 Out / M2 In (4 fields)
-- Meal penalty auto-calculates when M1 Out - Crew Call > meal window (from deal memo)
-- Show meal delay alert notice in expanded view
-- CWD days exempt from meal delay penalty
+---
 
-### C. GPS Punch In/Out
-**Status:** Toggle exists in preferences, no backend
-**Action:**
-- New model: `PunchLog` — { crewId, productionId, type: 'in'|'out', timestamp, location: { lat, lng }, accuracy }
-- New endpoints: `POST /api/punch/in`, `POST /api/punch/out`, `GET /api/punch/today`
-- Mobile-friendly punch page: big "Punch In" / "Punch Out" button with current time display
-- When GPS auto-fill is ON, timecard auto-populates crewCall from first punch-in, release from last punch-out
-- Source badge shows "GPS" on auto-filled fields
-- Location captured but not enforced (no geofencing for now)
+## Sprint 1: Wire Calculator + Meal Breaks (Payroll Accuracy)
 
-### D. Night Shoot / Split Day Handling
-**Status:** Need R&D per union
-**Action (universal approach):**
-- If release time < crew call time → overnight detected
-- Add 1440 minutes to release for calculation (already in timecardCalculator)
-- The day "belongs to" the date of crew call (not the date of release)
-- For consecutive day counting: a night shoot on Friday (call 18:00, release Sat 04:00) counts as Friday's work day
-- Turnaround: Friday release 04:00 → Saturday call 07:00 = 3 hours turnaround → BTA triggered
+### 1A. Wire timecardCalculator into payrollEngine
+**File:** `server/src/services/payrollEngine.js`
+- Import `calculateDay` and `calculateWeek` from `timecardCalculator.js`
+- Replace old `calculateDayHours()` calls with new `calculateDay()` 
+- All rates flow from deal memo — BTA, pre-call/wrap OT, meal escalation, night premium
 
-### E. Assignment Delegation
-**Status:** Kate's spec shows it, not built
-**Action:**
-- New fields on Timecard: `assignedTo: ObjectId`, `assignmentScope: 'all_weeks'|'this_week'|'custom'`
-- Assignee can edit: times, day types, notes, allowances
-- Assignee CANNOT see: rates, pay amounts, OT pay, gross, deal memo rates
-- Assignee CANNOT: submit or approve — only the crew member can submit
-- API: strip all pay fields from response when `req.user._id !== timecard.ownerId`
-- UI: AssignmentModal — select crew member + scope dropdown
+### 1B. Add Meal Break Fields to Timecard UI
+**File:** `client/src/components/timecard/TimecardShell.jsx` (DayRowNew)
+- Add to expanded view Times card: M1 Out, M1 In, M2 Out, M2 In
+- M2 fields hidden by default, auto-show when elapsed time from M1 In > 5hrs
+- Meal penalty auto-calculates: if M1 Out - Crew Call > mealPenaltyAfterHrs (from deal memo)
+- CWD exempt from meal penalty (already in calculator)
+- US NDM flag: `mealDeductible` from deal memo (UK=true/deductible, US=false/NDM)
 
-### F. Travel Day Rate from Deal Memo
-**Status:** Confirmed — travel rate comes from deal memo separateRates.travelRate
-**Action:**
-- When dayType === 'TRVL' or 'Travel':
-  - Basic pay = dealMemo.travelRate (if separate rates enabled) or dealMemo.dailyRate * 0.5 (half day default)
-  - No OT on travel days
-  - No meal penalty on travel days
-  - Allowances still apply (per diem especially)
+### 1C. Night Shoot Handling
+- Day "belongs to" date of crew call (universal)
+- If release < crew call → overnight detected, add 1440 mins (already in calculator)
+- Night premium: flat amount or percentage from deal memo
 
-### G. Backend Endpoints for New Pages
-**Status:** 3 frontend pages with no backend
+---
 
-**PayrollGrid endpoint:**
-- `GET /api/payroll/production/:productionId/grid?week=:weekId&view=weekly|daily|wtd`
-- Fetches all timecards for production + week, joins with deal memos
-- Returns: crew list with per-person pay breakdown, department grouping, flags
-- Rate privacy: only production_accountant / payroll_admin can see all rates
+## Sprint 2: Backend Endpoints (Make Pages Work)
 
-**Completer endpoint:**
-- `GET /api/timecards/completer/:deptId?week=:weekId`
-- Fetches all timecards for dept crew for the week
-- Rate privacy: strip rate/pay from non-self entries server-side
-- Returns: crew list with time data, hours breakdown (no pay for others)
+### 2A. PayrollGrid API
+**New endpoint:** `GET /api/payroll/production/:productionId/grid`
+- Fetch all timecards for production + week
+- Join with deal memos for rates
+- Return crew list with per-person pay breakdown
+- Rate privacy: only production_accountant/payroll_admin see all
 
-**CrewPayHistory endpoint:**
-- `GET /api/portal/:crewId/production/:productionId`
-- Fetches: crew info, production phases, all weeks with pay breakdown
-- Payment status per week (paid/approved/submitted/draft)
-- Only accessible by the crew member themselves or admins
+### 2B. Completer API  
+**New endpoint:** `GET /api/timecards/completer/:deptId`
+- Fetch dept crew timecards
+- **Strip rate/pay from non-self entries server-side** (not UI-side)
+- Return hours breakdown only for other crew
 
-### H. Dispute Ticket CRUD
-**Status:** Model exists, no controller/routes
-**Action:**
-- Controller: create, getAll, getById, update, addComment
-- Routes: `POST /api/disputes`, `GET /api/disputes?crewId=&productionId=`, `PATCH /api/disputes/:id`
-- UI: DisputeModal in CrewPayHistory — select week, type (dropdown), description
-- Notification: email/toast when dispute is created, resolved
+### 2C. CrewPayHistory API
+**New route file:** `server/src/routes/portalRoutes.js`
+- `GET /api/portal/:crewId/production/:productionId` — crew info, phases, weeks, pay breakdown
+- Only accessible by crew member themselves or admin
 
-### I. Payment File Export
-**Status:** Generator service exists, no endpoint
-**Action:**
-- `POST /api/payroll/:id/export-payment` — generates payment file based on production territory
-- UK → BACS Standard 18
-- US → NACHA/ACH
-- AU → ABA Direct Entry
-- EU → SEPA XML
-- Returns file as download
-- Pre-submission checklist validation (all amounts verified, all bank details present)
+### 2D. Sidebar Navigation
+- Add PayrollGrid link under Payroll
+- Add Completer link under Timecards (dept_head role only)
+- Remove Crew Portal → replaced by pay history link in deal memo detail
 
-### J. Sidebar Navigation Updates
-**Status:** 3 pages not accessible from nav
-**Action:**
-- Add "Payroll Grid" under Payroll section (links to production selector → grid)
-- Add "Completer" under Timecards section (visible to dept_head/completer roles only)
-- Remove "Crew Portal" — replaced by CrewPayHistory (accessible from deal memo detail)
-- CrewPayHistory accessible from: deal memo detail page, timecard detail, and direct URL
+### 2E. Hot Cost View (instead of payslip)
+**New component:** Per-crew daily cost estimate card
+- Shows: basic, OT breakdown, penalties, premiums, allowances, estimated gross
+- Compares estimated vs budgeted daily cost
+- Label: "Cost Estimate" — NOT "payslip"
+- Accessible from PayrollGrid detail panel
 
-### K. Amend Modal for Locked Fields
-**Status:** Not built
-**Action:**
-- When crew clicks Unit Call or Unit Wrap (locked fields) → AmendModal opens
-- Fields: New time (HH:MM), Original (read-only), Reason (required textarea)
-- On save: updates the field, logs amendment in auditLog[], changes source to 'amend'
-- Toast: "Amendment saved. Your producer will see this change."
-- Backend: `POST /api/timecards/:id/amend` — { dayIndex, field, newValue, reason }
+---
 
-### L. Allowance Modal
-**Status:** Not built
-**Action:**
-- 4 allowance types: Per Diem 🍽️, Mileage 🚗, Meal Buyout 🧾, Kit Rental 🎒
-- Lock notice: "OT is system-calculated, cannot be added here"
-- Dynamic fields per type:
-  - Per Diem: day select, rate (from deal memo), days count, total, notes
-  - Mileage: day select, miles, rate per mile (£0.45 HMRC), return trip toggle, total, notes
-  - Meal Buyout: day select, amount, notes
-  - Kit Rental: day select, amount per day, days, description, total
-- Saves to timecard.entries[dayIndex].allowances[] or weekly allowances
-- Button: "Cancel" + "Add to Timecard"
+## Sprint 3: Timecard Features (Kate's Spec)
 
-### M. Source Badges on Time Fields
-**Status:** Component exists, not displayed
-**Action:**
-- Each time input shows a small source badge next to it
-- GPS (green), CS (blue), BP (teal), Manual (yellow), Override (orange), Locked (red)
-- Default source = 'manual'
-- When GPS auto-fill runs, source = 'gps'
-- When production/AD sets Unit Call/Wrap, source = 'call_sheet' or 'locked'
-- When crew amends, source = 'amend'
+### 3A. Amend Modal
+- Click locked field (Unit Call / Unit Wrap) → AmendModal
+- Fields: new time, original (read-only), mandatory reason textarea
+- On save: update field, log in auditLog[], source = 'amend'
+- Endpoint: `POST /api/timecards/:id/amend` — { dayIndex, field, newValue, reason }
 
-### N. Audit Log Viewer
-**Status:** Schema exists on timecard model, no UI
-**Action:**
-- In expanded day detail, show "Activity Log" section
-- Chronological entries: timestamp, author (GPS/AD/Call Sheet/You), description
+### 3B. Allowance Modal
+- 4 types: Per Diem 🍽️, Mileage 🚗, Meal Buyout 🧾, Kit Rental 🎒
+- Lock notice: "OT is system-calculated"
+- Dynamic fields per type (day select, amount, quantity, notes)
+- Per diem at HMRC/IRS scale rate = no receipt needed
+- Mileage: miles input, auto-calculate at HMRC/IRS rate
+
+### 3C. Source Badges
+- Each time field shows colored badge: GPS/CS/BP/Manual/Override/Locked
+- Default = 'manual', GPS auto-fill = 'gps', production-set = 'locked'
+
+### 3D. Audit Log Viewer
+- In expanded day detail: chronological activity log
+- Each entry: timestamp, source, description
 - Amendments highlighted in yellow with reason
-- Stored in timecard.auditLog[] array
 
-### O. Day-Level Approval
-**Status:** Fields exist in model, no UI
-**Action:**
-- Each day row has an "Approve" button (visible to dept_head/admin)
-- Click → marks dayApproved = true, dayApprovedBy, dayApprovedAt
-- Visual: green checkmark on approved days, grey circle on pending
+### 3E. Day-Level Approval
+- "Approve" button per day (visible to dept_head/admin)
+- Marks dayApproved = true
 - All days must be approved before weekly submission
 
----
-
-## What We Need to Ask Kate (waiting for answers)
-1. Meal break input mechanism for UK timecards
-2. Second meal break handling in UK
-3. Partial days and minimum call rule (UK/BECTU)
-4. Turnaround across week boundaries (when payroll already processed)
-5. Payslip generation (our template vs bureau-generated)
-6. Ltd company timecard flow (invoice vs simplified timecard)
-7. Receipt/evidence upload for allowances
-8. Contracted hours — fixed per engagement or variable per day type?
+### 3F. Submit Modal
+- Pre-submit summary: days worked, total hours, OT, estimated gross
+- Confirmation checkbox
+- Cancel + Submit buttons
 
 ---
 
-## What Needs R&D
-1. Night shoot handling per union (UK vs US vs AU etc.)
-2. Minimum call rules per union
-3. Production calendar → timecard day type auto-fill integration
-4. Week-over-week consecutive day detection
+## Sprint 4: GPS + Assignment + Disputes
+
+### 4A. GPS Punch In/Out
+**New model:** `PunchLog` — crewId, productionId, type (in/out), timestamp, location
+**New endpoints:** `POST /api/punch/in`, `POST /api/punch/out`, `GET /api/punch/today`
+**New page:** Mobile-friendly punch page with big Punch In / Punch Out button
+- When GPS auto-fill preference ON: crewCall = first punch-in, release = last punch-out
+- Source badge = 'gps'
+
+### 4B. Assignment Delegation
+- New fields on Timecard: `assignedTo`, `assignmentScope`
+- Assignee can edit: times, day types, notes, allowances
+- Assignee CANNOT see: rates, pay, OT amounts, gross
+- Assignee CANNOT: submit or approve
+- API: strip pay fields when req.user._id !== timecard.ownerId
+- AssignmentModal: select crew + scope (all weeks / this week / custom)
+
+### 4C. Dispute Ticket CRUD
+**Controller + Routes:** Create, list, update, add comment
+**Endpoints:** `POST /api/disputes`, `GET /api/disputes`, `PATCH /api/disputes/:id`
+**UI:** DisputeModal in CrewPayHistory — select week, type, description
+**Types:** incorrect_time, missing_overtime, wrong_day_type, allowance_missing, rate_incorrect, payment_missing, other
+
+### 4D. Travel Day Handling
+- dayType === 'TRVL': basicPay = dealMemo.travelRate (if separate rates) or dailyRate * 0.5
+- No OT on travel days
+- No meal penalty on travel days  
+- Allowances still apply
+- BECTU: travel days neutral for consecutive counting
 
 ---
 
-## Execution Priority
+## Sprint 5: Lt Company + Deal Memo Completeness
 
-### Sprint 1: Calculator + Meal Breaks (payroll accuracy)
-- A. Wire timecardCalculator into payrollEngine
-- B. Add meal break inputs to timecard UI
-- D. Night shoot handling
+### 5A. Ltd Company Day Log
+**New component:** Lightweight day log (NOT a full timecard — IR35 risk)
+- Fields: date, worked (yes/no), UK location (yes/no), notes
+- Linked to Purchase Order (not deal memo)
+- For AVEC/HETVC: track UK vs overseas days
+- Invoice cross-reference against day log for approval
 
-### Sprint 2: Backend Endpoints (make pages work)
-- G. PayrollGrid, Completer, CrewPayHistory endpoints
-- J. Sidebar navigation
-- I. Payment file export endpoint
+### 5B. Payment File Export Endpoint
+**New endpoint:** `POST /api/payroll/:id/export-payment`
+- Territory-driven: UK→BACS, US→ACH, AU→ABA, EU→SEPA
+- Pre-submission validation checklist
+- Returns file as download
+- `paymentFileGenerator.js` already built — just needs endpoint
 
-### Sprint 3: Timecard Features (Kate's spec)
-- K. Amend modal
-- L. Allowance modal
-- M. Source badges
-- N. Audit log viewer
-- O. Day-level approval
+### 5C. Deal Memo Remaining Fields UI
+Add to Deal & Rates step:
+- BTA enabled toggle + BTA rate
+- Night premium flat amount
+- Contracted hours per day type (SWD/CWD/SCWD)
+- Camera dept flag (affects 2T vs 1.5T)
+- OT multiplier override
+- Golden time toggle + multiplier
+- Meal penalty escalation amounts array
+- Meal deductible flag (UK=yes, US=no/NDM)
+- Workers comp %
+- H&W per hour (US)
 
-### Sprint 4: Workflows
-- C. GPS punch in/out
-- E. Assignment delegation
-- H. Dispute ticket CRUD
-- F. Travel day rate handling
+### 5D. Timecard UI Polish
+- Fix cramped spacing in TimecardShell
+- Proper responsive layout
+- Better typography and visual hierarchy
+- Smooth animations on expand/collapse
+- Week summary cards with proper sizing
 
-### Sprint 5: Deal Memo Completeness
-- Add remaining 15+ fields to deal memo UI
-- BTA, golden time, OT tiers, meal escalation, etc.
+---
+
+## Execution Timeline
+
+```
+Sprint 1 (Calculator + Meals) ──→ Payroll accuracy fixed
+Sprint 2 (Backend APIs) ────────→ All pages functional  
+Sprint 3 (Timecard Features) ───→ Kate's spec complete
+Sprint 4 (GPS + Workflows) ────→ Full feature set
+Sprint 5 (Ltd + Polish) ───────→ Production ready
+```
+
+## No More Open Questions
+All R&D complete. All questions answered. Ready to build.
