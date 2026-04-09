@@ -45,6 +45,7 @@ import {
 } from "@/hooks/useTimecards";
 import TimecardGrid from "@/components/timecard/TimecardGrid";
 import TimecardSummary from "@/components/timecard/TimecardSummary";
+import TimecardShell from "@/components/timecard/TimecardShell";
 
 const STATUS_CONFIG = {
   draft: { label: "Draft", color: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300" },
@@ -310,20 +311,20 @@ export default function TimecardDetail() {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-6 p-6"
+      className="h-[calc(100vh-64px)]"
     >
-      {/* Back button + Title */}
-      <div className="flex items-center gap-3">
+      {/* Back button + Title — compact bar */}
+      <div className="flex items-center gap-3 px-4 py-2 border-b bg-background">
         <Button
           variant="ghost"
-          size="icon-sm"
+          size="sm"
           onClick={() => navigate("/timecards")}
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4 mr-1" /> Back
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight">
+            <h1 className="text-lg font-bold tracking-tight">
               {timecard.timecardNumber || "Timecard"}
             </h1>
             <span
@@ -341,183 +342,28 @@ export default function TimecardDetail() {
         </div>
       </div>
 
-      {/* Header info bar */}
-      <Card>
-        <CardContent className="py-4">
-          <div className="flex flex-wrap items-center gap-6">
-            <div className="flex items-center gap-2 text-sm">
-              <User className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">
-                {timecard.ownerId?.fullName || `${timecard.ownerId?.firstName || ''} ${timecard.ownerId?.lastName || ''}`.trim() || "N/A"}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Film className="h-4 w-4 text-muted-foreground" />
-              <span>{timecard.productionId?.name || "N/A"}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span>
-                {timecard.weekStarting
-                  ? `${format(parseISO(timecard.weekStarting), "dd MMM")} - ${format(
-                      parseISO(timecard.weekEnding || timecard.weekStarting),
-                      "dd MMM yyyy"
-                    )}`
-                  : "N/A"}
-              </span>
-            </div>
-            {timecard.dealMemoId && (
-              <Link
-                to={`/deal-memos/${typeof timecard.dealMemoId === 'object' ? timecard.dealMemoId._id : timecard.dealMemoId}`}
-                className="flex items-center gap-1.5 text-sm text-primary hover:underline"
-              >
-                <LinkIcon className="h-3.5 w-3.5" />
-                View Deal Memo
-              </Link>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Main content: Grid + Sidebar */}
-      <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
-        {/* Timecard Grid */}
-        <div className="min-w-0">
-          <TimecardGrid
-            entries={localEntries}
-            weekStartDate={timecard.weekStartDate}
-            onEntryChange={handleEntryChange}
-            disabled={!isEditable}
-            standardDayHrs={timecard.dealMemoId?.standardWorkDayHrs}
-            dayTypes={timecard.productionId?.dayTypes}
-            dealMemo={timecard.dealMemoId || {}}
-            dealType={timecard.dealMemoId?.dealType}
-          />
-        </div>
-
-        {/* Right Sidebar */}
-        <div className="space-y-4">
-          <TimecardSummary entries={localEntries} standardDayHrs={timecard.dealMemoId?.standardWorkDayHrs} />
-        </div>
+      {/* New TimecardShell — full layout with aside, week summary, expandable days */}
+      <div className="flex-1 overflow-hidden rounded-lg border">
+        <TimecardShell
+          timecard={timecard}
+          entries={localEntries}
+          weekStartDate={timecard.weekStarting}
+          onEntryChange={handleEntryChange}
+          onSave={handleManualSave}
+          onCalculate={handleCalculate}
+          onSubmit={() => handleAction("submitted")}
+          disabled={!isEditable}
+          crew={{
+            name: timecard.ownerId?.fullName || `${timecard.ownerId?.firstName || ''} ${timecard.ownerId?.lastName || ''}`.trim(),
+            role: timecard.dealMemoId?.designationId?.name || timecard.dealMemoId?.screenCredit || '',
+            department: timecard.dealMemoId?.departmentId?.name || '',
+            weekNumber: timecard.weekNumber,
+          }}
+          dealMemo={timecard.dealMemoId || {}}
+        />
       </div>
 
-      {/* Actions bar */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="sticky bottom-0 z-20 -mx-6 border-t bg-background/95 px-6 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/80"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {isEditable && (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={handleManualSave}
-                  disabled={updateEntries.isPending || !hasChanges}
-                >
-                  {updateEntries.isPending ? (
-                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="mr-1.5 h-4 w-4" />
-                  )}
-                  Save
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleCalculate}
-                  disabled={calculate.isPending}
-                >
-                  {calculate.isPending ? (
-                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Calculator className="mr-1.5 h-4 w-4" />
-                  )}
-                  Calculate
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setAiDialogOpen(true)}
-                >
-                  <Sparkles className="mr-1.5 h-4 w-4" />
-                  AI Fill
-                </Button>
-              </>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            {isEditable && (
-              <Button
-                onClick={handleSubmit}
-                disabled={submitTC.isPending}
-              >
-                {submitTC.isPending ? (
-                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="mr-1.5 h-4 w-4" />
-                )}
-                Submit for Approval
-              </Button>
-            )}
-
-            {/* Dept Approve — when submitted */}
-            {timecard.status === "submitted" && canDeptApprove && (
-              <>
-                <Button
-                  variant="outline"
-                  className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/30"
-                  onClick={() => setRejectDialogOpen(true)}
-                  disabled={rejectTC.isPending}
-                >
-                  <XCircle className="mr-1.5 h-4 w-4" />
-                  Reject
-                </Button>
-                <Button
-                  className="bg-amber-600 hover:bg-amber-700"
-                  onClick={handleApprove}
-                  disabled={approveTC.isPending}
-                >
-                  {approveTC.isPending ? (
-                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                  ) : (
-                    <CheckCircle2 className="mr-1.5 h-4 w-4" />
-                  )}
-                  Dept Approve
-                </Button>
-              </>
-            )}
-
-            {/* Payroll Approve — when dept_approved */}
-            {timecard.status === "dept_approved" && canPayrollApprove && (
-              <>
-                <Button
-                  variant="outline"
-                  className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/30"
-                  onClick={() => setRejectDialogOpen(true)}
-                  disabled={rejectTC.isPending}
-                >
-                  <XCircle className="mr-1.5 h-4 w-4" />
-                  Reject
-                </Button>
-                <Button
-                  className="bg-emerald-600 hover:bg-emerald-700"
-                  onClick={handlePayrollApprove}
-                  disabled={payrollApproveTC.isPending}
-                >
-                  {payrollApproveTC.isPending ? (
-                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                  ) : (
-                    <CheckCircle2 className="mr-1.5 h-4 w-4" />
-                  )}
-                  Payroll Approve
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      </motion.div>
+      {/* Old action bar removed — now in TimecardShell footer */}
 
       {/* Reject Dialog */}
       <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
