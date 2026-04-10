@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import AllowanceModal from "./AllowanceModal";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -200,6 +201,16 @@ function DayRowNew({ entry, dayIndex, date, onChange, disabled, dealMemo, prevEn
           {!entry?.preCallOTMins && !entry?.filmingOTMins && !entry?.wrapOTMins && !isOff && <span className="text-[10px] text-muted-foreground">—</span>}
         </div>
 
+        {/* Allowance pills (from deal memo) */}
+        <div className="flex gap-1 shrink-0 max-w-[140px] overflow-hidden">
+          {dmAllowances.slice(0, 2).map((a, ai) => (
+            <span key={ai} className="inline-flex items-center px-1 py-0 rounded text-[7px] font-medium bg-teal-500/10 text-teal-400 border border-teal-500/20 whitespace-nowrap">
+              {cs}{a.amount} {a.name?.split(' ')[0]}
+            </span>
+          ))}
+          {dmAllowances.length > 2 && <span className="text-[8px] text-muted-foreground">+{dmAllowances.length - 2}</span>}
+        </div>
+
         {/* Day Total */}
         <div className="w-20 text-right shrink-0">
           <span className="text-sm font-bold tabular-nums font-mono text-amber-400">
@@ -290,9 +301,39 @@ function DayRowNew({ entry, dayIndex, date, onChange, disabled, dealMemo, prevEn
                 <CardContent className="p-3 space-y-1.5">
                   <div className="flex items-center justify-between">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Allowances</p>
-                    <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1.5"><Plus className="size-3 mr-0.5" /> Add</Button>
+                    <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1.5" onClick={() => setAllowanceModalOpen(true)}>
+                      <Plus className="size-3 mr-0.5" /> Add
+                    </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground">No allowances for this day</p>
+                  {dmAllowances.length > 0 ? (
+                    <div className="space-y-1">
+                      {dmAllowances.map((a, ai) => (
+                        <div key={ai} className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <span className={cn(
+                              "inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium border",
+                              a.name?.toLowerCase().includes('per diem') && "bg-amber-500/10 text-amber-400 border-amber-500/20",
+                              a.name?.toLowerCase().includes('kit') && "bg-blue-500/10 text-blue-400 border-blue-500/20",
+                              a.name?.toLowerCase().includes('mileage') && "bg-teal-500/10 text-teal-400 border-teal-500/20",
+                              a.name?.toLowerCase().includes('phone') && "bg-purple-500/10 text-purple-400 border-purple-500/20",
+                              a.name?.toLowerCase().includes('car') && "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+                              !['per diem', 'kit', 'mileage', 'phone', 'car'].some(k => a.name?.toLowerCase().includes(k)) && "bg-muted text-muted-foreground border-border",
+                            )}>
+                              {a.name}
+                            </span>
+                          </div>
+                          <span className="font-mono font-medium">{cs}{Number(a.amount).toFixed(2)}</span>
+                        </div>
+                      ))}
+                      <Separator className="my-1" />
+                      <div className="flex justify-between text-xs font-medium">
+                        <span>Total</span>
+                        <span className="font-mono text-teal-400">{cs}{weeklyAllowanceTotal.toFixed(2)}/wk</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">No allowances on deal memo</p>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -401,6 +442,11 @@ export default function TimecardShell({
 }) {
   const country = dealMemo?.territory || dealMemo?.country || timecard?.productionId?.country || 'UK';
   const cs = currencySymbol(country);
+  const [allowanceModalOpen, setAllowanceModalOpen] = useState(false);
+
+  // Allowances from deal memo
+  const dmAllowances = dealMemo?.allowances || [];
+  const weeklyAllowanceTotal = dmAllowances.reduce((s, a) => s + (Number(a.amount) || 0), 0);
 
   const weekLabel = weekStartDate
     ? `Week · ${format(parseISO(weekStartDate), 'dd MMM')} – ${format(addDays(parseISO(weekStartDate), 6), 'dd MMM yyyy')}`
@@ -429,9 +475,10 @@ export default function TimecardShell({
       s.gross += e?.dayTotal || 0;
     });
     s.holidayPay = Math.round(s.basic * (dealMemo?.holidayPayPct || 0) / 100 * 100) / 100;
-    s.gross += s.holidayPay;
+    s.allowances = weeklyAllowanceTotal;
+    s.gross += s.holidayPay + s.allowances;
     return s;
-  }, [entries, dealMemo]);
+  }, [entries, dealMemo, weeklyAllowanceTotal]);
 
   return (
     <div className="flex flex-col h-full">
@@ -479,6 +526,18 @@ export default function TimecardShell({
           <Send className="size-3.5 mr-1.5" /> Submit for Approval
         </Button>
       </div>
+
+      {/* Allowance Modal */}
+      <AllowanceModal
+        open={allowanceModalOpen}
+        onOpenChange={setAllowanceModalOpen}
+        onAdd={(allowance) => {
+          console.log('Allowance added:', allowance);
+          // TODO: save to timecard or deal memo
+        }}
+        dealMemo={dealMemo}
+        currencySymbol={cs}
+      />
     </div>
   );
 }
