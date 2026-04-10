@@ -72,9 +72,9 @@ function WeekNav({ weekLabel, status, onPrev, onNext }) {
   return (
     <div className="flex items-center justify-between px-6 py-2.5 border-b bg-card/50">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="size-8" onClick={onPrev}><ChevronLeft className="size-4" /></Button>
+        <Button variant="ghost" size="icon" className="size-8" onClick={onPrev} disabled={!onPrev}><ChevronLeft className="size-4" /></Button>
         <span className="text-sm font-semibold">{weekLabel}</span>
-        <Button variant="ghost" size="icon" className="size-8" onClick={onNext}><ChevronRight className="size-4" /></Button>
+        <Button variant="ghost" size="icon" className="size-8" onClick={onNext} disabled={!onNext}><ChevronRight className="size-4" /></Button>
       </div>
       <Badge variant="outline" className={cn("text-xs",
         status === 'draft' && "text-yellow-500 border-yellow-500/30",
@@ -441,6 +441,8 @@ export default function TimecardShell({
   disabled = false,
   crew = {},
   dealMemo = {},
+  onPrevWeek,
+  onNextWeek,
 }) {
   const country = dealMemo?.territory || dealMemo?.country || timecard?.productionId?.country || 'UK';
   const cs = currencySymbol(country);
@@ -485,7 +487,7 @@ export default function TimecardShell({
   return (
     <div className="flex flex-col h-full">
       {/* Week Nav */}
-      <WeekNav weekLabel={weekLabel} status={timecard?.status} />
+      <WeekNav weekLabel={weekLabel} status={timecard?.status} onPrev={onPrevWeek} onNext={onNextWeek} />
 
       {/* Crew Header */}
       <CrewHeader crew={crew} dealMemo={dealMemo} />

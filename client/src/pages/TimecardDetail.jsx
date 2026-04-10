@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { format, parseISO, addDays } from "date-fns";
 import { toast } from "sonner";
@@ -84,6 +85,23 @@ export default function TimecardDetail() {
   const approveTC = useApproveTimecard();
   const payrollApproveTC = usePayrollApproveTimecard();
   const rejectTC = useRejectTimecard();
+
+  // Fetch sibling timecards for week navigation
+  const { data: siblingTimecards } = useQuery({
+    queryKey: ["timecards", "siblings", timecard?.ownerId?._id || timecard?.ownerId, timecard?.dealMemoId?._id || timecard?.dealMemoId],
+    queryFn: async () => {
+      const ownerId = timecard?.ownerId?._id || timecard?.ownerId;
+      if (!ownerId) return [];
+      const { data } = await api.get("/timecards", { params: { ownerId } });
+      const tcs = data.data || data;
+      return Array.isArray(tcs) ? tcs.sort((a, b) => new Date(a.weekStarting) - new Date(b.weekStarting)) : [];
+    },
+    enabled: !!timecard?.ownerId,
+  });
+
+  const currentIndex = siblingTimecards?.findIndex(tc => (tc._id || tc.id) === id) ?? -1;
+  const prevTimecard = currentIndex > 0 ? siblingTimecards[currentIndex - 1] : null;
+  const nextTimecard = currentIndex >= 0 && currentIndex < (siblingTimecards?.length || 0) - 1 ? siblingTimecards[currentIndex + 1] : null;
 
   const [localEntries, setLocalEntries] = useState([]);
   const [hasChanges, setHasChanges] = useState(false);
@@ -353,6 +371,8 @@ export default function TimecardDetail() {
           onCalculate={handleCalculate}
           onSubmit={handleSubmit}
           disabled={!isEditable}
+          onPrevWeek={prevTimecard ? () => navigate(`/timecards/${prevTimecard._id || prevTimecard.id}`) : null}
+          onNextWeek={nextTimecard ? () => navigate(`/timecards/${nextTimecard._id || nextTimecard.id}`) : null}
           crew={{
             name: timecard.ownerId?.fullName || `${timecard.ownerId?.firstName || ''} ${timecard.ownerId?.lastName || ''}`.trim(),
             role: timecard.dealMemoId?.designationId?.name || timecard.dealMemoId?.screenCredit || '',
