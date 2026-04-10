@@ -27,6 +27,9 @@ import rateBibleRoutes from './routes/rateBibleRoutes.js';
 import contractingEntityRoutes from './routes/contractingEntityRoutes.js';
 import complianceRoutes from './routes/complianceRoutes.js';
 import nominalCodeRoutes from './routes/nominalCodeRoutes.js';
+import portalRoutes from './routes/portalRoutes.js';
+import disputeRoutes from './routes/disputeRoutes.js';
+import punchRoutes from './routes/punchRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -75,6 +78,9 @@ app.use('/api/rates-bible', rateBibleRoutes);
 app.use('/api/contracting-entities', contractingEntityRoutes);
 app.use('/api/compliance', complianceRoutes);
 app.use('/api/nominal-codes', nominalCodeRoutes);
+app.use('/api/portal', portalRoutes);
+app.use('/api/disputes', disputeRoutes);
+app.use('/api/punch', punchRoutes);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date() }));
 

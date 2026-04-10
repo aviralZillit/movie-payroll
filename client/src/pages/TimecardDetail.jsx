@@ -351,7 +351,7 @@ export default function TimecardDetail() {
           onEntryChange={handleEntryChange}
           onSave={handleManualSave}
           onCalculate={handleCalculate}
-          onSubmit={() => handleAction("submitted")}
+          onSubmit={handleSubmit}
           disabled={!isEditable}
           crew={{
             name: timecard.ownerId?.fullName || `${timecard.ownerId?.firstName || ''} ${timecard.ownerId?.lastName || ''}`.trim(),

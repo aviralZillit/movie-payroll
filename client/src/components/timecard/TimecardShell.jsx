@@ -232,8 +232,34 @@ function DayRowNew({ entry, dayIndex, date, onChange, disabled, dealMemo, prevEn
                     <div className="flex justify-between"><span className="text-muted-foreground">Crew Call</span><span className="font-mono">{entry?.callTime || '—'}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Unit Call <Lock className="inline size-2.5" /></span><span className="font-mono text-emerald-400">{entry?.unitCall || '—'}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Unit Wrap <Lock className="inline size-2.5" /></span><span className="font-mono text-emerald-400">{entry?.unitWrap || '—'}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">M1 Out</span>
+                      <TimeInput value={entry?.lunchStart || ''} onChange={(v) => handleChange(dayIndex, 'lunchStart', v)} disabled={disabled} placeholder="13:00" />
+                    </div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">M1 In</span>
+                      <TimeInput value={entry?.lunchEnd || ''} onChange={(v) => handleChange(dayIndex, 'lunchEnd', v)} disabled={disabled} placeholder="14:00" />
+                    </div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Release</span><span className="font-mono">{entry?.release || entry?.wrapTime || '—'}</span></div>
-                    {entry?.lunchStart && <div className="flex justify-between"><span className="text-muted-foreground">Lunch</span><span className="font-mono">{entry.lunchStart}–{entry.lunchEnd}</span></div>}
+                    {/* M2 fields — auto-show when >5hrs after M1 end */}
+                    {(() => {
+                      const m1End = entry?.lunchEnd;
+                      const rel = entry?.release || entry?.wrapTime;
+                      if (!m1End || !rel) return null;
+                      const [m1h, m1m] = m1End.split(':').map(Number);
+                      const [rh, rm] = rel.split(':').map(Number);
+                      const elapsed = (rh * 60 + rm) - (m1h * 60 + m1m);
+                      if (elapsed < 300) return null; // < 5 hours
+                      return (
+                        <>
+                          <Separator className="my-1" />
+                          <div className="flex justify-between"><span className="text-muted-foreground">M2 Out</span>
+                            <TimeInput value={entry?.secondMealStart || ''} onChange={(v) => handleChange(dayIndex, 'secondMealStart', v)} disabled={disabled} placeholder="19:00" />
+                          </div>
+                          <div className="flex justify-between"><span className="text-muted-foreground">M2 In</span>
+                            <TimeInput value={entry?.secondMealEnd || ''} onChange={(v) => handleChange(dayIndex, 'secondMealEnd', v)} disabled={disabled} placeholder="19:30" />
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 </CardContent>
               </Card>

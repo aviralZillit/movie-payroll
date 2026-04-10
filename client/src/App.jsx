@@ -29,6 +29,7 @@ import CrewPortal from "@/pages/CrewPortal";
 import PayrollGrid from "@/pages/PayrollGrid";
 import Completer from "@/pages/Completer";
 import CrewPayHistory from "@/pages/CrewPayHistory";
+import PunchClock from "@/pages/PunchClock";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -78,6 +79,7 @@ export default function App() {
                 <Route path="/payroll/grid/:productionId" element={<PayrollGrid />} />
                 <Route path="/completer/:deptId" element={<Completer />} />
                 <Route path="/pay-history/:productionId" element={<CrewPayHistory />} />
+                <Route path="/punch" element={<PunchClock />} />
                 <Route path="/rate-cards" element={<RateCards />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/admin/rate-cards" element={<AdminRateCards />} />

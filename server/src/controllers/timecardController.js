@@ -1,8 +1,5 @@
 import { Timecard, DealMemo } from '../models/index.js';
-import { calculateDayHours } from '../services/overtimeCalculator.js';
-import { calculateMealPenalty } from '../services/mealPenaltyCalculator.js';
-import { checkTurnaround } from '../services/turnaroundCalculator.js';
-import { getOvertimeRules } from '../services/rateEngine.js';
+import { calculateWeek } from '../services/timecardCalculator.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import AppError from '../utils/AppError.js';
 
@@ -86,7 +83,8 @@ export const updateEntries = asyncHandler(async (req, res) => {
 });
 
 /**
- * Reusable calculation logic — computes OT, meal penalties, turnaround on a timecard.
+ * Reusable calculation logic — uses the universal timecardCalculator.
+ * ALL rates come from the deal memo. No hardcoded values.
  * Mutates the timecard in-place (entries + weekly totals) but does NOT save.
  */
 async function runCalculation(timecard) {
@@ -95,81 +93,73 @@ async function runCalculation(timecard) {
     throw new AppError('Associated deal memo not found.', 404);
   }
 
-  const overtimeRules = await getOvertimeRules(
-    dealMemo.unionId,
-    dealMemo.departmentId
-  );
-
-  let totalStraight = 0;
-  let totalOt1x5 = 0;
-  let totalOt2x = 0;
-  let totalNight = 0;
-  let totalMealPen = 0;
-  let totalTurnaround = 0;
-  let daysWorked = 0;
-
   const sortedEntries = [...timecard.entries].sort(
     (a, b) => new Date(a.date) - new Date(b.date)
   );
 
+  // Run the universal calculator — reads all rates from deal memo
+  const { days, weekly } = calculateWeek(sortedEntries, dealMemo);
+
+  // Merge calculated values back into entries
   for (let i = 0; i < sortedEntries.length; i++) {
-    const entry = sortedEntries[i];
+    const calc = days[i];
+    if (!calc) continue;
 
-    // Skip rest days and holidays — zero out their computed fields
-    if (entry.isRestDay || entry.isHoliday) {
-      entry.totalWorkedHrs = 0;
-      entry.straightHrs = 0;
-      entry.ot1x5Hrs = 0;
-      entry.ot2xHrs = 0;
-      entry.nightHrs = 0;
-      continue;
-    }
+    // Hours
+    sortedEntries[i].totalWorkedHrs = calc.totalWorkedHrs;
+    sortedEntries[i].straightHrs = calc.straightHrs;
+    sortedEntries[i].ot1x5Hrs = calc.ot1x5Hrs;
+    sortedEntries[i].ot2xHrs = calc.ot2xHrs;
+    sortedEntries[i].nightHrs = calc.nightHrs || 0;
 
-    if (!entry.callTime || !entry.wrapTime) continue;
-    daysWorked++;
+    // OT breakdown (minutes)
+    sortedEntries[i].preCallOTMins = calc.preCallMins || 0;
+    sortedEntries[i].filmingOTMins = calc.filmingOTMins || 0;
+    sortedEntries[i].wrapOTMins = calc.wrapMins || 0;
+    sortedEntries[i].btaMins = calc.btaMins || 0;
+    sortedEntries[i].mealDelayMins = calc.mealDelayMins || 0;
 
-    const hours = calculateDayHours(entry, dealMemo, overtimeRules);
-    entry.totalWorkedHrs = hours.totalWorkedHrs;
-    entry.straightHrs = hours.straightHrs;
-    entry.ot1x5Hrs = hours.ot1x5Hrs;
-    entry.ot2xHrs = hours.ot2xHrs;
-    entry.nightHrs = hours.nightHrs;
+    // Pay breakdown
+    sortedEntries[i].basicPay = calc.basicPay || 0;
+    sortedEntries[i].preCallOTPay = calc.preCallOTPay || 0;
+    sortedEntries[i].filmingOTPay = calc.filmingOTPay || 0;
+    sortedEntries[i].wrapOTPay = calc.wrapOTPay || 0;
+    sortedEntries[i].btaPay = calc.btaPay || 0;
+    sortedEntries[i].mealDelayPay = calc.mealDelayPay || 0;
+    sortedEntries[i].nightPremPay = calc.nightPremPay || 0;
+    sortedEntries[i].dayTotal = calc.dayTotal || 0;
 
-    totalStraight += hours.straightHrs;
-    totalOt1x5 += hours.ot1x5Hrs;
-    totalOt2x += hours.ot2xHrs;
-    totalNight += hours.nightHrs;
-
-    const meal = calculateMealPenalty(entry, dealMemo);
-    entry.mealPenaltyCount = meal.count;
-    entry.mealPenaltyMinutes = meal.minutes;
-    totalMealPen += meal.count;
-
-    if (i > 0) {
-      const prev = sortedEntries[i - 1];
-      if (prev.wrapTime) {
-        const ta = checkTurnaround(
-          prev.wrapTime,
-          prev.date,
-          entry.callTime,
-          entry.date,
-          dealMemo.turnaroundMinHrs || 11
-        );
-        entry.turnaroundViolation = ta.violation;
-        entry.turnaroundShortfallHrs = ta.shortfallHrs;
-        if (ta.violation) totalTurnaround++;
-      }
+    // Penalties & flags
+    sortedEntries[i].nightShoot = calc.nightShoot || false;
+    sortedEntries[i].turnaroundViolation = calc.turnaroundViolation || false;
+    sortedEntries[i].turnaroundHrs = calc.turnaroundHrs || 0;
+    sortedEntries[i].turnaroundShortfallHrs = calc.turnaroundShortfallHrs || 0;
+    if (calc.mealDelayMins > 0) {
+      sortedEntries[i].mealPenaltyCount = Math.ceil(calc.mealDelayMins / 15);
+      sortedEntries[i].mealPenaltyMinutes = calc.mealDelayMins;
     }
   }
 
+  // Update timecard
   timecard.entries = sortedEntries;
-  timecard.totalStraightHrs = Math.round(totalStraight * 100) / 100;
-  timecard.totalOt1x5Hrs = Math.round(totalOt1x5 * 100) / 100;
-  timecard.totalOt2xHrs = Math.round(totalOt2x * 100) / 100;
-  timecard.totalNightHrs = Math.round(totalNight * 100) / 100;
-  timecard.totalMealPenalties = totalMealPen;
-  timecard.totalTurnaroundPenalties = totalTurnaround;
-  timecard.daysWorked = daysWorked;
+
+  // Weekly hour totals
+  timecard.totalStraightHrs = weekly.totalStraightHrs;
+  timecard.totalOt1x5Hrs = weekly.totalOtHrs;
+  timecard.totalNightHrs = weekly.totalNightHrs;
+  timecard.daysWorked = weekly.daysWorked;
+  timecard.totalMealPenalties = sortedEntries.filter(e => e.mealPenaltyCount > 0).length;
+  timecard.totalTurnaroundPenalties = sortedEntries.filter(e => e.turnaroundViolation).length;
+
+  // Weekly pay totals
+  timecard.wkBasicPay = weekly.wkBasicPay;
+  timecard.wkPreCallOTPay = weekly.wkPreCallOTPay;
+  timecard.wkFilmingOTPay = weekly.wkFilmingOTPay;
+  timecard.wkWrapOTPay = weekly.wkWrapOTPay;
+  timecard.wkBTAPay = weekly.wkBTAPay;
+  timecard.wkMealPenaltyPay = weekly.wkMealPenaltyPay;
+  timecard.wkNightPremPay = weekly.wkNightPremPay;
+  timecard.wkGross = weekly.wkGross;
 }
 
 /**

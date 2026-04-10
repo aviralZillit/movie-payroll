@@ -48,7 +48,7 @@ export function calculateDay(entry, dm, prevEntry = null) {
   if (unitWrapM !== null && unitWrapM < unitCallM) releaseM += 1440;
   if (releaseM < crewCallM) releaseM += 1440;
 
-  // Lunch break duration
+  // Lunch break duration (M1)
   const lunchStartM = parseTime(entry.lunchStart);
   const lunchEndM = parseTime(entry.lunchEnd);
   let lunchMins = 0;
@@ -58,6 +58,20 @@ export function calculateDay(entry, dm, prevEntry = null) {
     lunchMins = le - lunchStartM;
   }
 
+  // Second meal break duration (M2)
+  const m2StartM = parseTime(entry.secondMealStart);
+  const m2EndM = parseTime(entry.secondMealEnd);
+  let m2Mins = 0;
+  if (m2StartM !== null && m2EndM !== null) {
+    let m2e = m2EndM;
+    if (m2e < m2StartM) m2e += 1440;
+    m2Mins = m2e - m2StartM;
+  }
+
+  // Meal deductible flag: UK = true (meals stop clock), US = false (NDM, clock runs)
+  const mealDeductible = dm.mealDeductible !== false; // default true
+  const effectiveMealMins = mealDeductible ? (lunchMins + m2Mins) : 0;
+
   // ── Contracted hours from deal memo ────────────────────────────
   const dayType = entry.dayType || 'SWD';
   const contractedHrs = dm.contractedHoursPerDayType?.[dayType]
@@ -66,7 +80,7 @@ export function calculateDay(entry, dm, prevEntry = null) {
   const contractedMins = contractedHrs * 60;
 
   // ── Total worked hours ─────────────────────────────────────────
-  const totalMins = Math.max(0, releaseM - crewCallM - lunchMins);
+  const totalMins = Math.max(0, releaseM - crewCallM - effectiveMealMins);
   result.totalWorkedHrs = formatMinsToHrs(totalMins);
 
   // ── OT Breakdown (only if deal memo says OT applicable) ────────
@@ -79,7 +93,7 @@ export function calculateDay(entry, dm, prevEntry = null) {
     result.preCallOTMins = Math.max(0, unitCallM - crewCallM);
 
     // Filming hours: unitCall → unitWrap minus lunch
-    const filmingMins = Math.max(0, (unitWrapM < unitCallM ? unitWrapM + 1440 : unitWrapM) - unitCallM - lunchMins);
+    const filmingMins = Math.max(0, (unitWrapM < unitCallM ? unitWrapM + 1440 : unitWrapM) - unitCallM - effectiveMealMins);
     result.filmingOTMins = Math.max(0, filmingMins - contractedMins);
 
     // Wrap OT: unitWrap → release

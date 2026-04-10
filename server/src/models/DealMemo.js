@@ -296,6 +296,7 @@ const dealMemoSchema = new mongoose.Schema(
     mealPenaltyAfterHrs: { type: Number, default: 6 },
     mealPenaltyAmounts: [Number],    // v2: escalating [25,35,50] for SAG
     mealPaidStatus: { type: String, enum: ['paid', 'unpaid', 'non-deductible', null], default: null },
+    mealDeductible: { type: Boolean, default: true }, // UK=true (meals stop clock), US=false (NDM, clock runs)
     turnaroundMinHrs: { type: Number, default: 11 },
     turnaroundPenaltyMultiplier: { type: Number, default: 1.5 },
 
