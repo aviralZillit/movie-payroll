@@ -30,6 +30,7 @@ import {
   BookOpen,
   UserCircle,
   X,
+  TrendingUp,
 } from "lucide-react";
 
 const navItems = [
@@ -39,6 +40,7 @@ const navItems = [
   { to: "/timecards", label: "Timecards", icon: Clock, roles: null },
   { to: "/punch", label: "Punch Clock", icon: Clock, roles: ["crew_member", "department_head"] },
   { to: "/payroll", label: "Payroll", icon: Banknote, roles: ["super_admin", "payroll_admin", "production_accountant"] },
+  { to: "/hot-cost", label: "Hot Cost", icon: TrendingUp, roles: ["super_admin", "payroll_admin", "production_accountant"] },
   { to: "/rate-cards", label: "Rate Cards", icon: CreditCard, roles: null },
   { to: "/rates-bible", label: "Rates Bible", icon: BookOpen, roles: null },
   { to: "/admin/rate-cards", label: "Admin Rates", icon: ShieldCheck, roles: ["super_admin", "payroll_admin"] },
