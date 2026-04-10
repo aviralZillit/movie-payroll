@@ -134,11 +134,13 @@ function WeekSummaryStrip({ summary = {}, cs = "£" }) {
 }
 
 // ── New Day Row ──────────────────────────────────────────────────────
-function DayRowNew({ entry, dayIndex, date, onChange, disabled, dealMemo, prevEntry, cs = "£" }) {
+function DayRowNew({ entry, dayIndex, date, onChange, disabled, dealMemo, prevEntry, cs = "£", allowanceModalOpen, setAllowanceModalOpen }) {
   const [expanded, setExpanded] = useState(false);
   const dayLabel = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][dayIndex] || '';
   const dateStr = date ? format(new Date(date), 'dd/MM') : '';
   const isOff = ['OFF', 'HOL', 'SICK', 'Rest'].includes(entry?.dayType);
+  const dmAllowances = dealMemo?.allowances || [];
+  const weeklyAllowanceTotal = dmAllowances.reduce((s, a) => s + (Number(a.amount) || 0), 0);
 
   const handleChange = (field, value) => onChange?.({ ...entry, [field]: value });
 
@@ -244,10 +246,10 @@ function DayRowNew({ entry, dayIndex, date, onChange, disabled, dealMemo, prevEn
                     <div className="flex justify-between"><span className="text-muted-foreground">Unit Call <Lock className="inline size-2.5" /></span><span className="font-mono text-emerald-400">{entry?.unitCall || '—'}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Unit Wrap <Lock className="inline size-2.5" /></span><span className="font-mono text-emerald-400">{entry?.unitWrap || '—'}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">M1 Out</span>
-                      <TimeInput value={entry?.lunchStart || ''} onChange={(v) => handleChange(dayIndex, 'lunchStart', v)} disabled={disabled} placeholder="13:00" />
+                      <TimeInput value={entry?.lunchStart || ''} onChange={(v) => handleChange('lunchStart', v)} disabled={disabled} placeholder="13:00" />
                     </div>
                     <div className="flex justify-between"><span className="text-muted-foreground">M1 In</span>
-                      <TimeInput value={entry?.lunchEnd || ''} onChange={(v) => handleChange(dayIndex, 'lunchEnd', v)} disabled={disabled} placeholder="14:00" />
+                      <TimeInput value={entry?.lunchEnd || ''} onChange={(v) => handleChange('lunchEnd', v)} disabled={disabled} placeholder="14:00" />
                     </div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Release</span><span className="font-mono">{entry?.release || entry?.wrapTime || '—'}</span></div>
                     {/* M2 fields — auto-show when >5hrs after M1 end */}
@@ -263,10 +265,10 @@ function DayRowNew({ entry, dayIndex, date, onChange, disabled, dealMemo, prevEn
                         <>
                           <Separator className="my-1" />
                           <div className="flex justify-between"><span className="text-muted-foreground">M2 Out</span>
-                            <TimeInput value={entry?.secondMealStart || ''} onChange={(v) => handleChange(dayIndex, 'secondMealStart', v)} disabled={disabled} placeholder="19:00" />
+                            <TimeInput value={entry?.secondMealStart || ''} onChange={(v) => handleChange('secondMealStart', v)} disabled={disabled} placeholder="19:00" />
                           </div>
                           <div className="flex justify-between"><span className="text-muted-foreground">M2 In</span>
-                            <TimeInput value={entry?.secondMealEnd || ''} onChange={(v) => handleChange(dayIndex, 'secondMealEnd', v)} disabled={disabled} placeholder="19:30" />
+                            <TimeInput value={entry?.secondMealEnd || ''} onChange={(v) => handleChange('secondMealEnd', v)} disabled={disabled} placeholder="19:30" />
                           </div>
                         </>
                       );
@@ -507,6 +509,8 @@ export default function TimecardShell({
               dealMemo={dealMemo}
               prevEntry={index > 0 ? entries[index - 1] : null}
               cs={cs}
+              allowanceModalOpen={allowanceModalOpen}
+              setAllowanceModalOpen={setAllowanceModalOpen}
             />
           ))}
         </div>
