@@ -131,6 +131,10 @@ const timecardSchema = new mongoose.Schema(
     // Audit trail
     auditLog: [auditEntrySchema],
 
+    // Assignment delegation
+    assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    assignmentScope: { type: String, enum: ['all_weeks', 'this_week', 'custom'], default: 'this_week' },
+
     submittedAt: Date,
     deptApprovedById: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     deptApprovedAt: Date,

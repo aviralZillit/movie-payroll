@@ -364,3 +364,41 @@ export const getApprovals = asyncHandler(async (req, res) => {
 
   res.json({ success: true, data: timecards });
 });
+
+/**
+ * PATCH /api/timecards/:id/assign
+ */
+export const assignTimecard = asyncHandler(async (req, res) => {
+  const tc = await Timecard.findById(req.params.id);
+  if (!tc) throw new AppError('Timecard not found.', 404);
+  const isOwner = tc.ownerId.toString() === req.user._id.toString();
+  const isAdmin = ['super_admin', 'payroll_admin', 'production_accountant'].includes(req.user.role);
+  if (!isOwner && !isAdmin) throw new AppError('Only the owner or admin can assign.', 403);
+  tc.assignedTo = req.body.assignedTo || null;
+  tc.assignmentScope = req.body.scope || 'this_week';
+  await tc.save();
+  res.json({ success: true, data: tc });
+});
+
+/**
+ * PATCH /api/timecards/:id/amend-entry
+ */
+export const amendEntry = asyncHandler(async (req, res) => {
+  const { entryIndex, field, newValue, reason } = req.body;
+  const tc = await Timecard.findById(req.params.id);
+  if (!tc) throw new AppError('Timecard not found.', 404);
+  if (!['unitCall', 'unitWrap'].includes(field)) throw new AppError('Only unitCall/unitWrap can be amended.', 400);
+  if (!reason || reason.trim().length < 5) throw new AppError('Reason required (min 5 chars).', 400);
+
+  const entry = tc.entries[entryIndex];
+  if (!entry) throw new AppError('Entry not found.', 400);
+  const oldValue = entry[field];
+  entry[field] = newValue;
+  entry.amendReason = reason.trim();
+  entry.amendedBy = req.user._id;
+  entry.amendedAt = new Date();
+  entry.source = 'amend';
+  tc.auditLog.push({ field: `entries[${entryIndex}].${field}`, oldValue, newValue, changedBy: req.user._id, source: 'amend', reason: reason.trim() });
+  await tc.save();
+  res.json({ success: true, data: tc });
+});

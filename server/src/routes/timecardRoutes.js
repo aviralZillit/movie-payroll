@@ -11,6 +11,8 @@ import {
   getById,
   getMyTimecards,
   getApprovals,
+  assignTimecard,
+  amendEntry,
 } from '../controllers/timecardController.js';
 import auth from '../middleware/auth.js';
 import { authorize } from '../middleware/rbac.js';
@@ -30,5 +32,7 @@ router.patch('/:id/submit', submit);
 router.patch('/:id/dept-approve', authorize('super_admin', 'payroll_admin', 'production_accountant', 'department_head'), deptApprove);
 router.patch('/:id/payroll-approve', authorize('super_admin', 'payroll_admin', 'production_accountant'), payrollApprove);
 router.patch('/:id/reject', authorize('super_admin', 'payroll_admin', 'production_accountant', 'department_head'), reject);
+router.patch('/:id/assign', assignTimecard);
+router.patch('/:id/amend-entry', amendEntry);
 
 export default router;
