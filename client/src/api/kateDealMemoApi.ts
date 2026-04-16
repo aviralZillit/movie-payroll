@@ -39,8 +39,8 @@ export async function listUsers(role?: string, _productionId?: string) {
   try {
     const params: Record<string, string> = {};
     if (role) params.role = role === 'crew' ? 'crew_member' : role;
-    const res = await get<any>('/users', { params });
-    const users = res.data?.data || res.data || [];
+    const res = await get<any>('/auth/users', { params });
+    const users = res.data?.data?.users || res.data?.data || res.data || [];
     if (!Array.isArray(users)) return [];
     // Map to Kate's expected shape {_id, name, email}
     return users.map((u: any) => ({
