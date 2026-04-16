@@ -79,8 +79,8 @@ export default function Step10Preview() {
 
       if (!memoId) throw new Error('No deal memo ID — save failed');
 
-      // Issue the memo (set status to active)
-      await apiPatch(`/deal-memos/${memoId}/approve`, { status: 'active' });
+      // Issue the memo — set status to active via direct PUT (skip approval chain)
+      await apiPut(`/deal-memos/${memoId}`, { status: 'active' });
 
       setIssued(true);
       store.update({ status: 'issued' } as Partial<typeof store>);
