@@ -328,29 +328,31 @@ export default function Step4Rates() {
   }, [scaleMin, rates.dayRate]);
 
   // ── Auto-populate rate from Bible when job title changes ────
+  // WEEKLY rate is the official source. Daily is ALWAYS derived = weekly ÷ 5.
   useEffect(() => {
-    if (!jobTitle || rates.dayRate > 0) return; // Don't overwrite user-entered rate
+    if (!jobTitle || rates.weeklyRate > 0) return; // Don't overwrite user-entered rate
     const currencyMap: Record<string, string> = { uk: 'GBP', us: 'USD', ca: 'CAD', au: 'AUD', ie: 'EUR', de: 'EUR', fr: 'EUR', es: 'EUR' };
     const curr = currencyMap[territory] || 'GBP';
 
-    // Try bible lookup first (fuzzy match on job title)
-    const matches = lookupBibleRate(jobTitle, curr);
-    let daily = 0;
+    let weekly = 0;
 
+    // Try bible + engine lookup (fuzzy match on job title)
+    const matches = lookupBibleRate(jobTitle, curr);
     if (matches.length > 0) {
       const best = matches[0];
-      daily = best.amount;
-      if (best.period === 'weekly') daily = Math.round(daily / 5 * 100) / 100;
-      if (best.period === 'hourly') daily = Math.round(daily * 10 * 100) / 100;
+      if (best.period === 'weekly') weekly = best.amount;
+      else if (best.period === 'daily') weekly = best.amount * 5;
+      else if (best.period === 'hourly') weekly = best.amount * 50; // 50hr week
     }
 
-    // Fallback: department-based default rate if no bible match
-    if (daily <= 0) {
-      daily = getDeptFallbackRate(department, curr);
+    // Fallback: department-based default (stored as daily, convert to weekly)
+    if (weekly <= 0) {
+      weekly = getDeptFallbackRate(department, curr) * 5;
     }
 
-    if (daily > 0) {
-      update({ rates: { ...rates, dayRate: daily, weeklyRate: daily * 5 } });
+    if (weekly > 0) {
+      const daily = Math.round(weekly / 5 * 100) / 100;
+      update({ rates: { ...rates, weeklyRate: weekly, dayRate: daily } });
     }
   }, [jobTitle, territory, department]); // eslint-disable-line react-hooks/exhaustive-deps
 
