@@ -429,6 +429,82 @@ const dealMemoSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// ── Auto-derive calculator fields from territory + union on save ──
+// Kate's wizard populates territory, unionKey, dailyRate, department etc.
+// The timecard calculator needs contractedHoursPerDayType, isCameraDept,
+// otRateCap, mealDeductible — these are derived here automatically.
+const DIVISOR_MAP = {
+  'PACT-BECTU': 10, 'PACT-BECTU-MMP': 11,
+  'IATSE-BASIC': 8, 'DGA': 8, 'SAG-THEATRICAL': 8,
+};
+const CAP_MAP = {
+  'PACT-BECTU': 70, 'PACT-BECTU-MMP': 81.82,
+};
+const TA_MAP = {
+  UK: 11, US: 10, IE: 11, AU: 10, CA: 10, DE: 11,
+};
+const US_UNIONS = ['IATSE-BASIC', 'DGA', 'SAG-THEATRICAL', 'TEAMSTERS'];
+
+dealMemoSchema.pre('save', function (next) {
+  const uk = this.unionKey || '';
+  const terr = (this.territory || this.country || 'UK').toUpperCase();
+
+  // Hourly rate from daily ÷ divisor
+  const divisor = DIVISOR_MAP[uk] || 10;
+  if (this.dailyRate > 0 && (!this.hourlyRate || this.isModified('dailyRate'))) {
+    this.hourlyRate = Math.round((this.dailyRate / divisor) * 100) / 100;
+  }
+
+  // Contracted hours per day type
+  if (!this.contractedHoursPerDayType?.SWD || this.isModified('unionKey')) {
+    this.contractedHoursPerDayType = {
+      SWD: divisor,
+      CWD: divisor === 11 ? 10 : divisor,
+      SCWD: divisor === 11 ? 10 : divisor,
+      default: divisor,
+    };
+  }
+
+  // Standard work day
+  if (this.isModified('unionKey') || !this.standardWorkDayHrs) {
+    this.standardWorkDayHrs = divisor;
+  }
+
+  // OT rate cap
+  if (CAP_MAP[uk] && (!this.otRateCap || this.isModified('unionKey'))) {
+    this.otRateCap = CAP_MAP[uk];
+  }
+
+  // Camera dept detection
+  if (this.isModified('departmentId') || this.isModified('role')) {
+    const deptStr = String(this.departmentId || this.role || '').toLowerCase();
+    this.isCameraDept = deptStr.includes('cam') || deptStr.includes('camera');
+    this.otMultiplier = this.isCameraDept ? 2.0 : 1.5;
+  }
+
+  // Meal deductible (UK=true, US=false)
+  if (this.mealDeductible === undefined || this.isModified('unionKey')) {
+    this.mealDeductible = !US_UNIONS.some(u => uk.includes(u));
+  }
+
+  // Turnaround
+  if (!this.turnaroundMinHrs || this.isModified('territory')) {
+    this.turnaroundMinHrs = TA_MAP[terr] || 11;
+  }
+
+  // Night premium flat (UK=£20)
+  if (this.nightPremiumFlat === 0 && terr === 'UK' && this.isModified('territory')) {
+    this.nightPremiumFlat = 20;
+  }
+
+  // Schema version upgrade for Kate-originated memos
+  if (this.schemaVersion < 2) {
+    this.schemaVersion = 2;
+  }
+
+  next();
+});
+
 dealMemoSchema.index({ productionId: 1, status: 1 });
 dealMemoSchema.index({ personId: 1 });
 dealMemoSchema.index({ territory: 1, unionKey: 1 });

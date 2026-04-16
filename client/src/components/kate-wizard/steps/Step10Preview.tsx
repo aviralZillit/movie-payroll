@@ -7,6 +7,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDealMemoStore } from '../../../store/kate/useDealMemoStore';
 import { post as apiPost, put as apiPut } from '../../../api/kateClient';
+import { mapKateToMoviePayroll } from '../../../utils/kate/dealMemoMapper';
 import { Card, CardHeader, CardBody, Badge, Alert } from '../../kate-ui/index';
 import { TERRITORIES, ALL_DEPARTMENTS } from '../../../data/kate/territories';
 import { calcHP, formatCurrency, TERRITORY_HP_RATES } from '../../../utils/kate/calculations';
@@ -58,30 +59,28 @@ export default function Step10Preview() {
     setIsIssuing(true);
 
     try {
-      // Step 1: Ensure the memo is saved to MongoDB first
+      // Map Kate's wizard state → movie-payroll DealMemo shape
+      const state = useDealMemoStore.getState();
+      const mapped = mapKateToMoviePayroll(state, productionId ? String(productionId) : undefined);
+
+      // Ensure personId is set (movie-payroll requires it)
+      if (assignedUserId) mapped.personId = assignedUserId;
+
       let memoId = store.currentMemoId;
 
       if (!memoId) {
-        const state = useDealMemoStore.getState();
-        const payload: Record<string, any> = {};
-        const skipKeys = new Set(['update', 'goStep', 'reset', 'setCurrentMemoId', 'currentMemoId']);
-        for (const [k, v] of Object.entries(state)) {
-          if (!skipKeys.has(k) && typeof v !== 'function') payload[k] = v;
-        }
-        payload.productionId = productionId || payload.productionId;
-        payload.assignedUserId = assignedUserId || undefined;
-        const createRes = await apiPost<any>('/deal-memos', payload);
+        // Create via movie-payroll's existing endpoint
+        const createRes = await apiPost<any>('/api/deal-memos', mapped);
         memoId = createRes.data?._id || createRes.data?.data?._id;
         if (memoId) store.setCurrentMemoId(memoId);
       } else {
-        // Save assignedUserId onto existing memo before issuing
-        await apiPut(`/deal-memos/${memoId}`, { assignedUserId });
+        await apiPut(`/api/deal-memos/${memoId}`, mapped);
       }
 
       if (!memoId) throw new Error('No deal memo ID — save failed');
 
-      // Step 2: Issue the memo
-      await apiPost(`/deal-memos/${memoId}/issue`);
+      // Issue the memo (set status to active)
+      await apiPost(`/api/deal-memos/${memoId}/approve`, { status: 'active' });
 
       setIssued(true);
       store.update({ status: 'issued' } as Partial<typeof store>);
