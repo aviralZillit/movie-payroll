@@ -205,7 +205,7 @@ export default function DealMemoWizard() {
       }
 
       if (currentMemoId) {
-        await put(`/api/deal-memos/${currentMemoId}`, payload);
+        await put(`/deal-memos/${currentMemoId}`, payload);
       } else {
         if (!prodId) {
           // Can't save without production — skip silently
@@ -213,7 +213,7 @@ export default function DealMemoWizard() {
           savingRef.current = false;
           return;
         }
-        const res = await post<any>('/api/deal-memos', payload);
+        const res = await post<any>('/deal-memos', payload);
         const newId = res.data?._id || res.data?.data?._id;
         if (newId) {
           store.setCurrentMemoId(newId);
@@ -304,51 +304,20 @@ export default function DealMemoWizard() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-bg">
-      {/* -- HEADER (52px) -- premium gradient + shadow */}
-      <header
-        className="flex items-center justify-between h-[52px] px-6 border-b border-border flex-shrink-0"
-        style={{
-          background: 'linear-gradient(180deg, rgba(30,30,30,1) 0%, rgba(24,24,24,1) 100%)',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.3), 0 1px 0 rgba(255,255,255,0.02) inset',
-        }}
-      >
-        <div className="flex items-center gap-4">
-          <Link to="/" className="font-display font-bold text-gold tracking-wider text-sm uppercase hover:text-gold/80 transition-colors">
-            ZILLIT CODA
-          </Link>
-          <div className="flex items-center gap-1.5 text-[11px] text-text-3">
-            <Link to={dealMemosUrl} className="hover:text-text-1 transition-colors">
-              Deal Memos
-            </Link>
-            <span className="text-text-4">/</span>
-            <span className="text-text-1">{id ? 'Edit Deal Memo' : 'New Deal Memo'}</span>
-          </div>
+    <div className="flex flex-col h-full bg-bg">
+      {/* -- SLIM TOOLBAR (no duplicate header — movie-payroll's MainLayout already has nav) -- */}
+      <div className="flex items-center justify-between h-[40px] px-4 border-b border-border bg-bg-elevated/50 flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <span className="font-display font-bold text-[12px] text-text-1 tracking-wide">New Deal Memo</span>
+          <span className="text-text-4 text-[10px]">·</span>
+          <span className="text-[10px] text-text-3">Step {store.currentStep} of 10</span>
         </div>
-        <div className="flex items-center gap-4">
-          {/* Auto-save indicator */}
-          <div className="flex items-center gap-2 text-[11px]">
-            {saveStatus === 'saving' && (
-              <>
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400" />
-                </span>
-                <span className="text-amber-400/80 font-medium">Saving...</span>
-              </>
-            )}
-            {saveStatus === 'saved' && (
-              <>
-                <span className="h-2.5 w-2.5 rounded-full bg-green-400" />
-                <span className="text-green-400/80 font-medium">Auto-saved</span>
-              </>
-            )}
-            {saveStatus === 'idle' && (
-              <>
-                <span className="h-2.5 w-2.5 rounded-full bg-text-4" />
-                <span className="text-text-4">Draft</span>
-              </>
-            )}
+        <div className="flex items-center gap-3">
+          {/* Save status */}
+          <div className="flex items-center gap-1.5 text-[10px]">
+            {saveStatus === 'saving' && <><span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" /><span className="text-amber-400">Saving…</span></>}
+            {saveStatus === 'saved' && <><span className="h-2 w-2 rounded-full bg-green-400" /><span className="text-green-400">Saved</span></>}
+            {saveStatus === 'idle' && <><span className="h-2 w-2 rounded-full bg-neutral-500" /><span className="text-neutral-400">Draft</span></>}
           </div>
           {/* Production picker */}
           <select
@@ -360,60 +329,15 @@ export default function DealMemoWizard() {
                 ...( prod ? { _productionName: prod.name } : {}),
               } as any);
             }}
-            className="px-3 py-1.5 rounded-md bg-bg-elevated border border-gold/30 text-[10px] font-display font-bold text-gold/90 uppercase tracking-wide focus:outline-none focus:border-gold"
+            className="px-2 py-1 rounded border border-neutral-700 bg-neutral-800 text-[11px] text-neutral-200 focus:outline-none focus:border-amber-500"
           >
             <option value="">Select Production…</option>
             {productions.map(p => (
               <option key={p._id} value={p._id}>{p.name}</option>
             ))}
           </select>
-          {/* User menu */}
-          <div className="relative" ref={userMenuRef}>
-            <button
-              type="button"
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center justify-center h-8 w-8 rounded-full bg-bg-elevated border border-border text-text-2 hover:border-border-light hover:text-text-1 transition-all duration-150"
-              aria-label="User menu"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-              </svg>
-            </button>
-            {showUserMenu && (
-              <div className="absolute right-0 top-full mt-1 w-48 rounded-lg border border-border bg-bg-surface shadow-modal z-50 py-1"
-                style={{ animation: 'fadeInUp 0.15s ease-out' }}
-              >
-                {user && (
-                  <div className="px-3 py-2 border-b border-border">
-                    <p className="text-[12px] font-display font-semibold text-text-1 truncate">{user.name}</p>
-                    <p className="text-[10px] text-text-4 truncate">{user.email}</p>
-                  </div>
-                )}
-                <Link
-                  to="/"
-                  className="flex items-center gap-2 px-3 py-2 text-[12px] text-text-2 hover:bg-bg-hover transition-colors"
-                  onClick={() => setShowUserMenu(false)}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-                  </svg>
-                  Dashboard
-                </Link>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-text-2 hover:bg-bg-hover transition-colors text-left"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H3zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
-                  </svg>
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
         </div>
-      </header>
+      </div>
 
       {/* -- 3-COLUMN GRID -- */}
       <div className="flex-1 grid grid-cols-[200px_1fr_240px] overflow-hidden">

@@ -25,7 +25,7 @@ export interface DealMemoSignature {
 }
 
 export async function listDealMemos(productionId?: string) {
-  const res = await get<any[]>('/api/deal-memos', { params: productionId ? { productionId } : {} });
+  const res = await get<any[]>('/deal-memos', { params: productionId ? { productionId } : {} });
   return res.data;
 }
 
@@ -39,7 +39,7 @@ export async function listUsers(role?: string, _productionId?: string) {
   try {
     const params: Record<string, string> = {};
     if (role) params.role = role === 'crew' ? 'crew_member' : role;
-    const res = await get<any>('/api/users', { params });
+    const res = await get<any>('/users', { params });
     const users = res.data?.data || res.data || [];
     if (!Array.isArray(users)) return [];
     // Map to Kate's expected shape {_id, name, email}
@@ -55,7 +55,7 @@ export async function listUsers(role?: string, _productionId?: string) {
 
 export async function listProductions() {
   try {
-    const res = await get<any>('/api/productions');
+    const res = await get<any>('/productions');
     const prods = res.data?.data || res.data || [];
     if (!Array.isArray(prods)) return [];
     return prods.map((p: any) => ({

@@ -70,17 +70,17 @@ export default function Step10Preview() {
 
       if (!memoId) {
         // Create via movie-payroll's existing endpoint
-        const createRes = await apiPost<any>('/api/deal-memos', mapped);
+        const createRes = await apiPost<any>('/deal-memos', mapped);
         memoId = createRes.data?._id || createRes.data?.data?._id;
         if (memoId) store.setCurrentMemoId(memoId);
       } else {
-        await apiPut(`/api/deal-memos/${memoId}`, mapped);
+        await apiPut(`/deal-memos/${memoId}`, mapped);
       }
 
       if (!memoId) throw new Error('No deal memo ID — save failed');
 
       // Issue the memo (set status to active)
-      await apiPost(`/api/deal-memos/${memoId}/approve`, { status: 'active' });
+      await apiPost(`/deal-memos/${memoId}/approve`, { status: 'active' });
 
       setIssued(true);
       store.update({ status: 'issued' } as Partial<typeof store>);
