@@ -13,6 +13,7 @@ import { Alert } from '../kate-ui/index';
 import type { DealMemoData } from '../../types/kate/index';
 import { mapKateToMoviePayroll } from '../../utils/kate/dealMemoMapper';
 import { listProductions } from '../../api/kateDealMemoApi';
+import { lookupBibleRate, getDeptFallbackRate } from '../../data/kate/bibleRates';
 
 import { StepNav } from './StepNav';
 import { RightPanel } from './RightPanel';
@@ -93,6 +94,31 @@ export default function DealMemoWizard() {
   const user = storedUser ? (() => { try { return JSON.parse(storedUser); } catch { return null; } })() : null;
 
   useAutoSave();
+
+  // ── Auto-populate rate from Bible as soon as job title is set (ANY step) ──
+  useEffect(() => {
+    const jt = store.jobTitle;
+    const wk = store.rates?.weeklyRate;
+    if (!jt || (wk && wk > 0)) return;
+
+    const currMap: Record<string, string> = { uk: 'GBP', us: 'USD', ca: 'CAD', au: 'AUD', ie: 'EUR', de: 'EUR', fr: 'EUR', es: 'EUR' };
+    const curr = currMap[store.territory] || 'GBP';
+    let weekly = 0;
+
+    const matches = lookupBibleRate(jt, curr);
+    if (matches.length > 0) {
+      const best = matches[0];
+      if (best.period === 'weekly') weekly = best.amount;
+      else if (best.period === 'daily') weekly = best.amount * 5;
+      else if (best.period === 'hourly') weekly = best.amount * 50;
+    }
+    if (weekly <= 0) weekly = getDeptFallbackRate(store.department || 'default', curr) * 5;
+
+    if (weekly > 0) {
+      const daily = Math.round(weekly / 5 * 100) / 100;
+      store.update({ rates: { ...store.rates, weeklyRate: weekly, dayRate: daily } });
+    }
+  }, [store.jobTitle, store.territory, store.department]);
 
   // Clear validation errors when store changes (user is fixing fields)
   useEffect(() => {
