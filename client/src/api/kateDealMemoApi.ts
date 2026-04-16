@@ -34,11 +34,38 @@ export async function getDealMemo(id: string) {
   return res.data;
 }
 
-export async function listUsers(_role?: string, _productionId?: string) {
-  // Movie-payroll doesn't have a /api/users?role= endpoint.
-  // Return empty array — crew picker will show "no users" and admin
-  // can type the person name manually or use movie-payroll's own user management.
-  return [] as any[];
+export async function listUsers(role?: string, _productionId?: string) {
+  // Use movie-payroll's /api/users endpoint (returns {success, data: [...]})
+  try {
+    const params: Record<string, string> = {};
+    if (role) params.role = role === 'crew' ? 'crew_member' : role;
+    const res = await get<any>('/api/users', { params });
+    const users = res.data?.data || res.data || [];
+    if (!Array.isArray(users)) return [];
+    // Map to Kate's expected shape {_id, name, email}
+    return users.map((u: any) => ({
+      _id: u._id,
+      name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email,
+      email: u.email,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function listProductions() {
+  try {
+    const res = await get<any>('/api/productions');
+    const prods = res.data?.data || res.data || [];
+    if (!Array.isArray(prods)) return [];
+    return prods.map((p: any) => ({
+      _id: p._id,
+      name: p.name,
+      status: p.status,
+    }));
+  } catch {
+    return [];
+  }
 }
 
 export async function inviteCrewUser(args: { email: string; name: string; productionId?: string }) {

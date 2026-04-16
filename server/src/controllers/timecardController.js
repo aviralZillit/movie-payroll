@@ -72,6 +72,14 @@ export const updateEntries = asyncHandler(async (req, res) => {
   }
 
   timecard.entries = req.body.entries;
+
+  // Auto-recalculate OT/pay after every entry update so computed fields stay fresh
+  try {
+    await runCalculation(timecard);
+  } catch (calcErr) {
+    console.warn('[updateEntries] Auto-calculation skipped:', calcErr.message);
+  }
+
   await timecard.save();
 
   const populated = await Timecard.findById(timecard._id)

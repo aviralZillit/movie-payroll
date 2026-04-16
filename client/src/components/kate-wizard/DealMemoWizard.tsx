@@ -11,6 +11,8 @@ import { useAutoSave } from '../../hooks/kate/useAutoSave';
 import { get, post, put } from '../../api/kateClient';
 import { Alert } from '../kate-ui/index';
 import type { DealMemoData } from '../../types/kate/index';
+import { mapKateToMoviePayroll } from '../../utils/kate/dealMemoMapper';
+import { listProductions } from '../../api/kateDealMemoApi';
 
 import { StepNav } from './StepNav';
 import { RightPanel } from './RightPanel';
@@ -77,6 +79,12 @@ export default function DealMemoWizard() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [productions, setProductions] = useState<Array<{ _id: string; name: string }>>([]);
+
+  // Load productions list
+  useEffect(() => {
+    listProductions().then(setProductions).catch(() => setProductions([]));
+  }, []);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -134,7 +142,7 @@ export default function DealMemoWizard() {
   // Load existing deal memo if route has :id
   useEffect(() => {
     if (id && id !== store.currentMemoId) {
-      get(`/deal-memos/${id}`)
+      get(`/api/deal-memos/${id}`)
         .then((res) => {
           const raw = res.data as any;
 
@@ -185,20 +193,27 @@ export default function DealMemoWizard() {
 
     try {
       const state = useDealMemoStore.getState();
-      // Extract only serializable data — skip Zustand functions
-      const payload: Record<string, any> = {};
-      const skipKeys = new Set(['update', 'goStep', 'reset', 'setCurrentMemoId', 'currentMemoId']);
-      for (const [k, v] of Object.entries(state)) {
-        if (!skipKeys.has(k) && typeof v !== 'function') payload[k] = v;
-      }
       const currentMemoId = state.currentMemoId;
 
+      // Use the mapper to convert Kate's state → movie-payroll's DealMemo shape
+      const prodId = searchParams.get('productionId') || state.productionId;
+      const payload = mapKateToMoviePayroll(state, prodId || undefined);
+
+      // Add personId from assignedUserId
+      if ((state as any).assignedUserId) {
+        payload.personId = (state as any).assignedUserId;
+      }
+
       if (currentMemoId) {
-        await put(`/deal-memos/${currentMemoId}`, payload);
+        await put(`/api/deal-memos/${currentMemoId}`, payload);
       } else {
-        const prodId = searchParams.get('productionId') || payload.productionId;
-        payload.productionId = prodId;
-        const res = await post<any>('/deal-memos', payload);
+        if (!prodId) {
+          // Can't save without production — skip silently
+          setSaveStatus('idle');
+          savingRef.current = false;
+          return;
+        }
+        const res = await post<any>('/api/deal-memos', payload);
         const newId = res.data?._id || res.data?.data?._id;
         if (newId) {
           store.setCurrentMemoId(newId);
@@ -335,17 +350,23 @@ export default function DealMemoWizard() {
               </>
             )}
           </div>
-          {/* Production badge */}
-          <span className="px-3 py-1.5 rounded-md bg-bg-elevated border border-gold/30 text-[10px] font-display font-bold text-gold/90 uppercase tracking-wide">
-            {(store as any)._productionName || (typeof store.productionId === 'string' ? store.productionId : '') || 'Production'}
-          </span>
-          {/* Production Defaults button */}
-          <button
-            type="button"
-            className="px-3 py-1.5 rounded-md bg-bg-elevated border border-border text-[10px] font-display font-semibold text-text-3 uppercase tracking-wide hover:border-border-light hover:text-text-2 transition-all duration-150"
+          {/* Production picker */}
+          <select
+            value={store.productionId || ''}
+            onChange={(e) => {
+              const prod = productions.find(p => p._id === e.target.value);
+              store.update({
+                productionId: e.target.value,
+                ...( prod ? { _productionName: prod.name } : {}),
+              } as any);
+            }}
+            className="px-3 py-1.5 rounded-md bg-bg-elevated border border-gold/30 text-[10px] font-display font-bold text-gold/90 uppercase tracking-wide focus:outline-none focus:border-gold"
           >
-            Production Defaults
-          </button>
+            <option value="">Select Production…</option>
+            {productions.map(p => (
+              <option key={p._id} value={p._id}>{p.name}</option>
+            ))}
+          </select>
           {/* User menu */}
           <div className="relative" ref={userMenuRef}>
             <button
