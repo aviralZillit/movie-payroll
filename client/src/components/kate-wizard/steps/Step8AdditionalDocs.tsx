@@ -5,7 +5,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useDealMemoStore } from '../../../store/kate/useDealMemoStore';
-import { Card, CardHeader, CardBody, Toggle, Badge, Alert } from '../kate-ui/index';
+import { Card, CardHeader, CardBody, Toggle, Badge, Alert } from '../../kate-ui/index';
 
 // ── Template definitions ─────────────────────────────────────
 

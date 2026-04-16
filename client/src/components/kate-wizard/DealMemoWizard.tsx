@@ -7,7 +7,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useDealMemoStore } from '../../store/kate/useDealMemoStore';
-import { useAutoSave } from '../../hooks/useAutoSave';
+import { useAutoSave } from '../../hooks/kate/useAutoSave';
 import { get, post, put } from '../../api/kateClient';
 import { Alert } from '../kate-ui/index';
 import type { DealMemoData } from '../../types/kate/index';

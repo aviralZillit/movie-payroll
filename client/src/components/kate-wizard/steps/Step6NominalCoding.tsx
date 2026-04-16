@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { useDealMemoStore } from '../../../store/kate/useDealMemoStore';
-import { Card, CardHeader, CardBody, Field, Select, Toggle, Badge, Alert } from '../kate-ui/index';
+import { Card, CardHeader, CardBody, Field, Select, Toggle, Badge, Alert } from '../../kate-ui/index';
 import { NOMINAL_DEFAULTS } from '../../../data/kate/nominalDefaults';
 import { ALL_DEPARTMENTS } from '../../../data/kate/territories';
 

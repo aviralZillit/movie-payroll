@@ -5,7 +5,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { useDealMemoStore } from '../../../store/kate/useDealMemoStore';
-import { Card, CardHeader, CardBody, Badge, Alert } from '../kate-ui/index';
+import { Card, CardHeader, CardBody, Badge, Alert } from '../../kate-ui/index';
 import { COMPLIANCE_CHECKS, TERRITORY_ONBOARDING } from '../../../data/kate/compliance';
 import { TERRITORIES } from '../../../data/kate/territories';
 

@@ -8,7 +8,7 @@ import { useDealMemoStore } from '../../../store/kate/useDealMemoStore';
 import {
   Card, CardHeader, CardBody, Alert, Badge, Toggle,
   CurrencyInput, Field, Select,
-} from '../kate-ui/index';
+} from '../../kate-ui/index';
 import { CURRENCY_SYMBOLS } from '../../../data/kate/territories';
 import { formatCurrency, parseCurrency } from '../../../utils/kate/calculations';
 import type { CurrencyCode, TerritoryCode } from '../../../types/kate/dealMemo';

@@ -7,7 +7,7 @@ import { useDealMemoStore } from '../../../store/kate/useDealMemoStore';
 import { TERRITORIES } from '../../../data/kate/territories';
 import { PACT_BANDS } from '../../../data/kate/pactBands';
 import { EMPLOYMENT_STATUSES } from '../../../data/kate/employmentStatus';
-import { Card, CardHeader, CardBody, Alert, Badge, Field, Select, Toggle } from '../kate-ui/index';
+import { Card, CardHeader, CardBody, Alert, Badge, Field, Select, Toggle } from '../../kate-ui/index';
 import type { TerritoryCode, UnionId } from '../../../types/kate/dealMemo';
 import type { TerritoryCode as EmpTerritoryCode } from '../../../data/kate/employmentStatus';
 

@@ -5,7 +5,7 @@
 
 import { useState } from 'react';
 import { useDealMemoStore } from '../../../store/kate/useDealMemoStore';
-import { Card, CardHeader, CardBody, Alert, Badge, Field, Select, Toggle } from '../kate-ui/index';
+import { Card, CardHeader, CardBody, Alert, Badge, Field, Select, Toggle } from '../../kate-ui/index';
 import type { UnionId, DealType, NoticeType } from '../../../types/kate/dealMemo';
 
 // ── Deal Type Cards ──────────────────────────────────────────

@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { useDealMemoStore } from '../../../store/kate/useDealMemoStore';
-import { Card, CardHeader, CardBody, Field, Select, Toggle } from '../kate-ui/index';
+import { Card, CardHeader, CardBody, Field, Select, Toggle } from '../../kate-ui/index';
 
 // ── Bureau options ───────────────────────────────────────────
 

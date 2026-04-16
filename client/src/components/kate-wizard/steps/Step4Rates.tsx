@@ -8,7 +8,7 @@ import { useDealMemoStore } from '../../../store/kate/useDealMemoStore';
 import {
   Card, CardHeader, CardBody, Alert, Badge, Toggle,
   CurrencyInput, Field, Select,
-} from '../kate-ui/index';
+} from '../../kate-ui/index';
 import {
   calcHP, isHPVisible, isRateBelowOTMinimum, getOTConstraints,
   getHourlyDivisor, TERRITORY_HP_RATES, calcDGAProductionFee, calcDGACOA,

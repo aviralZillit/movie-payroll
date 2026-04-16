@@ -8,7 +8,7 @@ import { useDealMemoStore } from '../../../store/kate/useDealMemoStore';
 import { ALL_DEPARTMENTS, getDeptsForUnion, getJobTitles } from '../../../data/kate/territories';
 import { EMPLOYMENT_STATUSES } from '../../../data/kate/employmentStatus';
 import { US_SCALE_MINIMUMS, UK_PACT_MINIMUMS } from '../../../data/kate/scaleMinimums';
-import { Card, CardHeader, CardBody, Alert, Badge, Field, Select } from '../kate-ui/index';
+import { Card, CardHeader, CardBody, Alert, Badge, Field, Select } from '../../kate-ui/index';
 import { TERRITORIES } from '../../../data/kate/territories';
 import { listUsers } from '../../../api/kateDealMemoApi';
 import InviteCrewModal from '../InviteCrewModal';

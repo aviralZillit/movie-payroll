@@ -7,7 +7,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDealMemoStore } from '../../../store/kate/useDealMemoStore';
 import { post as apiPost, put as apiPut } from '../../../api/kateClient';
-import { Card, CardHeader, CardBody, Badge, Alert } from '../kate-ui/index';
+import { Card, CardHeader, CardBody, Badge, Alert } from '../../kate-ui/index';
 import { TERRITORIES, ALL_DEPARTMENTS } from '../../../data/kate/territories';
 import { calcHP, formatCurrency, TERRITORY_HP_RATES } from '../../../utils/kate/calculations';
 
