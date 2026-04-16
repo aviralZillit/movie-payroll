@@ -66,10 +66,12 @@ export default function Step10Preview() {
       // Ensure personId is set (movie-payroll requires it)
       if (assignedUserId) mapped.personId = assignedUserId;
 
+      // Set status to active in the payload itself (one API call, not two)
+      mapped.status = 'active';
+
       let memoId = store.currentMemoId;
 
       if (!memoId) {
-        // Create via movie-payroll's existing endpoint
         const createRes = await apiPost<any>('/deal-memos', mapped);
         memoId = createRes.data?._id || createRes.data?.data?._id;
         if (memoId) store.setCurrentMemoId(memoId);
@@ -78,9 +80,6 @@ export default function Step10Preview() {
       }
 
       if (!memoId) throw new Error('No deal memo ID — save failed');
-
-      // Issue the memo — set status to active via direct PUT (skip approval chain)
-      await apiPut(`/deal-memos/${memoId}`, { status: 'active' });
 
       setIssued(true);
       store.update({ status: 'issued' } as Partial<typeof store>);
