@@ -14,6 +14,10 @@ export function put<T = unknown>(url: string, data?: unknown, config?: AxiosRequ
   return api.put<T>(url, data, config);
 }
 
+export function patch<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+  return api.patch<T>(url, data, config);
+}
+
 export function del<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
   return api.delete<T>(url, config);
 }

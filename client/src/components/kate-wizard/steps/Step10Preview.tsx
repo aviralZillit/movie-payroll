@@ -6,7 +6,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDealMemoStore } from '../../../store/kate/useDealMemoStore';
-import { post as apiPost, put as apiPut } from '../../../api/kateClient';
+import { post as apiPost, put as apiPut, patch as apiPatch } from '../../../api/kateClient';
 import { mapKateToMoviePayroll } from '../../../utils/kate/dealMemoMapper';
 import { Card, CardHeader, CardBody, Badge, Alert } from '../../kate-ui/index';
 import { TERRITORIES, ALL_DEPARTMENTS } from '../../../data/kate/territories';
@@ -80,7 +80,7 @@ export default function Step10Preview() {
       if (!memoId) throw new Error('No deal memo ID — save failed');
 
       // Issue the memo (set status to active)
-      await apiPost(`/deal-memos/${memoId}/approve`, { status: 'active' });
+      await apiPatch(`/deal-memos/${memoId}/approve`, { status: 'active' });
 
       setIssued(true);
       store.update({ status: 'issued' } as Partial<typeof store>);
