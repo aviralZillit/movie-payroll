@@ -109,6 +109,7 @@ export const calculateRun = asyncHandler(async (req, res) => {
       timecardId: tc._id,
       dealMemoId: dealMemo._id,
       personName: `${tc.ownerId.firstName} ${tc.ownerId.lastName}`,
+      employmentType: dealMemo.employmentStatus || 'paye',
       unionCode: dealMemo.unionId?.code || '',
       departmentName: dealMemo.departmentId?.name || '',
       designationName: dealMemo.designationId?.name || '',
@@ -146,6 +147,8 @@ export const calculateRun = asyncHandler(async (req, res) => {
       totalDeductions: payItem.totalDeductions,
       netPay: payItem.netPay,
       totalCost: payItem.totalCost,
+      // Calculation breakdown formulas for UI display
+      breakdown: payItem.breakdown || {},
     });
 
     totalGross = totalGross.plus(payItem.grossPay);

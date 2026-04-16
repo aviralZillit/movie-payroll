@@ -1,4 +1,5 @@
 import Decimal from 'decimal.js';
+import { calculateMealPenalty } from './mealPenaltyCalculator.js';
 
 /**
  * Universal Timecard Calculator.
@@ -35,6 +36,10 @@ export function calculateDay(entry, dm, prevEntry = null) {
     basicPay: 0, preCallOTPay: 0, filmingOTPay: 0, wrapOTPay: 0,
     btaPay: 0, mealDelayPay: 0, nightPremPay: 0, dayTotal: 0,
   };
+
+  // Skip OFF, HOL, SICK, Rest days entirely — no pay, no OT, no penalties
+  const dayType = entry.dayType || 'SWD';
+  if (['OFF', 'HOL', 'SICK', 'Rest'].includes(dayType)) return result;
 
   // Parse times (use release as wrap fallback)
   const crewCallM = parseTime(entry.callTime || entry.crewCall);
@@ -73,7 +78,6 @@ export function calculateDay(entry, dm, prevEntry = null) {
   const effectiveMealMins = mealDeductible ? (lunchMins + m2Mins) : 0;
 
   // ── Contracted hours from deal memo ────────────────────────────
-  const dayType = entry.dayType || 'SWD';
   const contractedHrs = dm.contractedHoursPerDayType?.[dayType]
     || dm.contractedHoursPerDayType?.default
     || dm.standardWorkDayHrs || 11;
@@ -84,7 +88,13 @@ export function calculateDay(entry, dm, prevEntry = null) {
   result.totalWorkedHrs = formatMinsToHrs(totalMins);
 
   // ── OT Breakdown (only if deal memo says OT applicable) ────────
-  const otApplicable = dm.overtimeApplicable !== false
+  // Corporate entities (Ltd, Loan-Out, GmbH) never get OT
+  const empCategory = dm.employmentStatus ? (
+    ['ltd', 'loanout', 'loan_out', 'pty_ltd', 'gmbh', 'sl'].includes(dm.employmentStatus.toLowerCase()) ? 'corporate' :
+    ['sole_trader', 'soletrader', '1099', 'abn', 'freiberufler', 'autonomo', 'micro_entrepreneur'].includes(dm.employmentStatus.toLowerCase()) ? 'self_employed' : 'employee'
+  ) : 'employee';
+  const otApplicable = empCategory === 'employee'
+    && dm.overtimeApplicable !== false
     && dm.rateType !== 'buyout' && dm.rateType !== 'all_in'
     && !['flat', 'picture', 'per_film', 'flat_fee'].includes(dm.dealType);
 
@@ -109,7 +119,7 @@ export function calculateDay(entry, dm, prevEntry = null) {
   }
 
   // ── BTA (Below Turnaround Allowance) ───────────────────────────
-  if (dm.btaEnabled && prevEntry) {
+  if (dm.btaEnabled && prevEntry && empCategory === 'employee') {
     const prevReleaseM = parseTime(prevEntry.release || prevEntry.wrapTime);
     if (prevReleaseM !== null && crewCallM !== null) {
       let turnaround = crewCallM - prevReleaseM;
@@ -122,8 +132,8 @@ export function calculateDay(entry, dm, prevEntry = null) {
         result.turnaroundShortfallHrs = formatMinsToHrs(result.btaMins);
       }
     }
-  } else if (prevEntry) {
-    // Even without BTA, track turnaround hours
+  } else if (prevEntry && empCategory === 'employee') {
+    // Even without BTA, track turnaround hours (employees only)
     const prevReleaseM = parseTime(prevEntry.release || prevEntry.wrapTime);
     if (prevReleaseM !== null && crewCallM !== null) {
       let turnaround = crewCallM - prevReleaseM;
@@ -138,13 +148,15 @@ export function calculateDay(entry, dm, prevEntry = null) {
   }
 
   // ── Meal Delay Penalty ─────────────────────────────────────────
-  if (dm.mealPenaltyEnabled !== false && dayType !== 'CWD') {
-    const mealWindow = (dm.mealPenaltyAfterHrs || 6) * 60;
-    if (lunchStartM !== null && crewCallM !== null) {
-      const mealDelay = lunchStartM - crewCallM;
-      if (mealDelay > mealWindow) {
-        result.mealDelayMins = mealDelay - mealWindow;
-      }
+  // Uses the full multi-gap calculator that checks all meal breaks,
+  // filters out non-qualifying breaks (< 30 min), and checks gaps
+  // between call→meal1, meal1→meal2, meal2→release, etc.
+  if (dm.mealPenaltyEnabled !== false && dayType !== 'CWD' && empCategory === 'employee') {
+    const mealResult = calculateMealPenalty(entry, dm);
+    if (mealResult.minutes > 0) {
+      result.mealDelayMins = mealResult.minutes;
+      result.mealPenaltyCount = mealResult.count;
+      result.mealPenaltyMinutes = mealResult.minutes;
     }
   }
 
@@ -192,15 +204,13 @@ export function calculateDay(entry, dm, prevEntry = null) {
     result.btaPay = new Decimal(result.btaMins).div(60).times(btaHrRate).toDecimalPlaces(2).toNumber();
   }
 
-  // Meal delay pay
+  // Meal delay pay — use the meal penalty calculator result directly
+  // The calculator already handles per-increment billing at hourly rate (PACT/BECTU §5.4b)
   if (result.mealDelayMins > 0) {
-    if (dm.mealPenaltyRate) {
-      // Per-increment penalty (e.g., £35 per 15-min increment)
-      const increments = Math.ceil(result.mealDelayMins / 15);
-      result.mealDelayPay = increments * dm.mealPenaltyRate;
-    } else {
-      result.mealDelayPay = new Decimal(result.mealDelayMins).div(60).times(hr).toDecimalPlaces(2).toNumber();
-    }
+    const mealResult = calculateMealPenalty(entry, dm);
+    result.mealDelayPay = mealResult.amount;
+    result.mealPenaltyCount = mealResult.count;
+    result.mealPenaltyMinutes = mealResult.minutes;
   }
 
   // Night premium pay

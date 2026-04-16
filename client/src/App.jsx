@@ -31,6 +31,7 @@ import Completer from "@/pages/Completer";
 import CrewPayHistory from "@/pages/CrewPayHistory";
 import PunchClock from "@/pages/PunchClock";
 import HotCost from "@/pages/HotCost";
+import MyTimecards from "@/pages/MyTimecards";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -75,6 +76,8 @@ export default function App() {
                 <Route path="/deal-memos/:id" element={<DealMemoDetail />} />
                 <Route path="/timecards" element={<Timecards />} />
                 <Route path="/timecards/:id" element={<TimecardDetail />} />
+                <Route path="/my-timecards" element={<MyTimecards />} />
+                <Route path="/my-timecards/:crewId" element={<MyTimecards />} />
                 <Route path="/payroll" element={<Payroll />} />
                 <Route path="/payroll/:id" element={<PayrollDetail />} />
                 <Route path="/payroll/grid/:productionId" element={<PayrollGrid />} />

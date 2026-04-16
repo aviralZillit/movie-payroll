@@ -6,14 +6,14 @@
 
 const RULES = {
   // UK
-  paye: { category: 'employee', showFields: ['niNumber', 'taxCode', 'studentLoan', 'bankSortCode', 'bankAccountNumber', 'dateOfBirth', 'crewAddress', 'emergencyContact'], hideFields: ['ltdCompanyName', 'ltdCompanyReg', 'vatNumber', 'ir35Status', 'utrNumber', 'corpName', 'corpEin'], timecardRequired: true, otApplies: true, fringesApply: true },
-  ltd: { category: 'corporate', showFields: ['ltdCompanyName', 'ltdCompanyReg', 'vatNumber', 'ir35Status', 'dateOfBirth', 'crewAddress'], hideFields: ['niNumber', 'taxCode', 'studentLoan', 'bankSortCode', 'bankAccountNumber', 'utrNumber'], timecardRequired: false, otApplies: false, fringesApply: false },
-  sole_trader: { category: 'self_employed', showFields: ['niNumber', 'utrNumber', 'bankSortCode', 'bankAccountNumber', 'dateOfBirth', 'crewAddress', 'emergencyContact'], hideFields: ['ltdCompanyName', 'ltdCompanyReg', 'vatNumber', 'ir35Status', 'taxCode'], timecardRequired: false, otApplies: false, fringesApply: false },
+  paye: { category: 'employee', fringes: { holidayPay: true, employerNIC: true, pension: true, apprenticeshipLevy: true }, showFields: ['niNumber', 'taxCode', 'studentLoan', 'bankSortCode', 'bankAccountNumber', 'dateOfBirth', 'crewAddress', 'emergencyContact'], hideFields: ['ltdCompanyName', 'ltdCompanyReg', 'vatNumber', 'ir35Status', 'utrNumber', 'corpName', 'corpEin'], timecardRequired: true, otApplies: true, fringesApply: true },
+  ltd: { category: 'corporate', fringes: {}, showFields: ['ltdCompanyName', 'ltdCompanyReg', 'vatNumber', 'ir35Status', 'dateOfBirth', 'crewAddress'], hideFields: ['niNumber', 'taxCode', 'studentLoan', 'bankSortCode', 'bankAccountNumber', 'utrNumber'], timecardRequired: false, otApplies: false, fringesApply: false },
+  sole_trader: { category: 'self_employed', fringes: { holidayPay: true }, showFields: ['niNumber', 'utrNumber', 'bankSortCode', 'bankAccountNumber', 'dateOfBirth', 'crewAddress', 'emergencyContact'], hideFields: ['ltdCompanyName', 'ltdCompanyReg', 'vatNumber', 'ir35Status', 'taxCode'], timecardRequired: false, otApplies: false, fringesApply: true },
 
   // US
-  w2: { category: 'employee', showFields: ['ssn', 'w4FilingStatus', 'w4Allowances', 'stateWithholding', 'achRoutingNumber', 'achAccountNumber', 'dateOfBirth', 'crewAddress', 'emergencyContact'], hideFields: ['corpName', 'corpEin'], timecardRequired: true, otApplies: true, fringesApply: true },
-  loanout: { category: 'corporate', showFields: ['corpName', 'corpEin', 'dateOfBirth', 'crewAddress'], hideFields: ['ssn', 'w4FilingStatus', 'w4Allowances', 'achRoutingNumber', 'achAccountNumber'], timecardRequired: false, otApplies: false, fringesApply: false },
-  '1099': { category: 'self_employed', showFields: ['ssn', 'crewAddress', 'dateOfBirth'], hideFields: ['corpName', 'corpEin', 'w4FilingStatus', 'w4Allowances', 'achRoutingNumber', 'achAccountNumber'], timecardRequired: false, otApplies: false, fringesApply: false },
+  w2: { category: 'employee', fringes: { holidayPay: false, employerNIC: true, pension: true, workersComp: true, healthWelfare: true }, showFields: ['ssn', 'w4FilingStatus', 'w4Allowances', 'stateWithholding', 'achRoutingNumber', 'achAccountNumber', 'dateOfBirth', 'crewAddress', 'emergencyContact'], hideFields: ['corpName', 'corpEin'], timecardRequired: true, otApplies: true, fringesApply: true },
+  loanout: { category: 'corporate', fringes: {}, showFields: ['corpName', 'corpEin', 'dateOfBirth', 'crewAddress'], hideFields: ['ssn', 'w4FilingStatus', 'w4Allowances', 'achRoutingNumber', 'achAccountNumber'], timecardRequired: false, otApplies: false, fringesApply: false },
+  '1099': { category: 'self_employed', fringes: {}, showFields: ['ssn', 'crewAddress', 'dateOfBirth'], hideFields: ['corpName', 'corpEin', 'w4FilingStatus', 'w4Allowances', 'achRoutingNumber', 'achAccountNumber'], timecardRequired: false, otApplies: false, fringesApply: false },
 
   // AU
   payg: { category: 'employee', showFields: ['tfn', 'superFund', 'superMemberNumber', 'bsb', 'bankAccountNumber', 'dateOfBirth', 'crewAddress', 'emergencyContact'], hideFields: [], timecardRequired: true, otApplies: true, fringesApply: true },

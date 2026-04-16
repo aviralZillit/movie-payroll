@@ -4,6 +4,7 @@ const payrollItemSchema = new mongoose.Schema({
   timecardId: { type: mongoose.Schema.Types.ObjectId, ref: 'Timecard', required: true },
   dealMemoId: { type: mongoose.Schema.Types.ObjectId, ref: 'DealMemo' },
   personName: { type: String, required: true },
+  employmentType: { type: String, default: 'paye' },
   unionCode: String,
   departmentName: String,
   designationName: String,
@@ -49,6 +50,9 @@ const payrollItemSchema = new mongoose.Schema({
 
   netPay: { type: Number, default: 0 },
   totalCost: { type: Number, default: 0 },
+
+  // Calculation breakdown formulas — stored as flexible object
+  breakdown: { type: mongoose.Schema.Types.Mixed, default: {} },
 });
 
 const payrollRunSchema = new mongoose.Schema(

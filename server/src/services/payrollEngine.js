@@ -233,6 +233,236 @@ const calculatePayrollItemV2 = async (timecard, dealMemo) => {
   const netPay = grossPay.minus(taxes.totalDeductions);
   const totalCost = grossPay.plus(fringes.totalFringes);
 
+  // --- Build calculation breakdown for every derived value ---
+  const territory = dealMemo.territory || dealMemo.country || 'UK';
+  const cSym = territory === 'US' ? '$' : territory === 'AU' ? 'A$' : territory === 'CA' ? 'C$' : '£';
+  const fmtAmt = (v) => `${cSym}${v.toDecimalPlaces(2).toNumber().toLocaleString('en-GB', { minimumFractionDigits: 2 })}`;
+  const fmtNum = (v) => typeof v === 'number' ? v : v.toDecimalPlaces(2).toNumber();
+
+  const breakdown = {};
+
+  // Base pay formula
+  if (isFlatDeal) {
+    breakdown.basePay = { formula: `Flat fee (weekly rate)`, value: fmtNum(basePay) };
+  } else if (payBasis === 'weekly') {
+    breakdown.basePay = { formula: `Weekly rate`, rate: fmtNum(weeklyRate), value: fmtNum(basePay) };
+  } else {
+    breakdown.basePay = { formula: `Daily rate × days worked`, rate: fmtNum(dailyRate), days: timecard.daysWorked || 0, value: fmtNum(basePay) };
+  }
+  if (dealMemo.hpMode === 'incl') {
+    const hpPct = dealMemo.holidayPayPct != null ? dealMemo.holidayPayPct : 12.07;
+    breakdown.basePay.hpAdjustment = `HP inclusive — base = quoted ÷ ${(1 + hpPct / 100).toFixed(4)}`;
+  }
+
+  // OT breakdown
+  if (!noOT) {
+    const ot1x5Hrs = timecard.totalOt1x5Hrs || 0;
+    const ot2xHrs = timecard.totalOt2xHrs || 0;
+    const otCap = dealMemo.otRateCap ? dealMemo.otRateCap : null;
+    const effectiveOt1x5Rate = otCap ? Math.min((dealMemo.otRate1x5 || hourlyRate.times(1.5).toNumber()), otCap) : (dealMemo.otRate1x5 || hourlyRate.times(1.5).toNumber());
+    const effectiveOt2xRate = otCap ? Math.min((dealMemo.otRate2x || hourlyRate.times(2).toNumber()), otCap) : (dealMemo.otRate2x || hourlyRate.times(2).toNumber());
+
+    if (ot1x5Hrs > 0) {
+      breakdown.overtime1x5Pay = {
+        formula: `${ot1x5Hrs}hrs × ${cSym}${effectiveOt1x5Rate.toFixed(2)}/hr`,
+        hours: ot1x5Hrs, rate: effectiveOt1x5Rate, value: fmtNum(totalOt1x5),
+        ...(otCap ? { cap: `OT rate capped at ${cSym}${otCap}/hr` } : {}),
+      };
+    }
+    if (ot2xHrs > 0) {
+      breakdown.overtime2xPay = {
+        formula: `${ot2xHrs}hrs × ${cSym}${effectiveOt2xRate.toFixed(2)}/hr`,
+        hours: ot2xHrs, rate: effectiveOt2xRate, value: fmtNum(totalOt2x),
+        ...(otCap ? { cap: `OT rate capped at ${cSym}${otCap}/hr` } : {}),
+      };
+    }
+  } else {
+    breakdown.overtimeNote = isBuyout ? 'Buyout/All-In — OT absorbed' : isFlatDeal ? 'Flat deal — no OT' : 'Employment type excludes OT';
+  }
+
+  // Meal penalty breakdown
+  if (mealPenaltyPay.gt(0)) {
+    const mealDetails = [];
+    for (const entry of timecard.entries || []) {
+      if (entry.mealPenaltyCount > 0) {
+        mealDetails.push({ day: entry.dayOfWeek || entry.date, increments: entry.mealPenaltyCount });
+      }
+    }
+    const rateUsed = dealMemo.mealPenaltyAmounts?.[0] || dealMemo.mealPenaltyRate || 0;
+    breakdown.mealPenaltyPay = {
+      formula: `${mealDetails.reduce((s, d) => s + d.increments, 0)} increments × ${cSym}${rateUsed}/increment`,
+      details: mealDetails, rate: rateUsed, value: fmtNum(mealPenaltyPay),
+    };
+  }
+
+  // Turnaround penalty
+  if (turnaroundPenaltyPay.gt(0)) {
+    const btaDetails = [];
+    for (const entry of timecard.entries || []) {
+      if (entry.turnaroundViolation) {
+        btaDetails.push({ day: entry.dayOfWeek || entry.date, shortfall: entry.turnaroundShortfallHrs || 0 });
+      }
+    }
+    const btaMultiplier = dealMemo.turnaroundPenaltyMultiplier || 1.5;
+    const totalShortfallHrs = btaDetails.reduce((s, d) => s + (d.shortfall || 0), 0).toFixed(1);
+    breakdown.turnaroundPenaltyPay = {
+      formula: `${totalShortfallHrs}hrs shortfall × ${cSym}${hourlyRate.toNumber().toFixed(2)}/hr × ${btaMultiplier} = ${cSym}${fmtNum(turnaroundPenaltyPay)}`,
+      details: btaDetails, hourlyRate: fmtNum(hourlyRate), multiplier: btaMultiplier, value: fmtNum(turnaroundPenaltyPay),
+    };
+  }
+
+  // Day premiums
+  if (sixthDayPay.gt(0)) {
+    const mult = dealMemo.sixthDayMultiplier || 1.5;
+    breakdown.sixthDayPremium = {
+      formula: `Daily rate ${cSym}${fmtNum(dailyRate)} × (${mult} - 1) premium`,
+      multiplier: mult, dailyRate: fmtNum(dailyRate), value: fmtNum(sixthDayPay),
+    };
+  }
+  if (seventhDayPay.gt(0)) {
+    const mult = dealMemo.seventhDayMultiplier || 2.0;
+    breakdown.seventhDayPremium = {
+      formula: `Daily rate ${cSym}${fmtNum(dailyRate)} × (${mult} - 1) premium`,
+      multiplier: mult, dailyRate: fmtNum(dailyRate), value: fmtNum(seventhDayPay),
+    };
+  }
+
+  // Night premium
+  if (nightPremiumPay.gt(0)) {
+    const nightHrsVal = timecard.totalNightHrs || 0;
+    const nightPctVal = dealMemo.nightPremiumPct != null ? dealMemo.nightPremiumPct : 0;
+    breakdown.nightPremium = {
+      formula: `${nightHrsVal}hrs × ${cSym}${fmtNum(hourlyRate)}/hr × ${nightPctVal}%`,
+      hours: nightHrsVal, hourlyRate: fmtNum(hourlyRate), pct: nightPctVal, value: fmtNum(nightPremiumPay),
+    };
+  }
+
+  // Gross pay
+  const grossComponents = [`Base ${cSym}${fmtNum(basePay)}`];
+  if (totalOt1x5.gt(0)) grossComponents.push(`OT 1.5× ${cSym}${fmtNum(totalOt1x5)}`);
+  if (totalOt2x.gt(0)) grossComponents.push(`OT 2× ${cSym}${fmtNum(totalOt2x)}`);
+  if (mealPenaltyPay.gt(0)) grossComponents.push(`Meal penalties ${cSym}${fmtNum(mealPenaltyPay)}`);
+  if (turnaroundPenaltyPay.gt(0)) grossComponents.push(`BTA ${cSym}${fmtNum(turnaroundPenaltyPay)}`);
+  if (sixthDayPay.gt(0)) grossComponents.push(`6th day ${cSym}${fmtNum(sixthDayPay)}`);
+  if (seventhDayPay.gt(0)) grossComponents.push(`7th day ${cSym}${fmtNum(seventhDayPay)}`);
+  if (nightPremiumPay.gt(0)) grossComponents.push(`Night ${cSym}${fmtNum(nightPremiumPay)}`);
+  if (totalAllowances.gt(0)) grossComponents.push(`Allowances ${cSym}${fmtNum(totalAllowances)}`);
+  breakdown.grossPay = { formula: grossComponents.join(' + '), value: fmtNum(grossPay) };
+
+  // Fringes breakdown (from territory calculator) — territory-aware labels & currency
+  const fringeableBase = fringeableGross.toDecimalPlaces(2).toNumber();
+  const isUS = territory === 'US';
+
+  // US returns separate fringe fields; map them to breakdown for UI
+  if (isUS) {
+    if (fringes.vacationHoliday > 0) {
+      const vacPct = dealMemo.vacationHolidayPct ?? dealMemo.holidayPayPct ?? 8.583;
+      breakdown.holidayPay = {
+        label: 'Vacation & Holiday',
+        formula: `${vacPct}% × ${cSym}${fringeableBase.toFixed(2)}`,
+        pct: vacPct, base: fringeableBase, value: fringes.vacationHoliday,
+      };
+    }
+    if (fringes.socialSecurity > 0 || fringes.medicare > 0) {
+      const ficaTotal = (fringes.socialSecurity || 0) + (fringes.medicare || 0);
+      breakdown.employerNi = {
+        label: 'FICA (SS + Medicare)',
+        formula: `SS 6.2% + Med 1.45% × ${cSym}${fringeableBase.toFixed(2)}`,
+        value: ficaTotal,
+      };
+    }
+    if (fringes.pensionHealth > 0) {
+      const penPct = dealMemo.unionPensionPct ?? dealMemo.pensionPct ?? 7.5;
+      breakdown.employerPension = {
+        label: 'Union P&H',
+        formula: `${penPct}% × ${cSym}${fringeableBase.toFixed(2)}`,
+        pct: penPct, base: fringeableBase, value: fringes.pensionHealth,
+      };
+    }
+    if (fringes.workersComp > 0) {
+      const wcPct = dealMemo.workersCompPct ?? 3.5;
+      breakdown.workersComp = {
+        label: "Workers' Comp",
+        formula: `${wcPct}% × ${cSym}${fringeableBase.toFixed(2)}`,
+        value: fringes.workersComp,
+      };
+    }
+    if (fringes.futa > 0) {
+      breakdown.futa = {
+        label: 'FUTA',
+        formula: `0.6% × min(${cSym}${fringeableBase.toFixed(2)}, ${cSym}${(7000/52).toFixed(2)}/wk cap)`,
+        value: fringes.futa,
+      };
+    }
+    if (fringes.hwContribution > 0) {
+      breakdown.hwContribution = {
+        label: 'H&W Per Hour',
+        formula: `${cSym}${(dealMemo.hwPerHour || 0).toFixed(2)}/hr × ${totalWorkedHrs.toFixed(1)}hrs`,
+        value: fringes.hwContribution,
+      };
+    }
+    breakdown.totalFringes = {
+      formula: 'Vacation + FICA + P&H + WC + FUTA + H&W',
+      value: fringes.totalFringes,
+    };
+  } else {
+    // UK / other territories
+    if (fringes.holidayPay > 0) {
+      const hpPctUsed = dealMemo.holidayPayPct ?? dealMemo.rfHolidayPayPct ?? 12.07;
+      breakdown.holidayPay = {
+        label: 'Holiday Pay',
+        formula: `${hpPctUsed}% × ${cSym}${fringeableBase.toFixed(2)} (fringeable base)`,
+        pct: hpPctUsed, base: fringeableBase, value: fringes.holidayPay,
+      };
+    }
+    if (fringes.employerNi > 0) {
+      const niPct = dealMemo.employerNiPct ?? dealMemo.rfNicPct ?? 13.8;
+      const threshold = dealMemo.employerNiThresholdWeekly ?? dealMemo.rfNicThreshold ?? 175;
+      breakdown.employerNi = {
+        label: 'Employer NI',
+        formula: `${niPct}% × max(${cSym}${fringeableBase.toFixed(2)} - ${cSym}${threshold}, 0)`,
+        pct: niPct, base: fringeableBase, threshold, value: fringes.employerNi,
+      };
+    }
+    if (fringes.employerPension > 0) {
+      const penPct = dealMemo.unionPensionPct ?? dealMemo.pensionPct ?? 3;
+      breakdown.employerPension = {
+        label: 'Employer Pension',
+        formula: `${penPct}% × ${cSym}${fringeableBase.toFixed(2)}`,
+        pct: penPct, base: fringeableBase, value: fringes.employerPension,
+      };
+    }
+    breakdown.totalFringes = {
+      formula: `Holiday Pay + Employer NI + Pension${fringes.apprenticeshipLevy > 0 ? ' + Apprenticeship Levy' : ''}`,
+      value: fringes.totalFringes,
+    };
+  }
+
+  // Employee deductions (zero for corporate entities)
+  const taxLabel = isUS ? 'Federal/State Tax' : 'PAYE';
+  const empTaxLabel = isUS ? 'Employee FICA' : 'Employee NI';
+  if (taxes.breakdown?.note) {
+    breakdown.deductionsNote = taxes.breakdown.note;
+  }
+  if (taxes.incomeTax > 0) {
+    breakdown.incomeTax = { label: taxLabel, formula: taxes.breakdown?.incomeTax || `${taxLabel} on gross ${cSym}${fmtNum(grossPay)}`, value: taxes.incomeTax };
+  }
+  if (taxes.employeeNi > 0) {
+    breakdown.employeeNi = { label: empTaxLabel, formula: taxes.breakdown?.employeeNi || `${empTaxLabel} on gross ${cSym}${fmtNum(grossPay)}`, value: taxes.employeeNi };
+  }
+
+  // Net pay
+  breakdown.netPay = {
+    formula: `Gross ${cSym}${fmtNum(grossPay)} - Tax ${cSym}${fmtNum(new Decimal(taxes.incomeTax || 0))} - ${empTaxLabel} ${cSym}${fmtNum(new Decimal(taxes.employeeNi || 0))}${taxes.employeePension > 0 ? ` - Pension ${cSym}${fmtNum(new Decimal(taxes.employeePension))}` : ''}`,
+    value: fmtNum(netPay),
+  };
+
+  // Total cost
+  breakdown.totalCost = {
+    formula: `Gross ${cSym}${fmtNum(grossPay)} + Fringes ${cSym}${fringes.totalFringes.toFixed(2)}`,
+    value: fmtNum(totalCost),
+  };
+
   return {
     basePay: basePay.toDecimalPlaces(2).toNumber(),
     overtime1x5Pay: totalOt1x5.toDecimalPlaces(2).toNumber(),
@@ -265,6 +495,7 @@ const calculatePayrollItemV2 = async (timecard, dealMemo) => {
     totalDeductions: taxes.totalDeductions || 0,
     netPay: netPay.toDecimalPlaces(2).toNumber(),
     totalCost: totalCost.toDecimalPlaces(2).toNumber(),
+    breakdown,
     // Meta
     daysWorked: timecard.daysWorked,
     totalHours: totalWorkedHrs,

@@ -289,19 +289,21 @@ const dealMemoSchema = new mongoose.Schema(
     nightPremiumEnabled: { type: Boolean, default: true },
     nightStartTime: { type: String, default: '23:00' },
 
-    // Meal & turnaround (existing)
+    // Meal & turnaround
     mealPenaltyEnabled: { type: Boolean, default: true },
-    mealPenaltyRate: Number,
+    mealPenaltyRate: Number,                              // Fixed rate per increment (e.g. US: $50/15min). If 0/null, uses hourly rate.
+    mealPenaltyUseHourlyRate: { type: Boolean, default: true }, // PACT/BECTU §5.4(b): penalty at crew's hourly rate
     mealPenaltyIncrementMin: { type: Number, default: 15 },
     mealPenaltyAfterHrs: { type: Number, default: 6 },
     mealPenaltyAmounts: [Number],    // v2: escalating [25,35,50] for SAG
+    minMealBreakMins: { type: Number, default: 30 },     // Minimum break duration to count as qualifying meal
     mealPaidStatus: { type: String, enum: ['paid', 'unpaid', 'non-deductible', null], default: null },
     mealDeductible: { type: Boolean, default: true }, // UK=true (meals stop clock), US=false (NDM, clock runs)
     turnaroundMinHrs: { type: Number, default: 11 },
     turnaroundPenaltyMultiplier: { type: Number, default: 1.5 },
 
-    // Below Turnaround Allowance (BTA)
-    btaEnabled: { type: Boolean, default: false },
+    // Below Turnaround Allowance (BTA) — §5.3(b): enabled by default
+    btaEnabled: { type: Boolean, default: true },
     btaRate: { type: Number, default: 0 },           // £/hr for BTA (e.g., £45 UK)
 
     // Night premium flat amount (alternative to percentage)
@@ -432,5 +434,33 @@ const dealMemoSchema = new mongoose.Schema(
 dealMemoSchema.index({ productionId: 1, status: 1 });
 dealMemoSchema.index({ personId: 1 });
 dealMemoSchema.index({ territory: 1, unionKey: 1 });
+
+// ── Pre-save: ensure critical territory defaults are always set ──────
+const TERRITORY_CRITICAL_DEFAULTS = {
+  UK: {
+    btaEnabled: true, btaRate: 45, turnaroundMinHrs: 11,
+    mealPenaltyEnabled: true, mealPenaltyUseHourlyRate: true, mealPenaltyAfterHrs: 6,
+    nightPremiumEnabled: true, nightPremiumFlat: 20, nightPremiumPct: 0,
+    standardWorkDayHrs: 11, otRateCap: 81.82,
+    sixthDayMultiplier: 1.5, seventhDayMultiplier: 2.0,
+  },
+  US: {
+    btaEnabled: true, turnaroundMinHrs: 10,
+    mealPenaltyEnabled: true, mealPenaltyAfterHrs: 6,
+    standardWorkDayHrs: 8,
+    sixthDayMultiplier: 1.5, seventhDayMultiplier: 2.0,
+  },
+};
+
+dealMemoSchema.pre('save', function (next) {
+  const defaults = TERRITORY_CRITICAL_DEFAULTS[this.territory] || TERRITORY_CRITICAL_DEFAULTS.UK;
+  for (const [key, val] of Object.entries(defaults)) {
+    // Only set if the field is null, undefined, or missing — never overwrite explicit values
+    if (this[key] == null) {
+      this[key] = val;
+    }
+  }
+  next();
+});
 
 export default mongoose.model('DealMemo', dealMemoSchema);

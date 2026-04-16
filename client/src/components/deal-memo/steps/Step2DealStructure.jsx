@@ -103,10 +103,19 @@ export default function Step2DealStructure({ control, errors, watch, setValue, c
   const dailyRate = watch("dailyRate");
   const hourlyRate = watch("hourlyRate");
 
+  const employmentStatus = watch("employmentStatus");
   const isFlatDeal = ["flat", "picture", "step"].includes(dealType);
   const isBuyout = rateType === "buyout" || rateType === "all_in";
   const empRulesForRateType = getEmploymentRules(employmentStatus);
   const empCategoryForRate = empRulesForRateType?.category || 'employee';
+
+  // Auto-disable OT/Night/Meal based on deal type, rate type, and employment type
+  const shouldDisableOT = isFlatDeal || isBuyout || empCategoryForRate !== 'employee';
+  const disableReason = isFlatDeal ? 'Flat/run of show — fee covers all hours'
+    : isBuyout ? `${rateType === 'all_in' ? 'All-in' : 'Buyout'} rate includes all hours`
+    : empCategoryForRate === 'corporate' ? 'Corporate entity — no OT applies'
+    : empCategoryForRate === 'self_employed' ? 'Self-employed — no OT entitlement'
+    : null;
 
   // Filter rate type options based on employment type
   const allRateTypeOptions = country === "US" ? RATE_TYPES_US : RATE_TYPES_UK;
@@ -117,7 +126,6 @@ export default function Step2DealStructure({ control, errors, watch, setValue, c
   // Territory rule for OT rate cap
   const { data: territoryRule } = useTerritoryRule(territory || country, unionKey);
   const otRateCap = territoryRule?.otRateCap || null;
-  const employmentStatus = watch("employmentStatus");
 
   // ── Cascading auto-fill: territory + employment + dealType + rateType ──
   const prevCascadeRef = useRef(null);
@@ -151,7 +159,7 @@ export default function Step2DealStructure({ control, errors, watch, setValue, c
   // Derive rateBasis from dealType (no separate dropdown)
   useEffect(() => {
     if (!dealType || !setValue) return;
-    const basisMap = { daily: "daily", weekly: "weekly", flat: "flat", picture: "flat", step: "flat" };
+    const basisMap = { daily: "daily", weekly: "weekly", flat: "weekly", picture: "weekly", step: "weekly" };
     setValue("rateBasis", basisMap[dealType] || "weekly", { shouldDirty: false });
   }, [dealType, setValue]);
 
@@ -164,14 +172,20 @@ export default function Step2DealStructure({ control, errors, watch, setValue, c
     const h = Number(hourlyRate) || 0;
     const r2 = (n) => Math.round(n * 100) / 100;
 
+    // Territory-aware hourly derivation:
+    // UK (PACT/BECTU §3.3a): weekly ÷ 55 (11h/day × 5 days), daily ÷ 11
+    // US (IATSE): weekly ÷ 40 (8h/day × 5 days), daily ÷ 8
+    const weeklyDivisor = country === 'US' ? 40 : 55;
+    const dailyDivisor = country === 'US' ? 8 : 11;
+
     if (dealType === "weekly" && w > 0) {
       if (!d) setValue("dailyRate", r2(w / 5), { shouldDirty: true });
-      if (!h) setValue("hourlyRate", r2(w / 50), { shouldDirty: true });
+      if (!h) setValue("hourlyRate", r2(w / weeklyDivisor), { shouldDirty: true });
     } else if (dealType === "daily" && d > 0) {
       if (!w) setValue("weeklyRate", r2(d * 5), { shouldDirty: true });
-      if (!h) setValue("hourlyRate", r2(d / 10), { shouldDirty: true });
+      if (!h) setValue("hourlyRate", r2(d / dailyDivisor), { shouldDirty: true });
     }
-  }, [weeklyRate, dailyRate, hourlyRate, dealType, isFlatDeal, setValue]);
+  }, [weeklyRate, dailyRate, hourlyRate, dealType, isFlatDeal, setValue, country]);
 
   // Auto-populate separate rates when toggle turns ON
   useEffect(() => {
@@ -204,7 +218,7 @@ export default function Step2DealStructure({ control, errors, watch, setValue, c
             render={({ field }) => (
               <div className="space-y-1.5">
                 <Label>Deal Type <span className="text-destructive">*</span></Label>
-                <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                <Select value={field.value || undefined} onValueChange={field.onChange}>
                   <SelectTrigger className={cn(errors.dealType && "border-destructive")}>
                     {field.value ? (
                       <span>{DEAL_TYPES.find(o => o.value === field.value)?.label || field.value}</span>
@@ -234,7 +248,7 @@ export default function Step2DealStructure({ control, errors, watch, setValue, c
               render={({ field }) => (
                 <div className="space-y-1.5">
                   <Label>Exclusivity</Label>
-                  <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                  <Select value={field.value || undefined} onValueChange={field.onChange}>
                     <SelectTrigger>
                       {field.value ? (
                         <span>{EXCLUSIVITY_OPTIONS.find(o => o.value === field.value)?.label || field.value}</span>
@@ -274,7 +288,7 @@ export default function Step2DealStructure({ control, errors, watch, setValue, c
                 <Label>Start Date</Label>
                 <Input
                   type="date"
-                  value={field.value ?? ""}
+                  value={field.value || undefined}
                   onChange={field.onChange}
                   className={cn(errors.startDate && "border-destructive")}
                 />
@@ -290,7 +304,7 @@ export default function Step2DealStructure({ control, errors, watch, setValue, c
             render={({ field }) => (
               <div className="space-y-1.5">
                 <Label>End Date</Label>
-                <Input type="date" value={field.value ?? ""} onChange={field.onChange} />
+                <Input type="date" value={field.value || undefined} onChange={field.onChange} />
               </div>
             )}
           />
@@ -305,7 +319,7 @@ export default function Step2DealStructure({ control, errors, watch, setValue, c
                     type="number"
                     min="1"
                     placeholder="e.g. 12"
-                    value={field.value ?? ""}
+                    value={field.value || undefined}
                     onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))}
                   />
                 </div>
@@ -332,7 +346,7 @@ export default function Step2DealStructure({ control, errors, watch, setValue, c
               render={({ field }) => (
                 <div className="space-y-1.5">
                   <Label>Rate Type</Label>
-                  <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                  <Select value={field.value || undefined} onValueChange={field.onChange}>
                     <SelectTrigger>
                       {field.value ? (
                         <span>{rateTypeOptions.find(o => o.value === field.value)?.label || field.value}</span>
@@ -375,26 +389,62 @@ export default function Step2DealStructure({ control, errors, watch, setValue, c
               />
             )}
 
-            {/* OT Applicable toggle */}
-            <Controller
-              name="overtimeApplicable"
-              control={control}
-              render={({ field }) => (
-                <div className="flex items-center gap-3 pt-6">
-                  <Switch
-                    checked={isBuyout ? false : (field.value ?? true)}
-                    onCheckedChange={field.onChange}
-                    disabled={isBuyout}
-                  />
-                  <div>
-                    <Label className="cursor-pointer">Overtime Applicable</Label>
-                    {isBuyout && (
-                      <p className="text-xs text-amber-500">Disabled — {rateType === 'all_in' ? 'all-in rate' : 'buyout rate'} includes all hours</p>
-                    )}
+            {/* OT / Night / Meal toggles — auto-disable based on deal type, rate type, employment */}
+            <div className="space-y-3 pt-4 border-t mt-4">
+              <Controller
+                name="overtimeApplicable"
+                control={control}
+                render={({ field }) => (
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={shouldDisableOT ? false : (field.value ?? true)}
+                      onCheckedChange={field.onChange}
+                      disabled={shouldDisableOT}
+                    />
+                    <div>
+                      <Label className="cursor-pointer">Overtime Applicable</Label>
+                      {disableReason && <p className="text-[10px] text-amber-600">{disableReason}</p>}
+                    </div>
                   </div>
-                </div>
-              )}
-            />
+                )}
+              />
+              <Controller
+                name="nightPremiumEnabled"
+                control={control}
+                render={({ field }) => (
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={shouldDisableOT ? false : (field.value ?? true)}
+                      onCheckedChange={field.onChange}
+                      disabled={shouldDisableOT}
+                    />
+                    <div>
+                      <Label className="cursor-pointer">Night Premium</Label>
+                      {!shouldDisableOT && country !== 'US' && <p className="text-[10px] text-muted-foreground">£20 flat/night (PACT/BECTU §5.2)</p>}
+                      {disableReason && <p className="text-[10px] text-amber-600">{disableReason}</p>}
+                    </div>
+                  </div>
+                )}
+              />
+              <Controller
+                name="mealPenaltyEnabled"
+                control={control}
+                render={({ field }) => (
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={shouldDisableOT ? false : (field.value ?? true)}
+                      onCheckedChange={field.onChange}
+                      disabled={shouldDisableOT}
+                    />
+                    <div>
+                      <Label className="cursor-pointer">Meal Penalty</Label>
+                      {!shouldDisableOT && <p className="text-[10px] text-muted-foreground">Penalty after {country === 'US' ? '5' : '6'}hrs without meal break</p>}
+                      {disableReason && <p className="text-[10px] text-amber-600">{disableReason}</p>}
+                    </div>
+                  </div>
+                )}
+              />
+            </div>
           </div>
 
           {/* Rate amounts — different layout for flat vs rate-based */}
@@ -558,7 +608,7 @@ export default function Step2DealStructure({ control, errors, watch, setValue, c
                       <div className="space-y-1">
                         <Label className="text-xs">Holiday Pay %</Label>
                         <Input type="number" step="0.01" min="0" className="h-8 text-sm tabular-nums"
-                          value={field.value ?? ""} onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))} />
+                          value={field.value || undefined} onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))} />
                       </div>
                     )}
                   />
@@ -572,7 +622,7 @@ export default function Step2DealStructure({ control, errors, watch, setValue, c
                       <div className="space-y-1">
                         <Label className="text-xs">{isUK ? 'Employer NIC %' : 'Social Contributions %'}</Label>
                         <Input type="number" step="0.01" min="0" className="h-8 text-sm tabular-nums"
-                          value={field.value ?? ""} onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))} />
+                          value={field.value || undefined} onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))} />
                       </div>
                     )}
                   />
@@ -586,7 +636,7 @@ export default function Step2DealStructure({ control, errors, watch, setValue, c
                       <div className="space-y-1">
                         <Label className="text-xs">{isAU ? 'Superannuation %' : isUS ? 'Union P&H %' : 'Pension %'}</Label>
                         <Input type="number" step="0.01" min="0" className="h-8 text-sm tabular-nums"
-                          value={field.value ?? ""} onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))} />
+                          value={field.value || undefined} onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))} />
                       </div>
                     )}
                   />
@@ -600,7 +650,7 @@ export default function Step2DealStructure({ control, errors, watch, setValue, c
                       <div className="space-y-1">
                         <Label className="text-xs">Apprenticeship Levy %</Label>
                         <Input type="number" step="0.01" min="0" className="h-8 text-sm tabular-nums"
-                          value={field.value ?? ""} onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))} />
+                          value={field.value || undefined} onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))} />
                       </div>
                     )}
                   />
@@ -614,7 +664,7 @@ export default function Step2DealStructure({ control, errors, watch, setValue, c
                       <div className="space-y-1">
                         <Label className="text-xs">FICA (Employer) %</Label>
                         <Input type="number" step="0.01" min="0" className="h-8 text-sm tabular-nums"
-                          value={field.value ?? ""} onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))} />
+                          value={field.value || undefined} onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))} />
                       </div>
                     )}
                   />
@@ -628,7 +678,7 @@ export default function Step2DealStructure({ control, errors, watch, setValue, c
                       <div className="space-y-1">
                         <Label className="text-xs">Workers Comp %</Label>
                         <Input type="number" step="0.01" min="0" className="h-8 text-sm tabular-nums"
-                          value={field.value ?? ""} onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))} />
+                          value={field.value || undefined} onChange={(e) => field.onChange(e.target.value === "" ? null : Number(e.target.value))} />
                       </div>
                     )}
                   />

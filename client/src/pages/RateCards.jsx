@@ -170,7 +170,7 @@ function FilterSelect({
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-xs font-medium text-muted-foreground">{label}</label>
-      <Select value={value ?? ""} onValueChange={onValueChange} disabled={disabled}>
+      <Select value={value || undefined} onValueChange={onValueChange} disabled={disabled}>
         <SelectTrigger className="w-[200px]">
           {selectedLabel ? (
             <span className="truncate">{selectedLabel}</span>

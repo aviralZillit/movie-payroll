@@ -117,12 +117,28 @@ export const create = asyncHandler(async (req, res) => {
     }
   }
 
+  // ── Auto-derive rates from weekly using territory-correct formulas ──
+  // UK (PACT/BECTU §3.3a): hourly = weekly ÷ 55, daily = weekly ÷ 5
+  // US (IATSE): hourly = weekly ÷ 40, daily = weekly ÷ 5
+  const territory = dealData.territory || production.country || 'UK';
+  dealData.territory = territory; // ensure territory is always set
+  const weeklyDivisor = territory === 'US' ? 40 : 55;
+
+  if (dealData.weeklyRate > 0) {
+    if (!dealData.dailyRate || dealData.dailyRate <= 0) {
+      dealData.dailyRate = Math.round(dealData.weeklyRate / 5 * 100) / 100;
+    }
+    if (!dealData.hourlyRate || dealData.hourlyRate <= 0) {
+      dealData.hourlyRate = Math.round(dealData.weeklyRate / weeklyDivisor * 100) / 100;
+    }
+  }
+
   // Calculate OT rates from hourly if not provided
   if (!dealData.otRate1x5 && dealData.hourlyRate) {
-    dealData.otRate1x5 = dealData.hourlyRate * 1.5;
+    dealData.otRate1x5 = Math.round(dealData.hourlyRate * 1.5 * 100) / 100;
   }
   if (!dealData.otRate2x && dealData.hourlyRate) {
-    dealData.otRate2x = dealData.hourlyRate * 2;
+    dealData.otRate2x = Math.round(dealData.hourlyRate * 2 * 100) / 100;
   }
 
   const dealMemo = await DealMemo.create(dealData);

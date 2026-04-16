@@ -51,7 +51,7 @@ function FilterSelect({
   return (
     <div className={cn("space-y-1.5", className)}>
       <Label>{label}</Label>
-      <Select value={value ?? ""} onValueChange={onValueChange} disabled={disabled}>
+      <Select value={value || undefined} onValueChange={onValueChange} disabled={disabled}>
         <SelectTrigger className={cn("w-full", error && "border-destructive")}>
           {selectedLabel ? (
             <span className="truncate">{selectedLabel}</span>

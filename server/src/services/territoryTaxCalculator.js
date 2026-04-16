@@ -1,12 +1,29 @@
 import Decimal from 'decimal.js';
+import { getEmploymentCategory } from '../config/employmentTypeRules.js';
+
+// Zero deductions result
+function zeroDeductions(territory) {
+  return {
+    incomeTax: 0, employeeNi: 0, employeePension: 0, stateTax: 0,
+    totalDeductions: 0, territory,
+    breakdown: { note: 'Corporate entity — no PAYE deductions (invoiced)' },
+  };
+}
 
 /**
  * Territory-aware employee tax/deductions calculator.
  * Dispatches by territory.
+ * Corporate entities (Ltd, Loan-out, etc.) get zero deductions — they invoice.
  */
 export function calculateTerritoryTax(grossPay, dealMemo) {
   const gross = new Decimal(grossPay || 0);
   const territory = dealMemo.territory || dealMemo.country || 'UK';
+
+  // Corporate entities don't go through PAYE — they invoice and handle own taxes
+  const empCategory = getEmploymentCategory(dealMemo.employmentStatus);
+  if (empCategory === 'corporate') {
+    return zeroDeductions(territory);
+  }
 
   switch (territory) {
     case 'US': return calculateUSTaxV2(gross, dealMemo);
@@ -40,6 +57,10 @@ function calculateUKTaxV2(gross, dm) {
     stateTax: 0,
     totalDeductions: totalDeductions.toDecimalPlaces(2).toNumber(),
     territory: 'UK',
+    breakdown: {
+      incomeTax: `20% × max(£${gross.toFixed(2)} - £242, 0) = £${incomeTax.toDecimalPlaces(2)}`,
+      employeeNi: `8% × max(£${gross.toFixed(2)} - £242, 0) = £${employeeNi.toDecimalPlaces(2)}`,
+    },
   };
 }
 

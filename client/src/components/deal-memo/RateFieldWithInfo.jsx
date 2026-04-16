@@ -109,7 +109,7 @@ export default function RateFieldWithInfo({
           type="number"
           step="0.01"
           min="0"
-          value={value ?? ""}
+          value={value || undefined}
           onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
           disabled={disabled}
           className={cn(

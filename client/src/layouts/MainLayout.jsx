@@ -31,6 +31,7 @@ import {
   UserCircle,
   X,
   TrendingUp,
+  CalendarDays,
 } from "lucide-react";
 
 const navItems = [
@@ -38,6 +39,7 @@ const navItems = [
   { to: "/productions", label: "Productions", icon: Film, roles: ["super_admin", "payroll_admin", "production_accountant", "department_head"] },
   { to: "/deal-memos", label: "Deal Memos", icon: FileText, roles: null },
   { to: "/timecards", label: "Timecards", icon: Clock, roles: null },
+  { to: "/my-timecards", label: "My Timecards", icon: CalendarDays, roles: null },
   { to: "/punch", label: "Punch Clock", icon: Clock, roles: ["crew_member", "department_head"] },
   { to: "/payroll", label: "Payroll", icon: Banknote, roles: ["super_admin", "payroll_admin", "production_accountant"] },
   { to: "/hot-cost", label: "Hot Cost", icon: TrendingUp, roles: ["super_admin", "payroll_admin", "production_accountant"] },

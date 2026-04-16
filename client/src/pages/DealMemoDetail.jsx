@@ -313,6 +313,7 @@ export default function DealMemoDetail() {
   const isCrew = memo?.personId?._id?.toString() === (user?._id || user?.id)?.toString()
     || memo?.personId?.toString() === (user?._id || user?.id)?.toString();
   const memoCountry = memo?.territory || memo?.country || memo?.productionId?.country || "UK";
+  const cs = memoCountry === 'US' ? '$' : memoCountry === 'AU' ? 'A$' : memoCountry === 'CA' ? 'C$' : '£';
   const fmt = (amount) => formatCurrency(amount || 0, memoCountry);
   const transitionMutation = useTransitionDealMemo();
   const updateMutation = useUpdateDealMemo();
@@ -606,13 +607,9 @@ export default function DealMemoDetail() {
                 {empCat === 'employee' && memo.hpMode && (
                   <DetailField label="Holiday Pay Mode" value={memo.hpMode === 'excl' ? 'HP Excluded' : memo.hpMode === 'incl' ? 'HP Included' : 'N/A'} />
                 )}
-                {/* OT/Night/Meal — only for employee types with non-flat/buyout deals */}
+                {/* OT flag — only for employee types with non-flat/buyout deals */}
                 {showOTFields && (
-                  <>
-                    <DetailField label="Overtime Applicable" value={memo.overtimeApplicable === false ? 'No' : 'Yes'} />
-                    <DetailField label="Night Premium" value={memo.nightPremiumEnabled === false ? 'Disabled' : memo.nightPremiumPct != null ? `${memo.nightPremiumPct}%` : 'Enabled'} />
-                    <DetailField label="Meal Penalty" value={memo.mealPenaltyEnabled === false ? 'Disabled' : 'Enabled'} />
-                  </>
+                  <DetailField label="Overtime Applicable" value={memo.overtimeApplicable === false ? 'No' : 'Yes'} />
                 )}
                 {/* For corporate/self-employed, show a note */}
                 {empCat === 'corporate' && (
@@ -660,24 +657,39 @@ export default function DealMemoDetail() {
 
           <Separator />
 
-          {/* Fringes — hide for corporate types */}
-          {getEmploymentRules(memo.employmentStatus)?.category !== 'corporate' && (
-            <Section icon={Percent} title="Fringes">
-              <DetailField label="Holiday Pay" value={memo.holidayPayPct != null ? `${memo.holidayPayPct}%` : "--"} />
-              <DetailField label="Employer NI" value={memo.employerNiPct != null ? `${memo.employerNiPct}%` : "--"} />
-              <DetailField label="Pension" value={memo.pensionPct != null ? `${memo.pensionPct}%` : "--"} />
-              <DetailField label="Apprenticeship Levy" value={(memo.apprenticeshipLevyPct ?? memo.apprenticeLevyPct) != null ? `${memo.apprenticeshipLevyPct ?? memo.apprenticeLevyPct}%` : "--"} />
-              <DetailField
-                label="Total Fringe Rate"
-                value={`${(
-                  (memo.holidayPayPct || 0) +
-                  (memo.employerNiPct || 0) +
-                  (memo.pensionPct || 0) +
-                  (memo.apprenticeLevyPct || 0)
-                ).toFixed(2)}%`}
-              />
-            </Section>
-          )}
+          {/* Fringes — only show applicable fringes per employment type rules */}
+          {(() => {
+            const empRules = getEmploymentRules(memo.employmentStatus);
+            if (empRules?.category === 'corporate') return null;
+            const f = empRules?.fringes || {};
+            const isUS = memoCountry === 'US';
+            // Calculate total from applicable fringes only
+            let total = 0;
+            if (f.holidayPay) total += (memo.holidayPayPct || 0);
+            if (f.employerNIC) total += (memo.employerNiPct || 0);
+            if (f.pension) total += (memo.pensionPct || 0);
+            if (f.apprenticeshipLevy) total += ((memo.apprenticeshipLevyPct ?? memo.apprenticeLevyPct) || 0);
+            return (
+              <Section icon={Percent} title="Fringes">
+                {f.holidayPay && (
+                  <DetailField label={isUS ? "Vacation & Holiday" : "Holiday Pay"} value={memo.holidayPayPct != null ? `${memo.holidayPayPct}%` : "--"} />
+                )}
+                {f.employerNIC && (
+                  <DetailField label={isUS ? "FICA (Employer)" : "Employer NI"} value={memo.employerNiPct != null ? `${memo.employerNiPct}%` : "--"} />
+                )}
+                {f.pension && (
+                  <DetailField label={isUS ? "Union P&H" : "Pension"} value={memo.pensionPct != null ? `${memo.pensionPct}%` : "--"} />
+                )}
+                {f.apprenticeshipLevy && (
+                  <DetailField label="Apprenticeship Levy" value={(memo.apprenticeshipLevyPct ?? memo.apprenticeLevyPct) != null ? `${memo.apprenticeshipLevyPct ?? memo.apprenticeLevyPct}%` : "--"} />
+                )}
+                {!f.employerNIC && !f.pension && !f.apprenticeshipLevy && f.holidayPay && (
+                  <DetailField label="Note" value="Self-employed — only Holiday Pay applies. No employer NI or pension." />
+                )}
+                <DetailField label="Total Fringe Rate" value={`${total.toFixed(2)}%`} />
+              </Section>
+            );
+          })()}
 
           <Separator />
 
@@ -692,17 +704,23 @@ export default function DealMemoDetail() {
                 <DetailField label="Lunch Break" value={memo.lunchBreakHrs != null ? `${memo.lunchBreakHrs} hrs` : "--"} />
                 <DetailField label="6th Day Multiplier" value={memo.sixthDayMultiplier ? `${memo.sixthDayMultiplier}x` : "--"} />
                 <DetailField label="7th Day Multiplier" value={memo.seventhDayMultiplier ? `${memo.seventhDayMultiplier}x` : "--"} />
-                <DetailField label="Night Premium" value={memo.nightPremiumEnabled === false ? "Disabled" : memo.nightPremiumPct != null ? `${memo.nightPremiumPct}%` : "--"} />
+                <DetailField label="Night Premium" value={
+                  memo.nightPremiumEnabled === false ? "Disabled"
+                    : memo.nightPremiumFlat > 0 ? `${cs}${memo.nightPremiumFlat} flat/night`
+                    : memo.nightPremiumPct > 0 ? `${memo.nightPremiumPct}%`
+                    : "--"
+                } />
                 <DetailField label="Turnaround Minimum" value={memo.turnaroundMinHrs ? `${memo.turnaroundMinHrs} hrs` : "--"} />
-                <DetailField
-                  label="Meal Penalty"
-                  value={
-                    memo.mealPenaltyEnabled === false ? "Disabled"
-                      : (memo.mealPenaltyRate > 0 || memo.mealPenaltyEnabled)
-                        ? `${fmt(memo.mealPenaltyRate || memo.mealPenaltyAmount || 0)} after ${memo.mealPenaltyAfterHrs || 6} hrs`
-                        : "Disabled"
-                  }
-                />
+                {memo.otRateCap > 0 && (
+                  <DetailField label="OT Rate Cap" value={`${cs}${memo.otRateCap}/hr`} />
+                )}
+                <DetailField label="Meal Penalty" value={
+                  memo.mealPenaltyEnabled === false ? "Disabled"
+                    : memo.mealPenaltyRate > 0 ? `${cs}${memo.mealPenaltyRate}/15min after ${memo.mealPenaltyAfterHrs || 6} hrs`
+                    : (memo.mealPenaltyUseHourlyRate || (!memo.mealPenaltyRate && memo.hourlyRate))
+                      ? `Hourly rate (${cs}${(memo.hourlyRate || (memo.weeklyRate / 55)).toFixed(2)})/15min after ${memo.mealPenaltyAfterHrs || 6} hrs`
+                    : `Enabled — after ${memo.mealPenaltyAfterHrs || 6} hrs`
+                } />
               </Section>
             );
           })()}
@@ -1404,7 +1422,9 @@ function CrewOnboardingForm({ dealMemoId, memo, territory, employmentStatus }) {
   const [saving, setSaving] = useState(false);
 
   const fieldDefs = getCrewFieldsForTerritory(territory, employmentStatus);
-  const requiredKeys = new Set((memo?.crewRequiredFields || []).map(f => f.fieldKey));
+  const fieldNames = new Set(fieldDefs.map(f => f.name));
+  // Only count required fields that have a matching form input
+  const requiredKeys = new Set((memo?.crewRequiredFields || []).map(f => f.fieldKey).filter(k => fieldNames.has(k)));
   const requiredCount = requiredKeys.size;
   const completedCount = [...requiredKeys].filter(k => fields[k] && fields[k].trim() !== "").length;
 
@@ -1473,6 +1493,7 @@ function getCrewFieldsForTerritory(territory, employmentStatus) {
     paye: [
       { name: "niNumber", label: "NI Number", placeholder: "AB 12 34 56 C" },
       { name: "taxCode", label: "Tax Code", placeholder: "1257L" },
+      { name: "studentLoan", label: "Student Loan Plan", placeholder: "Plan 1, 2, 4, or PG" },
       { name: "bankSortCode", label: "Sort Code", placeholder: "00-00-00" },
       { name: "bankAccountNumber", label: "Account Number", placeholder: "12345678" },
     ],

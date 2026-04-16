@@ -70,8 +70,30 @@ export const calculateDayHours = (entry, dealMemo, overtimeRules = [], options =
     secondMealDurationMin = sm2End - sm2Start;
   }
 
-  // Total worked = (wrap - call) - lunch - second meal
-  const totalWorkedMin = (wrapMin - callMin) - lunchDurationMin - secondMealDurationMin;
+  // Calculate third meal break
+  let thirdMealDurationMin = 0;
+  if (entry.thirdMealStart && entry.thirdMealEnd) {
+    let sm3Start = parseTimeToMinutes(entry.thirdMealStart);
+    let sm3End = parseTimeToMinutes(entry.thirdMealEnd);
+    if (sm3End < sm3Start) {
+      sm3End += 24 * 60;
+    }
+    thirdMealDurationMin = sm3End - sm3Start;
+  }
+
+  // Calculate fourth meal break
+  let fourthMealDurationMin = 0;
+  if (entry.fourthMealStart && entry.fourthMealEnd) {
+    let sm4Start = parseTimeToMinutes(entry.fourthMealStart);
+    let sm4End = parseTimeToMinutes(entry.fourthMealEnd);
+    if (sm4End < sm4Start) {
+      sm4End += 24 * 60;
+    }
+    fourthMealDurationMin = sm4End - sm4Start;
+  }
+
+  // Total worked = (wrap - call) - all meal breaks
+  const totalWorkedMin = (wrapMin - callMin) - lunchDurationMin - secondMealDurationMin - thirdMealDurationMin - fourthMealDurationMin;
   const totalWorkedHrs = minutesToHours(Math.max(0, totalWorkedMin));
   result.totalWorkedHrs = totalWorkedHrs;
 

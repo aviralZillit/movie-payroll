@@ -71,7 +71,20 @@ export const updateEntries = asyncHandler(async (req, res) => {
     throw new AppError(`Cannot edit entries on a ${timecard.status} timecard.`, 400);
   }
 
-  timecard.entries = req.body.entries;
+  // Accept client entries directly — they include all user-editable fields.
+  // The auto-recalculate below will recompute all server-computed fields (pay, OT, penalties).
+  const incoming = req.body.entries || [];
+  console.log(`[updateEntries] TC ${timecard.timecardNumber}: received ${incoming.length} entries. Mon callTime: ${incoming[0]?.callTime || 'EMPTY'}, unitCall: ${incoming[0]?.unitCall || 'EMPTY'}`);
+  timecard.entries = incoming;
+
+  // Auto-recalculate OT/pay after every entry update so computed fields stay fresh
+  try {
+    await runCalculation(timecard);
+  } catch (calcErr) {
+    // Calculation may fail if deal memo is missing — still save raw entries
+    console.warn('Auto-calculation skipped:', calcErr.message);
+  }
+
   await timecard.save();
 
   const populated = await Timecard.findById(timecard._id)
@@ -113,9 +126,9 @@ async function runCalculation(timecard) {
     sortedEntries[i].nightHrs = calc.nightHrs || 0;
 
     // OT breakdown (minutes)
-    sortedEntries[i].preCallOTMins = calc.preCallMins || 0;
+    sortedEntries[i].preCallOTMins = calc.preCallOTMins || calc.preCallMins || 0;
     sortedEntries[i].filmingOTMins = calc.filmingOTMins || 0;
-    sortedEntries[i].wrapOTMins = calc.wrapMins || 0;
+    sortedEntries[i].wrapOTMins = calc.wrapOTMins || calc.wrapMins || 0;
     sortedEntries[i].btaMins = calc.btaMins || 0;
     sortedEntries[i].mealDelayMins = calc.mealDelayMins || 0;
 

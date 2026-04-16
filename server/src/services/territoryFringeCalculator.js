@@ -59,7 +59,7 @@ function calculateUKFringesV2(gross, dm, empCategory = 'employee') {
   let employerNi = new Decimal(0);
   if (empCategory === 'employee') {
     const niPct = pct(dm.employerNiPct ?? dm.rfNicPct, 0.138);
-    const niThreshold = new Decimal(dm.employerNiThresholdWeekly ?? dm.rfNicThreshold ?? 967);
+    const niThreshold = new Decimal(dm.employerNiThresholdWeekly ?? dm.rfNicThreshold ?? 175);
     const niable = Decimal.max(gross.minus(niThreshold), 0);
     employerNi = niable.times(niPct);
   }
@@ -96,13 +96,20 @@ function calculateUSFringesV2(gross, totalWorkedHrs, dm, empCategory = 'employee
   // Self-employed (1099): no employer FICA/FUTA/WC, but union P&H may still apply
   const isEmployee = empCategory === 'employee';
 
+  // DB stores percentages as whole numbers (7.5 = 7.5%, 8.583 = 8.583%)
+  // Normalize: if value > 1, treat as whole-number %, divide by 100
+  const pct = (val, fallback) => {
+    if (val == null) return fallback;
+    return val > 1 ? val / 100 : val; // 7.5 → 0.075, 0.075 → 0.075
+  };
+
   // Union-specific pension (SAG:18.5%, WGA:21%, DGA:6%, IATSE:7.5%)
-  const pensionPct = dm.unionPensionPct ?? dm.rfPensionPct ?? 0.20;
-  const pensionHealth = gross.times(pensionPct); // union P&H applies regardless
+  const pensionPctVal = pct(dm.unionPensionPct ?? dm.pensionPct ?? dm.rfPensionPct, 0.075);
+  const pensionHealth = gross.times(pensionPctVal); // union P&H applies regardless
 
   // Vacation & Holiday (8.583%) — employees only
-  const vacPct = dm.vacationHolidayPct ?? 0.08583;
-  const vacationHoliday = isEmployee ? gross.times(vacPct) : new Decimal(0);
+  const vacPctVal = pct(dm.vacationHolidayPct ?? dm.holidayPayPct, 0.08583);
+  const vacationHoliday = isEmployee ? gross.times(vacPctVal) : new Decimal(0);
 
   // FICA - Social Security (6.2% employer on first $168,600/yr) — employees only
   const ssThresholdWeekly = new Decimal(168600).div(52);
@@ -116,8 +123,8 @@ function calculateUSFringesV2(gross, totalWorkedHrs, dm, empCategory = 'employee
   const futa = isEmployee ? Decimal.min(gross, futaThresholdWeekly).times(0.006) : new Decimal(0);
 
   // Workers Comp (CA film ~3.5%) — employees only
-  const wcPct = dm.workersCompPct ?? dm.rfWorkersCompPct ?? 0.035;
-  const workersComp = isEmployee ? gross.times(wcPct) : new Decimal(0);
+  const wcPctVal = pct(dm.workersCompPct ?? dm.rfWorkersCompPct, 0.035);
+  const workersComp = isEmployee ? gross.times(wcPctVal) : new Decimal(0);
 
   // H&W per hour (IATSE $26-34/hr, Teamsters $28-34/hr)
   const hwRate = new Decimal(dm.hwPerHour ?? dm.rfHwPerHour ?? 0);

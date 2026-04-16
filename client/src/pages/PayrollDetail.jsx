@@ -69,9 +69,68 @@ const DONUT_COLORS = [
   "#f97316", "#06b6d4",
 ];
 
+/* ── Employment type badge colors ───────────────────────── */
+const EMP_BADGE = {
+  paye: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  w2: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  ltd: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+  loanout: "bg-orange-500/10 text-orange-400 border-orange-500/20",
+  loan_out: "bg-orange-500/10 text-orange-400 border-orange-500/20",
+  "1099": "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  sole_trader: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  self_employed: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+};
+const EMP_LABEL = {
+  paye: "PAYE", w2: "W-2", ltd: "LTD", loanout: "LOAN-OUT", loan_out: "LOAN-OUT",
+  "1099": "1099", sole_trader: "SOLE TRADER", self_employed: "SELF-EMP",
+};
+
+/* ── Formula tooltip badge ──────────────────────────────── */
+function FormulaTag({ breakdown, field, children }) {
+  const bd = breakdown?.[field];
+  if (!bd?.formula) return children;
+  return (
+    <span className="group relative cursor-help">
+      {children}
+      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-[100] hidden group-hover:flex flex-col items-center">
+        <span className="whitespace-nowrap rounded-md bg-zinc-900 dark:bg-zinc-100 px-2.5 py-1.5 text-[10px] font-mono text-white dark:text-zinc-900 shadow-lg ring-1 ring-zinc-700/20">
+          {bd.formula}
+          {bd.cap && <span className="block text-amber-300 dark:text-amber-600 mt-0.5">{bd.cap}</span>}
+          {bd.hpAdjustment && <span className="block text-blue-300 dark:text-blue-600 mt-0.5">{bd.hpAdjustment}</span>}
+        </span>
+        <span className="h-0 w-0 border-x-[5px] border-x-transparent border-t-[5px] border-t-zinc-900 dark:border-t-zinc-100" />
+      </span>
+    </span>
+  );
+}
+
+/* ── Breakdown line item with formula ──────────────────── */
+function BreakdownLine({ label, value, formula, indent = false, bold = false, borderTop = false }) {
+  return (
+    <div className={cn(
+      indent && "pl-3",
+      borderTop && "border-t pt-1.5 mt-1",
+    )}>
+      <div className="flex justify-between items-start gap-2">
+        <dt className={cn("text-muted-foreground", bold && "font-medium text-foreground")}>{label}</dt>
+        <dd className={cn("font-medium tabular-nums shrink-0 text-right", bold && "font-bold")}>{value}</dd>
+      </div>
+      {formula && (
+        <dd className="text-[9px] font-mono text-muted-foreground/70 leading-snug mt-0.5" title={formula}>
+          {formula}
+        </dd>
+      )}
+    </div>
+  );
+}
+
 /* ── Compact expandable row ──────────────────────────────── */
 function ExpandableRow({ item, index, fmt }) {
   const [expanded, setExpanded] = useState(false);
+  const bd = item.breakdown || {};
+
+  // Compute combined OT for the collapsed row
+  const overtimePay = (item.overtime1x5Pay || 0) + (item.overtime2xPay || 0);
 
   return (
     <>
@@ -91,15 +150,28 @@ function ExpandableRow({ item, index, fmt }) {
             )}
           </Button>
         </TableCell>
-        <TableCell className="font-medium py-1.5">{item.person?.name || item.personName || "-"}</TableCell>
-        <TableCell className="text-muted-foreground py-1.5">{item.department || item.departmentName || "-"}</TableCell>
-        <TableCell className="text-right tabular-nums py-1.5">{fmt(item.basePay)}</TableCell>
-        <TableCell className="text-right tabular-nums py-1.5">{fmt(item.overtimePay || item.overtime1x5Pay)}</TableCell>
-        <TableCell className="text-right tabular-nums font-semibold py-1.5">{fmt(item.grossPay)}</TableCell>
-        <TableCell className="text-right tabular-nums py-1.5">{fmt(item.totalFringes)}</TableCell>
-        <TableCell className="text-right tabular-nums py-1.5">{fmt(item.tax)}</TableCell>
+        <TableCell className="font-medium py-1.5">{item.personName || "-"}</TableCell>
+        <TableCell className="py-1.5">
+          <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold border", EMP_BADGE[item.employmentType] || EMP_BADGE.paye)}>
+            {EMP_LABEL[item.employmentType] || item.employmentType?.toUpperCase() || "PAYE"}
+          </span>
+        </TableCell>
+        <TableCell className="text-muted-foreground py-1.5">{item.departmentName || "-"}</TableCell>
+        <TableCell className="text-right tabular-nums py-1.5">
+          <FormulaTag breakdown={bd} field="basePay">{fmt(item.basePay)}</FormulaTag>
+        </TableCell>
+        <TableCell className="text-right tabular-nums py-1.5">
+          <FormulaTag breakdown={bd} field="overtime1x5Pay">{fmt(overtimePay)}</FormulaTag>
+        </TableCell>
+        <TableCell className="text-right tabular-nums font-semibold py-1.5">
+          <FormulaTag breakdown={bd} field="grossPay">{fmt(item.grossPay)}</FormulaTag>
+        </TableCell>
+        <TableCell className="text-right tabular-nums py-1.5">
+          <FormulaTag breakdown={bd} field="totalFringes">{fmt(item.totalFringes)}</FormulaTag>
+        </TableCell>
+        <TableCell className="text-right tabular-nums py-1.5">{fmt(item.incomeTax || item.tax)}</TableCell>
         <TableCell className="text-right tabular-nums font-bold text-emerald-600 dark:text-emerald-400 py-1.5">
-          {fmt(item.netPay)}
+          <FormulaTag breakdown={bd} field="netPay">{fmt(item.netPay)}</FormulaTag>
         </TableCell>
       </motion.tr>
 
@@ -110,46 +182,282 @@ function ExpandableRow({ item, index, fmt }) {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
           >
-            <TableCell colSpan={9} className="bg-muted/20 p-0">
-              <div className="grid gap-3 p-3 md:grid-cols-2">
-                <GrossToNetBreakdown
-                  basePay={item.basePay || 0}
-                  overtimePay={item.overtimePay || item.overtime1x5Pay || 0}
-                  penalties={item.penalties || item.mealPenaltyPay || 0}
-                  allowances={item.allowances || 0}
-                  grossPay={item.grossPay || 0}
-                  tax={item.tax || 0}
-                  employeeNI={item.employeeNI || 0}
-                  pension={item.pension || 0}
-                  netPay={item.netPay || 0}
-                />
+            <TableCell colSpan={10} className="bg-muted/20 p-0">
+              <div className="grid gap-3 p-3 md:grid-cols-[1fr_1fr_minmax(200px,1.2fr)]">
+                {/* Column 1: Earnings with formulas */}
                 <Card>
                   <CardHeader className="border-b py-2 px-3">
-                    <CardTitle className="text-xs">Full Breakdown</CardTitle>
+                    <CardTitle className="text-xs flex items-center gap-1.5">
+                      <Banknote className="h-3 w-3 text-emerald-500" />
+                      Earnings Breakdown
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-2 px-3 pb-3">
-                    <dl className="space-y-1 text-xs">
-                      {[
-                        ["Role", item.role || item.designationName || "-"],
-                        ["Days Worked", item.daysWorked ?? "-"],
-                        ["Total Hours", item.totalHours?.toFixed(1) || "-"],
-                        ["OT Hours", item.otHours?.toFixed(1) || "-"],
-                        ["Penalties", fmt(item.penalties || item.mealPenaltyPay)],
-                        ["Holiday Pay", fmt(item.holidayPay)],
-                        ["Emp'r NI", fmt(item.employerNI || item.employerNi)],
-                        ["Pension", fmt(item.pension || item.employerPension)],
-                        ["Employee NI", fmt(item.employeeNI || item.employeeNi)],
-                      ].map(([label, val]) => (
-                        <div key={label} className="flex justify-between">
-                          <dt className="text-muted-foreground">{label}</dt>
-                          <dd className="font-medium tabular-nums">{val}</dd>
-                        </div>
-                      ))}
-                      <div className="flex justify-between border-t pt-1.5 mt-1">
-                        <dt className="font-medium">Total Cost</dt>
-                        <dd className="font-bold tabular-nums">{fmt(item.totalCost)}</dd>
-                      </div>
+                    <dl className="space-y-1.5 text-xs">
+                      <BreakdownLine label="Role" value={item.designationName || "-"} />
+                      <BreakdownLine label="Days Worked" value={item.daysWorked ?? "-"} />
+                      <BreakdownLine label="Total Hours" value={item.totalHours?.toFixed(1) || "-"} />
+                      <BreakdownLine
+                        label="Base Pay"
+                        value={fmt(item.basePay)}
+                        formula={bd.basePay?.formula}
+                        bold
+                      />
+                      {bd.basePay?.hpAdjustment && (
+                        <div className="pl-3 text-[9px] font-mono text-blue-500">{bd.basePay.hpAdjustment}</div>
+                      )}
+
+                      {/* OT section */}
+                      {(item.overtime1x5Pay > 0 || item.overtime2xPay > 0) && (
+                        <>
+                          <div className="text-[10px] uppercase tracking-wider text-muted-foreground/60 pt-1">Overtime</div>
+                          {item.overtime1x5Pay > 0 && (
+                            <BreakdownLine
+                              label="OT 1.5×"
+                              value={fmt(item.overtime1x5Pay)}
+                              formula={bd.overtime1x5Pay?.formula}
+                              indent
+                            />
+                          )}
+                          {item.overtime2xPay > 0 && (
+                            <BreakdownLine
+                              label="OT 2×"
+                              value={fmt(item.overtime2xPay)}
+                              formula={bd.overtime2xPay?.formula}
+                              indent
+                            />
+                          )}
+                          {bd.overtime1x5Pay?.cap && (
+                            <div className="pl-3 text-[9px] font-mono text-amber-500">{bd.overtime1x5Pay.cap}</div>
+                          )}
+                        </>
+                      )}
+                      {bd.overtimeNote && (
+                        <div className="text-[9px] italic text-muted-foreground/60">{bd.overtimeNote}</div>
+                      )}
+
+                      {/* Penalties */}
+                      {(item.mealPenaltyPay > 0 || item.turnaroundPenaltyPay > 0) && (
+                        <>
+                          <div className="text-[10px] uppercase tracking-wider text-muted-foreground/60 pt-1">Penalties</div>
+                          {item.mealPenaltyPay > 0 && (
+                            <BreakdownLine
+                              label="Meal Delay"
+                              value={fmt(item.mealPenaltyPay)}
+                              formula={bd.mealPenaltyPay?.formula}
+                              indent
+                            />
+                          )}
+                          {item.turnaroundPenaltyPay > 0 && (
+                            <BreakdownLine
+                              label="BTA (Turnaround)"
+                              value={fmt(item.turnaroundPenaltyPay)}
+                              formula={bd.turnaroundPenaltyPay?.formula}
+                              indent
+                            />
+                          )}
+                        </>
+                      )}
+
+                      {/* Premiums */}
+                      {(item.sixthDayPremium > 0 || item.seventhDayPremium > 0 || item.nightPremium > 0) && (
+                        <>
+                          <div className="text-[10px] uppercase tracking-wider text-muted-foreground/60 pt-1">Premiums</div>
+                          {item.sixthDayPremium > 0 && (
+                            <BreakdownLine label="6th Day" value={fmt(item.sixthDayPremium)} formula={bd.sixthDayPremium?.formula} indent />
+                          )}
+                          {item.seventhDayPremium > 0 && (
+                            <BreakdownLine label="7th Day" value={fmt(item.seventhDayPremium)} formula={bd.seventhDayPremium?.formula} indent />
+                          )}
+                          {item.nightPremium > 0 && (
+                            <BreakdownLine label="Night Premium" value={fmt(item.nightPremium)} formula={bd.nightPremium?.formula} indent />
+                          )}
+                        </>
+                      )}
+
+                      {/* Gross */}
+                      <BreakdownLine
+                        label="Gross Pay"
+                        value={fmt(item.grossPay)}
+                        formula={bd.grossPay?.formula}
+                        bold
+                        borderTop
+                      />
                     </dl>
+                  </CardContent>
+                </Card>
+
+                {/* Column 2: Employer fringes with formulas */}
+                <Card>
+                  <CardHeader className="border-b py-2 px-3">
+                    <CardTitle className="text-xs flex items-center gap-1.5">
+                      <Receipt className="h-3 w-3 text-amber-500" />
+                      Employer Fringes
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-2 px-3 pb-3">
+                    <dl className="space-y-1.5 text-xs">
+                      {item.holidayPay > 0 && (
+                        <BreakdownLine
+                          label={bd.holidayPay?.label || "Holiday Pay"}
+                          value={fmt(item.holidayPay)}
+                          formula={bd.holidayPay?.formula}
+                        />
+                      )}
+                      {(item.employerNi || item.employerNI) > 0 && (
+                        <BreakdownLine
+                          label={bd.employerNi?.label || "Employer NI"}
+                          value={fmt(item.employerNi || item.employerNI)}
+                          formula={bd.employerNi?.formula}
+                        />
+                      )}
+                      {(item.employerPension || 0) > 0 && (
+                        <BreakdownLine
+                          label={bd.employerPension?.label || "Employer Pension"}
+                          value={fmt(item.employerPension)}
+                          formula={bd.employerPension?.formula}
+                        />
+                      )}
+                      {(item.apprenticeshipLevy || 0) > 0 && (
+                        <BreakdownLine
+                          label="Apprenticeship Levy"
+                          value={fmt(item.apprenticeshipLevy)}
+                          formula={bd.apprenticeshipLevy?.formula}
+                          indent
+                        />
+                      )}
+                      {/* US-specific fringe lines */}
+                      {bd.workersComp && (
+                        <BreakdownLine
+                          label={bd.workersComp.label || "Workers' Comp"}
+                          value={fmt(bd.workersComp.value)}
+                          formula={bd.workersComp.formula}
+                          indent
+                        />
+                      )}
+                      {bd.futa && (
+                        <BreakdownLine
+                          label={bd.futa.label || "FUTA"}
+                          value={fmt(bd.futa.value)}
+                          formula={bd.futa.formula}
+                          indent
+                        />
+                      )}
+                      {bd.hwContribution && bd.hwContribution.value > 0 && (
+                        <BreakdownLine
+                          label={bd.hwContribution.label || "H&W Per Hour"}
+                          value={fmt(bd.hwContribution.value)}
+                          formula={bd.hwContribution.formula}
+                          indent
+                        />
+                      )}
+                      <BreakdownLine
+                        label="Total Fringes"
+                        value={fmt(item.totalFringes)}
+                        formula={bd.totalFringes?.formula}
+                        bold
+                        borderTop
+                      />
+
+                      {/* Employee Deductions section */}
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground/60 pt-2">Employee Deductions</div>
+                      {bd.deductionsNote ? (
+                        <div className="text-[9px] italic text-muted-foreground/60">{bd.deductionsNote}</div>
+                      ) : (
+                        <>
+                          {(item.incomeTax || item.tax || 0) > 0 && (
+                            <BreakdownLine
+                              label={bd.incomeTax?.label || "Income Tax (PAYE)"}
+                              value={`-${fmt(item.incomeTax || item.tax)}`}
+                              formula={bd.incomeTax?.formula}
+                            />
+                          )}
+                          {(item.employeeNi || item.employeeNI || 0) > 0 && (
+                            <BreakdownLine
+                              label={bd.employeeNi?.label || "Employee NI"}
+                              value={`-${fmt(item.employeeNi || item.employeeNI)}`}
+                              formula={bd.employeeNi?.formula}
+                            />
+                          )}
+                          {(item.employeePension || 0) > 0 && (
+                            <BreakdownLine
+                              label="Employee Pension"
+                              value={`-${fmt(item.employeePension)}`}
+                              indent
+                            />
+                          )}
+                        </>
+                      )}
+                    </dl>
+                  </CardContent>
+                </Card>
+
+                {/* Column 3: Net pay + total cost summary */}
+                <Card>
+                  <CardHeader className="border-b py-2 px-3">
+                    <CardTitle className="text-xs flex items-center gap-1.5">
+                      <Landmark className="h-3 w-3 text-emerald-500" />
+                      Summary
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-2 px-3 pb-3">
+                    <dl className="space-y-1.5 text-xs">
+                      <BreakdownLine
+                        label="Net Pay"
+                        value={fmt(item.netPay)}
+                        formula={bd.netPay?.formula}
+                        bold
+                      />
+                      <BreakdownLine
+                        label="Total Cost"
+                        value={fmt(item.totalCost)}
+                        formula={bd.totalCost?.formula}
+                        bold
+                        borderTop
+                      />
+                    </dl>
+
+                    {/* Visual gross→net bar */}
+                    <div className="mt-4">
+                      <div className="flex justify-between text-[10px] text-muted-foreground mb-0.5">
+                        <span>Gross</span>
+                        <span>Net</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-muted overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: item.grossPay > 0 ? `${((item.netPay / item.grossPay) * 100).toFixed(0)}%` : "0%" }}
+                          transition={{ delay: 0.3, duration: 0.6 }}
+                          className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-500"
+                        />
+                      </div>
+                      <div className="flex justify-between text-[10px] font-medium tabular-nums mt-0.5">
+                        <span>{fmt(item.grossPay)}</span>
+                        <span className="text-emerald-600 dark:text-emerald-400">{fmt(item.netPay)}</span>
+                      </div>
+                    </div>
+
+                    {/* Stacked cost breakdown mini chart */}
+                    <div className="mt-4 space-y-1">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60">Cost Composition</p>
+                      {[
+                        { label: "Base Pay", value: item.basePay || 0, color: "bg-blue-500" },
+                        { label: "OT", value: (item.overtime1x5Pay || 0) + (item.overtime2xPay || 0), color: "bg-indigo-500" },
+                        { label: "Penalties", value: (item.mealPenaltyPay || 0) + (item.turnaroundPenaltyPay || 0), color: "bg-amber-500" },
+                        { label: "Premiums", value: (item.sixthDayPremium || 0) + (item.seventhDayPremium || 0) + (item.nightPremium || 0), color: "bg-purple-500" },
+                        { label: "Fringes", value: item.totalFringes || 0, color: "bg-orange-500" },
+                      ].filter(c => c.value > 0).map(({ label, value, color }) => {
+                        const pct = item.totalCost > 0 ? (value / item.totalCost * 100) : 0;
+                        return (
+                          <div key={label} className="flex items-center gap-2 text-[10px]">
+                            <div className={cn("h-1.5 rounded-full shrink-0", color)} style={{ width: `${Math.max(pct, 2)}%`, maxWidth: "60%" }} />
+                            <span className="text-muted-foreground">{label}</span>
+                            <span className="ml-auto font-medium tabular-nums">{fmt(value)}</span>
+                            <span className="text-muted-foreground/50 w-8 text-right">{pct.toFixed(0)}%</span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </CardContent>
                 </Card>
               </div>
@@ -198,7 +506,7 @@ export default function PayrollDetail() {
     };
     items.forEach((item) => {
       t.basePay += item.basePay || 0;
-      t.overtimePay += item.overtimePay || item.overtime1x5Pay || 0;
+      t.overtimePay += (item.overtime1x5Pay || 0) + (item.overtime2xPay || 0);
       t.grossPay += item.grossPay || 0;
       t.totalFringes += item.totalFringes || 0;
       t.tax += item.tax || 0;
@@ -328,7 +636,7 @@ export default function PayrollDetail() {
       </div>
 
       {/* ── Main grid: Table + Right sidebar ───────────────── */}
-      <div className="grid gap-3 xl:grid-cols-[1fr_280px]">
+      <div className="grid gap-3 xl:grid-cols-[1fr_320px]">
         {/* Payroll items table (compact) */}
         <Card>
           <CardContent className="p-0">
@@ -338,6 +646,7 @@ export default function PayrollDetail() {
                   <TableRow className="text-[10px]">
                     <TableHead className="w-6" />
                     <TableHead>Person</TableHead>
+                    <TableHead>Type</TableHead>
                     <TableHead>Dept</TableHead>
                     <TableHead className="text-right">Base Pay</TableHead>
                     <TableHead className="text-right">OT Pay</TableHead>
@@ -356,6 +665,7 @@ export default function PayrollDetail() {
                   <TableRow className="bg-muted/40 font-semibold text-xs">
                     <TableCell />
                     <TableCell>Totals</TableCell>
+                    <TableCell />
                     <TableCell />
                     <TableCell className="text-right tabular-nums">{fmt(totals.basePay)}</TableCell>
                     <TableCell className="text-right tabular-nums">{fmt(totals.overtimePay)}</TableCell>
@@ -438,15 +748,15 @@ export default function PayrollDetail() {
                   { icon: DollarSign, label: "OT Pay", value: fmt(totals.overtimePay), color: "" },
                   { icon: Equal, label: "Gross Pay", value: fmt(totals.grossPay), color: "font-bold" },
                   { icon: Receipt, label: "Fringes", value: fmt(totals.totalFringes), color: "text-amber-500" },
-                  { icon: TrendingDown, label: "Tax (PAYE)", value: `-${fmt(totals.tax)}`, color: "text-red-500" },
-                  { icon: TrendingDown, label: "Employee NI", value: `-${fmt(totals.employeeNI)}`, color: "text-red-500" },
+                  { icon: TrendingDown, label: country === 'US' ? "Federal/State Tax" : "Tax (PAYE)", value: `-${fmt(totals.tax)}`, color: "text-red-500" },
+                  { icon: TrendingDown, label: country === 'US' ? "Employee FICA" : "Employee NI", value: `-${fmt(totals.employeeNI)}`, color: "text-red-500" },
                 ].map(({ icon: Icon, label, value, color }) => (
-                  <div key={label} className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <Icon className="h-3 w-3" />
-                      <span>{label}</span>
+                  <div key={label} className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
+                      <Icon className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{label}</span>
                     </div>
-                    <span className={cn("font-medium tabular-nums", color)}>{value}</span>
+                    <span className={cn("font-medium tabular-nums shrink-0 whitespace-nowrap", color)}>{value}</span>
                   </div>
                 ))}
                 <div className="flex items-center justify-between border-t pt-1.5 mt-1">

@@ -24,11 +24,20 @@ const timecardEntrySchema = new mongoose.Schema({
   // Legacy compat: wrapTime maps to release
   wrapTime: String,
 
-  // Meal breaks
+  // Meal breaks (up to 4 meals)
   lunchStart: String,
   lunchEnd: String,
   secondMealStart: String,
   secondMealEnd: String,
+  thirdMealStart: String,
+  thirdMealEnd: String,
+  fourthMealStart: String,
+  fourthMealEnd: String,
+  // Meal display names (user-editable; null defaults to "Meal 1", "Meal 2", etc.)
+  meal1Name: String,
+  meal2Name: String,
+  meal3Name: String,
+  meal4Name: String,
 
   // Time source tracking
   source: { type: String, enum: ['manual', 'call_sheet', 'gps', 'override', 'locked'], default: 'manual' },

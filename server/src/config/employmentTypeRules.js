@@ -540,7 +540,10 @@ const RULES = {
  */
 export function getEmploymentRules(employmentStatus) {
   if (!employmentStatus) return RULES.paye; // default
-  return RULES[employmentStatus.toLowerCase()] || RULES.paye;
+  const raw = employmentStatus.toLowerCase();
+  // Normalize: loan_out → loanout, loan-out → loanout, sole_trader → soletrader, self_employed → selfemployed
+  const key = raw.replace(/[-_\s]/g, '');
+  return RULES[raw] || RULES[key] || RULES.paye;
 }
 
 /**

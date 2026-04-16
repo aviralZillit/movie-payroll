@@ -195,7 +195,7 @@ export default function Step3Rates({
               render={({ field }) => (
                 <div className="space-y-1.5">
                   <Label>Rate Basis</Label>
-                  <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                  <Select value={field.value || undefined} onValueChange={field.onChange}>
                     <SelectTrigger className={cn(errors.rateBasis && "border-destructive")}>
                       {field.value ? (
                         <span>{RATE_BASIS_OPTIONS.find(o => o.value === field.value)?.label || field.value}</span>
@@ -240,7 +240,7 @@ export default function Step3Rates({
               render={({ field }) => (
                 <div className="space-y-1.5">
                   <Label>Rate Type</Label>
-                  <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                  <Select value={field.value || undefined} onValueChange={field.onChange}>
                     <SelectTrigger>
                       {field.value ? (
                         <span>{rateTypeOptions.find(o => o.value === field.value)?.label || field.value}</span>
@@ -278,7 +278,7 @@ export default function Step3Rates({
                         </TooltipContent>
                       </Tooltip>
                     </div>
-                    <Select value={field.value ?? ""} onValueChange={field.onChange}>
+                    <Select value={field.value || undefined} onValueChange={field.onChange}>
                       <SelectTrigger>
                         {field.value ? (
                           <span>{HP_MODE_OPTIONS.find(o => o.value === field.value)?.label || field.value}</span>

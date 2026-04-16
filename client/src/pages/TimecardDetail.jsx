@@ -112,23 +112,75 @@ export default function TimecardDetail() {
   const [aiLoading, setAiLoading] = useState(false);
   const debounceRef = useRef(null);
 
-  // Sync server data into local state
+  // Sync server data into local state ONLY on initial load or timecard ID change.
+  // Never re-sync after saves — that causes race conditions wiping unsaved edits.
+  const initializedRef = useRef(null); // tracks which timecard ID we've initialized for
+
   useEffect(() => {
-    if (timecard?.entries) {
-      setLocalEntries(timecard.entries);
+    if (timecard?.entries && timecard._id !== initializedRef.current) {
+      initializedRef.current = timecard._id;
+      const weekStart = timecard.weekStarting ? parseISO(timecard.weekStarting) : new Date();
+      const padded = Array.from({ length: 7 }, (_, i) => {
+        const dateStr = addDays(weekStart, i).toISOString();
+        const existing = timecard.entries.find(e =>
+          e.date && dateStr.slice(0, 10) === new Date(e.date).toISOString().slice(0, 10)
+        ) || timecard.entries[i];
+        return { date: dateStr, dayOfWeek: i + 1, ...existing };
+      });
+      setLocalEntries(padded);
       setHasChanges(false);
     }
-  }, [timecard?.entries]);
+  }, [timecard?._id, timecard?.entries, timecard?.weekStarting]);
 
-  // Auto-save with debounce — only send complete entries (have both callTime and wrapTime)
+  // Computed fields that come back from the server after calculation — these should
+  // be merged INTO localEntries without overwriting user-editable time fields.
+  const COMPUTED_FIELDS = [
+    'totalWorkedHrs', 'straightHrs', 'ot1x5Hrs', 'ot2xHrs', 'nightHrs',
+    'preCallOTMins', 'filmingOTMins', 'wrapOTMins', 'btaMins', 'mealDelayMins',
+    'basicPay', 'preCallOTPay', 'filmingOTPay', 'wrapOTPay', 'btaPay',
+    'mealDelayPay', 'nightPremPay', 'dayTotal',
+    'nightShoot', 'turnaroundViolation', 'turnaroundHrs', 'turnaroundShortfallHrs',
+    'mealPenaltyCount', 'mealPenaltyMinutes',
+  ];
+
+  // Auto-save with debounce — only send complete entries; skip if timecard isn't editable
   const debouncedSave = useCallback(
     (entries) => {
+      // Don't auto-save non-editable timecards (approved, submitted, etc.)
+      const editableStatuses = ['draft', 'rejected', 'revision_requested'];
+      if (timecard?.status && !editableStatuses.includes(timecard.status)) return;
+
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
-        const completeEntries = entries.filter(e => e.date && (e.callTime && e.wrapTime || e.isRestDay || e.isHoliday));
-        if (completeEntries.length === 0) return; // don't save if no complete entries
-        updateEntries.mutate(completeEntries, {
-          onSuccess: () => {
+        // Send all entries — don't filter. Server handles empty entries gracefully.
+        const hasAnyData = entries.some(e => e.callTime || e.release || e.wrapTime);
+        if (!hasAnyData) return;
+        updateEntries.mutate(entries, {
+          onSuccess: (serverData) => {
+            // Merge ONLY computed fields from server into local entries.
+            // Do NOT replace localEntries — the user may have edited other days
+            // that weren't included in this save batch.
+            if (serverData?.entries) {
+              setLocalEntries((prev) => {
+                const next = [...prev];
+                for (const serverEntry of serverData.entries) {
+                  const dateStr = serverEntry.date ? new Date(serverEntry.date).toISOString().slice(0, 10) : null;
+                  const idx = next.findIndex(e => {
+                    if (!e.date || !dateStr) return false;
+                    return new Date(e.date).toISOString().slice(0, 10) === dateStr;
+                  });
+                  if (idx >= 0) {
+                    // Merge computed fields only — preserve local user edits
+                    const merged = { ...next[idx] };
+                    for (const f of COMPUTED_FIELDS) {
+                      if (serverEntry[f] !== undefined) merged[f] = serverEntry[f];
+                    }
+                    next[idx] = merged;
+                  }
+                }
+                return next;
+              });
+            }
             setHasChanges(false);
           },
           onError: () => {
@@ -137,7 +189,7 @@ export default function TimecardDetail() {
         });
       }, 1500);
     },
-    [updateEntries]
+    [updateEntries, timecard?.status]
   );
 
   const handleEntryChange = useCallback(
@@ -166,9 +218,37 @@ export default function TimecardDetail() {
     [debouncedSave, timecard?.weekStarting]
   );
 
-  const handleCalculate = () => {
+  const handleCalculate = async () => {
+    // Flush any pending debounced save first so calculate runs on latest data
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    // Save entries before calculating — only if editable
+    const editableStatuses = ['draft', 'rejected', 'revision_requested'];
+    if (editableStatuses.includes(timecard?.status)) {
+      try {
+        await updateEntries.mutateAsync(localEntries);
+        setHasChanges(false);
+      } catch {
+        toast.error("Failed to save before calculating");
+        return;
+      }
+    }
     calculate.mutate(undefined, {
-      onSuccess: () => toast.success("Hours calculated successfully"),
+      onSuccess: (data) => {
+        // Force-update localEntries with server-computed values
+        if (data?.entries) {
+          const weekStart = timecard?.weekStarting ? parseISO(timecard.weekStarting) : new Date();
+          const padded = Array.from({ length: 7 }, (_, i) => {
+            const dateStr = addDays(weekStart, i).toISOString();
+            const serverEntry = data.entries.find(e =>
+              e.date && dateStr.slice(0, 10) === new Date(e.date).toISOString().slice(0, 10)
+            ) || data.entries[i];
+            return { date: dateStr, dayOfWeek: i + 1, ...serverEntry };
+          });
+          setLocalEntries(padded);
+        }
+        setHasChanges(false);
+        toast.success("Hours calculated successfully");
+      },
       onError: () => toast.error("Calculation failed"),
     });
   };
@@ -210,8 +290,8 @@ export default function TimecardDetail() {
 
   const handleManualSave = () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    const completeEntries = localEntries.filter(e => e.date && (e.callTime && e.wrapTime || e.isRestDay || e.isHoliday));
-    updateEntries.mutate(completeEntries, {
+    // Send ALL 7 entries — don't filter. Server handles empty entries gracefully.
+    updateEntries.mutate(localEntries, {
       onSuccess: () => {
         setHasChanges(false);
         toast.success("Timecard saved");
@@ -369,7 +449,10 @@ export default function TimecardDetail() {
           onEntryChange={handleEntryChange}
           onSave={handleManualSave}
           onCalculate={handleCalculate}
-          onSubmit={handleSubmit}
+          onSubmit={isEditable ? handleSubmit : null}
+          onApprove={canDeptApprove && timecard.status === 'submitted' ? handleApprove : null}
+          onPayrollApprove={canPayrollApprove && timecard.status === 'dept_approved' ? handlePayrollApprove : null}
+          onReject={canDeptApprove && timecard.status === 'submitted' ? () => setRejectDialogOpen(true) : null}
           disabled={!isEditable}
           onPrevWeek={prevTimecard ? () => navigate(`/timecards/${prevTimecard._id || prevTimecard.id}`) : null}
           onNextWeek={nextTimecard ? () => navigate(`/timecards/${nextTimecard._id || nextTimecard.id}`) : null}
@@ -378,6 +461,7 @@ export default function TimecardDetail() {
             role: timecard.dealMemoId?.designationId?.name || timecard.dealMemoId?.screenCredit || '',
             department: timecard.dealMemoId?.departmentId?.name || '',
             weekNumber: timecard.weekNumber,
+            employmentType: timecard.dealMemoId?.employmentStatus || 'paye',
           }}
           dealMemo={timecard.dealMemoId || {}}
         />

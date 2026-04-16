@@ -16,15 +16,28 @@
 // ---------------------------------------------------------------------------
 export const TERRITORY_DEFAULTS = {
   UK: {
+    // Source: PACT/BECTU MMP Agreement (amended 5 Apr 2021)
     hpMode: 'excl', holidayPayPct: 12.07,
-    nightPremiumEnabled: true, nightPremiumPct: 50, nightPremiumFlat: 20, nightStartTime: '23:00',
+    // §5.2(b): Night Work Premium is £20 flat per night (NOT a percentage)
+    nightPremiumEnabled: true, nightPremiumPct: 0, nightPremiumFlat: 20, nightPremiumMode: 'flat', nightStartTime: '00:00',
+    // §5.3: 11 hours turnaround
     turnaroundMinHrs: 11,
-    mealPenaltyEnabled: true, mealPenaltyRate: 35, mealPenaltyAfterHrs: 6, mealDeductible: true,
+    // §5.4(b): Meal penalty at crew's hourly rate per 15-min increment; §5.4(a): lunch no later than 6hrs after unit call
+    // mealPenaltyRate: 0 means "use hourly rate" — resolved at calculation time from deal memo
+    mealPenaltyEnabled: true, mealPenaltyRate: 0, mealPenaltyUseHourlyRate: true, mealPenaltyAfterHrs: 6, mealDeductible: true,
+    // §4.1/4.2: 6th day 1.5T, 7th day 2T
     sixthDayMultiplier: 1.5, seventhDayMultiplier: 2.0,
     employerNiPct: 13.8, pensionPct: 3, apprenticeshipLevyPct: 0.5,
     overtimeApplicable: true,
-    btaEnabled: true, btaRate: 45,
+    // §5.3(b): Broken turnaround at 1.5T in 30-min increments, capped at £45/hr
+    btaEnabled: true, btaRate: 45, btaIncrementMin: 30,
+    // §2.2/2.3: SWD=11hrs, CWD=10hrs, SCWD=10hrs (10.5 with 30min break)
     contractedHoursSWD: 11, contractedHoursCWD: 10, contractedHoursSCWD: 10,
+    // §3.3(c): Maximum OT rate cap
+    otRateCap: 81.82,
+    // §3.3(b): Minimum camera OT rate
+    minCameraOTRate: 25,
+    standardWorkDayHrs: 11,
   },
   US: {
     hpMode: 'na', holidayPayPct: 0,

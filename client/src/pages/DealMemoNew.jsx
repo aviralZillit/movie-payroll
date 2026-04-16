@@ -240,7 +240,7 @@ function FilterSelect({
   return (
     <div className={cn("space-y-1.5", className)}>
       <Label>{label}</Label>
-      <Select value={value ?? ""} onValueChange={onValueChange} disabled={disabled}>
+      <Select value={value || undefined} onValueChange={onValueChange} disabled={disabled}>
         <SelectTrigger className={cn("w-full", error && "border-destructive")}>
           {selectedLabel ? (
             <span className="truncate">{selectedLabel}</span>
@@ -1025,6 +1025,13 @@ export default function DealMemoNew() {
     };
 
     issueModeRef.current = false;
+
+    // Clean payload: convert empty strings to undefined for ObjectId ref fields
+    // Mongoose casts "" to null for ObjectId which loses the value silently
+    const refFields = ['productionId', 'personId', 'unionId', 'departmentId', 'designationId', 'budgetTierId', 'contractingEntityId', 'rateCardId'];
+    for (const f of refFields) {
+      if (payload[f] === '' || payload[f] === null) payload[f] = undefined;
+    }
 
     if (isEditMode) {
       // Update existing deal memo
