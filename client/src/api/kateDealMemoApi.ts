@@ -34,17 +34,11 @@ export async function getDealMemo(id: string) {
   return res.data;
 }
 
-export async function listUsers(role?: string, productionId?: string) {
-  // movie-payroll uses /api/users endpoint
-  const params: Record<string, string> = {};
-  if (role) params.role = role;
-  if (productionId) params.productionId = productionId;
-  try {
-    const res = await get<any[]>('/api/users', { params });
-    return res.data?.data || res.data || [];
-  } catch {
-    return [];
-  }
+export async function listUsers(_role?: string, _productionId?: string) {
+  // Movie-payroll doesn't have a /api/users?role= endpoint.
+  // Return empty array — crew picker will show "no users" and admin
+  // can type the person name manually or use movie-payroll's own user management.
+  return [] as any[];
 }
 
 export async function inviteCrewUser(args: { email: string; name: string; productionId?: string }) {

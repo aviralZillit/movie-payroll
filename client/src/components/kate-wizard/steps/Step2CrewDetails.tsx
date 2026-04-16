@@ -42,7 +42,7 @@ export default function Step2CrewDetails() {
 
   useEffect(() => {
     setLoadingCrew(true);
-    listUsers('crew').then(setCrewUsers).catch(() => setCrewUsers([])).finally(() => setLoadingCrew(false));
+    listUsers('crew').then(d => setCrewUsers(Array.isArray(d) ? d : [])).catch(() => setCrewUsers([])).finally(() => setLoadingCrew(false));
   }, []);
 
   const handleCrewSelect = (userId: string) => {
