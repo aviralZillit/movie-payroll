@@ -19,6 +19,7 @@ import { OT_SCHEDULES } from '../../../data/kate/otSchedules';
 import { US_SCALE_MINIMUMS, UK_PACT_MINIMUMS } from '../../../data/kate/scaleMinimums';
 import { FRINGE_PACKAGES } from '../../../data/kate/fringePackages';
 import type { CurrencyCode, TerritoryCode, UnionId, HPMode, COABasis } from '../../../types/kate/dealMemo';
+import { lookupBibleRate } from '../../../data/kate/bibleRates';
 
 // ── CONSTANTS ────────────────────────────────────────────────
 
@@ -325,6 +326,23 @@ export default function Step4Rates() {
     if (rates.dayRate > ref) return 'above' as const;
     return 'below' as const;
   }, [scaleMin, rates.dayRate]);
+
+  // ── Auto-populate rate from Bible when job title changes ────
+  useEffect(() => {
+    if (!jobTitle || rates.dayRate > 0) return; // Don't overwrite user-entered rate
+    const currencyMap: Record<string, string> = { uk: 'GBP', us: 'USD', ca: 'CAD', au: 'AUD', ie: 'EUR', de: 'EUR', fr: 'EUR', es: 'EUR' };
+    const curr = currencyMap[territory] || 'GBP';
+    const matches = lookupBibleRate(jobTitle, curr);
+    if (matches.length > 0) {
+      const best = matches[0];
+      let daily = best.amount;
+      if (best.period === 'weekly') daily = Math.round(daily / 5 * 100) / 100;
+      if (best.period === 'hourly') daily = Math.round(daily * 10 * 100) / 100; // assume 10hr day
+      if (daily > 0) {
+        update({ rates: { ...rates, dayRate: daily, weeklyRate: daily * 5 } });
+      }
+    }
+  }, [jobTitle, territory]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Payment currency options
   const paymentCurrencyOpts = useMemo(() => {
