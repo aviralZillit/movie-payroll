@@ -473,9 +473,60 @@ export const BIBLE_RATES: BibleRate[] = [
   { grade: 'CPF employer contribution (citizen/PR)', amount: 17.0, currency: 'GBP', period: 'daily', raw: '17% on monthly wages' },
 ];
 
+/** Lookup rates by grade name with progressive fuzzy matching */
 export function lookupBibleRate(search: string, currency?: string): BibleRate[] {
   const s = search.toLowerCase();
-  let r = BIBLE_RATES.filter(x => x.grade.toLowerCase().includes(s) || s.includes(x.grade.toLowerCase()));
-  if (currency) r = r.filter(x => x.currency === currency);
+  let pool = currency ? BIBLE_RATES.filter(x => x.currency === currency) : BIBLE_RATES;
+
+  // 1. Exact match
+  let r = pool.filter(x => x.grade.toLowerCase() === s);
+  if (r.length) return r;
+
+  // 2. Grade contains search
+  r = pool.filter(x => x.grade.toLowerCase().includes(s));
+  if (r.length) return r;
+
+  // 3. Search contains grade (for long search strings)
+  r = pool.filter(x => s.includes(x.grade.toLowerCase()) && x.grade.length > 3);
+  if (r.length) return r;
+
+  // 4. Word overlap — match if 2+ words overlap
+  const searchWords = s.split(/[\s\/\-—·,]+/).filter(w => w.length > 2);
+  r = pool.filter(x => {
+    const gradeWords = x.grade.toLowerCase().split(/[\s\/\-—·,]+/).filter(w => w.length > 2);
+    const overlap = searchWords.filter(sw => gradeWords.some(gw => gw.includes(sw) || sw.includes(gw)));
+    return overlap.length >= 2;
+  });
+  if (r.length) return r;
+
+  // 5. Single keyword match (last resort)
+  r = pool.filter(x => {
+    const gl = x.grade.toLowerCase();
+    return searchWords.some(w => gl.includes(w) && w.length > 3);
+  });
   return r;
+}
+
+/** Department-based fallback rates when job title lookup fails */
+const DEPT_FALLBACK_RATES: Record<string, Record<string, number>> = {
+  // UK daily rates by department (BECTU standard crew rate for the dept)
+  cam:      { GBP: 565, USD: 650, CAD: 487, AUD: 550, EUR: 500 },
+  light:    { GBP: 429, USD: 550, CAD: 399, AUD: 450, EUR: 400 },
+  grip:     { GBP: 429, USD: 500, CAD: 399, AUD: 450, EUR: 400 },
+  sound:    { GBP: 450, USD: 550, CAD: 420, AUD: 460, EUR: 410 },
+  art:      { GBP: 371, USD: 450, CAD: 380, AUD: 400, EUR: 370 },
+  costume:  { GBP: 350, USD: 400, CAD: 360, AUD: 380, EUR: 350 },
+  hair:     { GBP: 370, USD: 420, CAD: 370, AUD: 390, EUR: 360 },
+  loc:      { GBP: 337, USD: 400, CAD: 350, AUD: 370, EUR: 340 },
+  prod:     { GBP: 260, USD: 350, CAD: 300, AUD: 320, EUR: 300 },
+  trans:    { GBP: 300, USD: 350, CAD: 320, AUD: 340, EUR: 310 },
+  dir:      { GBP: 851, USD: 1000, CAD: 800, AUD: 850, EUR: 750 },
+  vfx:      { GBP: 450, USD: 550, CAD: 450, AUD: 480, EUR: 430 },
+  post:     { GBP: 400, USD: 500, CAD: 420, AUD: 440, EUR: 400 },
+  default:  { GBP: 350, USD: 400, CAD: 360, AUD: 380, EUR: 350 },
+};
+
+export function getDeptFallbackRate(dept: string, currency: string): number {
+  const d = DEPT_FALLBACK_RATES[dept] || DEPT_FALLBACK_RATES.default;
+  return d[currency] || d.GBP || 350;
 }

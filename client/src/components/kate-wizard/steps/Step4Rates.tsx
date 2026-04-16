@@ -19,7 +19,7 @@ import { OT_SCHEDULES } from '../../../data/kate/otSchedules';
 import { US_SCALE_MINIMUMS, UK_PACT_MINIMUMS } from '../../../data/kate/scaleMinimums';
 import { FRINGE_PACKAGES } from '../../../data/kate/fringePackages';
 import type { CurrencyCode, TerritoryCode, UnionId, HPMode, COABasis } from '../../../types/kate/dealMemo';
-import { lookupBibleRate } from '../../../data/kate/bibleRates';
+import { lookupBibleRate, getDeptFallbackRate } from '../../../data/kate/bibleRates';
 
 // ── CONSTANTS ────────────────────────────────────────────────
 
@@ -332,17 +332,27 @@ export default function Step4Rates() {
     if (!jobTitle || rates.dayRate > 0) return; // Don't overwrite user-entered rate
     const currencyMap: Record<string, string> = { uk: 'GBP', us: 'USD', ca: 'CAD', au: 'AUD', ie: 'EUR', de: 'EUR', fr: 'EUR', es: 'EUR' };
     const curr = currencyMap[territory] || 'GBP';
+
+    // Try bible lookup first (fuzzy match on job title)
     const matches = lookupBibleRate(jobTitle, curr);
+    let daily = 0;
+
     if (matches.length > 0) {
       const best = matches[0];
-      let daily = best.amount;
+      daily = best.amount;
       if (best.period === 'weekly') daily = Math.round(daily / 5 * 100) / 100;
-      if (best.period === 'hourly') daily = Math.round(daily * 10 * 100) / 100; // assume 10hr day
-      if (daily > 0) {
-        update({ rates: { ...rates, dayRate: daily, weeklyRate: daily * 5 } });
-      }
+      if (best.period === 'hourly') daily = Math.round(daily * 10 * 100) / 100;
     }
-  }, [jobTitle, territory]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Fallback: department-based default rate if no bible match
+    if (daily <= 0) {
+      daily = getDeptFallbackRate(department, curr);
+    }
+
+    if (daily > 0) {
+      update({ rates: { ...rates, dayRate: daily, weeklyRate: daily * 5 } });
+    }
+  }, [jobTitle, territory, department]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Payment currency options
   const paymentCurrencyOpts = useMemo(() => {
